@@ -1,0 +1,17 @@
+# Secrets — never commit
+.env
+*.env
+!.env.example
+
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+*.log
