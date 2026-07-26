@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { connectCall, type CallClient } from '../lib/call-client'
 import { PcmPlayer } from '../lib/audio-playback'
@@ -11,7 +11,7 @@ interface Segment {
   text: string
 }
 
-type CallState = 'idle' | 'ringing' | 'active' | 'disconnected'
+type CallState = 'idle' | 'ringing' | 'dialing' | 'active' | 'disconnected'
 
 const LANG_LABELS: Record<string, string> = {
   auto: 'Auto 🌐',
@@ -22,8 +22,11 @@ const LANG_LABELS: Record<string, string> = {
 }
 
 export default function CallPage() {
+  const location = useLocation()
+  const pendingDial = (location.state as { dial?: { number: string; name: string } } | null)?.dial
   const [state, setState] = useState<CallState>('idle')
   const [caller, setCaller] = useState('')
+  const [ringingStatus, setRingingStatus] = useState('Connecting…')
   const [segments, setSegments] = useState<Segment[]>([])
   const [speaking, setSpeaking] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -78,6 +81,14 @@ export default function CallPage() {
           setState('ringing')
           navigator.vibrate?.([400, 150, 400, 150, 400])
           notifyNative('ring')
+        } else if (e.type === 'dialing') {
+          setCaller(e.to || '')
+          setSegments([])
+          setEndReason('')
+          setRingingStatus('Calling…')
+          setState('dialing')
+        } else if (e.type === 'outbound_ringing') {
+          setRingingStatus('Ringing…')
         } else if (e.type === 'call_started') {
           notifyNative('ring_stop')
           setState('active')
@@ -110,6 +121,24 @@ export default function CallPage() {
       client.close()
     }
   }, [])
+
+  async function startDial(number: string, contactName: string) {
+    setError('')
+    try {
+      playerRef.current = new PcmPlayer()
+      await playerRef.current.resume()
+      captureRef.current = await startAudioCapture((pcm) => {
+        if (!mutedRef.current) clientRef.current?.sendAudio(pcm)
+      })
+      setCaller(contactName)
+      setRingingStatus('Calling…')
+      setState('dialing')
+      clientRef.current?.dial(number, contactName, language)
+    } catch {
+      setError('Microphone permission is needed to call')
+      stopCallMedia()
+    }
+  }
 
   function stopCallMedia() {
     captureRef.current?.stop()
@@ -145,6 +174,22 @@ export default function CallPage() {
     clientRef.current?.end()
     stopCallMedia()
     setState('idle')
+  }
+
+  if (state === 'dialing') {
+    return (
+      <main className="call-ring dialing">
+        <div className="ring-pulse">📞</div>
+        <h2>{ringingStatus}</h2>
+        <p className="caller-number">{caller}</p>
+        {error && <p className="status-line error">{error}</p>}
+        <div className="ring-actions">
+          <button className="bigbtn stop" onClick={endCall}>
+            ✕ Cancel
+          </button>
+        </div>
+      </main>
+    )
   }
 
   if (state === 'ringing') {
@@ -245,6 +290,31 @@ export default function CallPage() {
           </button>
           <button className="bigbtn stop" onClick={endCall}>
             📵 End call
+          </button>
+        </div>
+      </main>
+    )
+  }
+
+  if (pendingDial) {
+    return (
+      <main className="call-ring">
+        <div className="ring-pulse">📞</div>
+        <h2>Call {pendingDial.name}?</h2>
+        <p className="caller-number">{pendingDial.number}</p>
+        {error && <p className="status-line error">{error}</p>}
+        <div className="ring-actions">
+          <button className="bigbtn stop" onClick={() => navigate('/contacts')}>
+            ✕ Back
+          </button>
+          <button
+            className="bigbtn start"
+            onClick={() => {
+              navigate('/call', { replace: true })
+              void startDial(pendingDial.number, pendingDial.name)
+            }}
+          >
+            📞 Call now
           </button>
         </div>
       </main>

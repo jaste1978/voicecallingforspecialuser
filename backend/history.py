@@ -31,13 +31,18 @@ def init() -> None:
                 reason TEXT,
                 language TEXT,
                 transcript TEXT,
-                timeline TEXT
+                timeline TEXT,
+                direction TEXT DEFAULT 'in'
             )
         """)
-        try:
-            conn.execute("ALTER TABLE calls ADD COLUMN timeline TEXT")
-        except sqlite3.OperationalError:
-            pass  # column already exists
+        for ddl in (
+            "ALTER TABLE calls ADD COLUMN timeline TEXT",
+            "ALTER TABLE calls ADD COLUMN direction TEXT DEFAULT 'in'",
+        ):
+            try:
+                conn.execute(ddl)
+            except sqlite3.OperationalError:
+                pass  # column already exists
 
 
 def save_call(
@@ -50,17 +55,19 @@ def save_call(
     language: str,
     transcript: list[str],
     timeline: list[dict] | None = None,
+    direction: str = "in",
 ) -> None:
     with _conn() as conn:
         conn.execute(
             "INSERT INTO calls (call_uuid, from_number, to_number, started_at,"
-            " answered_at, ended_at, reason, language, transcript, timeline)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " answered_at, ended_at, reason, language, transcript, timeline, direction)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 call_uuid, from_number, to_number, started_at,
                 answered_at, time.time(), reason, language,
                 json.dumps(transcript, ensure_ascii=False),
                 json.dumps(timeline or [], ensure_ascii=False),
+                direction,
             ),
         )
 

@@ -420,6 +420,108 @@ select.lang {
   margin-top: 18px;
 }
 
+/* Contacts / dialer */
+.contacts-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.dialbar {
+  display: flex;
+  gap: 10px;
+}
+
+.dialinput {
+  flex: 1;
+  background: var(--surface);
+  border: 2px solid #3a3a42;
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 20px;
+  padding: 12px 14px;
+  min-height: 56px;
+}
+
+.dialcall {
+  flex: 0 0 auto;
+  padding: 0 22px;
+}
+
+.contacts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.contact-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--surface);
+  border: 2px solid #3a3a42;
+  border-radius: 14px;
+  color: var(--text);
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.contact-name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.contact-number {
+  color: var(--dim);
+  font-size: 15px;
+}
+
+.contact-callbtn,
+.contact-delete {
+  background: var(--surface);
+  border: 2px solid #3a3a42;
+  border-radius: 14px;
+  font-size: 20px;
+  min-width: 56px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.contact-callbtn {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.contact-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-add-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.addcontact {
+  flex: 0 0 auto;
+}
+
 .audio-row {
   display: flex;
   gap: 14px;

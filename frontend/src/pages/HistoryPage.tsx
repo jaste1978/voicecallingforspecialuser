@@ -14,6 +14,7 @@ export interface CallRecord {
   answered: boolean
   duration_s: number
   reason: string
+  direction?: string
   transcript: string[]
   timeline: TimelineEvent[]
 }
@@ -68,7 +69,10 @@ export default function HistoryPage() {
               <span className={`history-badge${c.answered ? '' : ' missed'}`}>
                 {c.answered ? '✓' : '✕'}
               </span>
-              <span className="history-number">{c.from_number}</span>
+              <span className="history-number">
+                {c.direction === 'out' ? '↗ ' : '↙ '}
+                {c.from_number}
+              </span>
               <span className="history-meta">
                 {formatWhen(c.started_at)}
                 {c.answered ? ` · ${formatDuration(c.duration_s)}` : ` · ${c.reason}`}

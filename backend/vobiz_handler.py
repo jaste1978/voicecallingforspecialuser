@@ -40,6 +40,27 @@ async def vobiz_answer(request: Request):
     to_number = params.get("To") or ""
     logger.info("incoming call %s from %s to %s", call_uuid, from_number, to_number)
 
+    if request.query_params.get("direction") == "out":
+        # Callee answered our outbound call: reuse the same media bridge
+        if await manager.outbound_answered(call_uuid):
+            ws_url = f"wss://{_public_host(request)}/ws/vobiz"
+            xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Stream
+        bidirectional="true"
+        audioTrack="inbound"
+        contentType="audio/x-l16;rate=16000"
+        keepCallAlive="true"
+        maxRetries="3"
+        streamTimeout="3600">{ws_url}</Stream>
+</Response>"""
+            return Response(content=xml, media_type="application/xml")
+        logger.warning("outbound answer webhook with no dialing call — hanging up")
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?>\n<Response><Hangup/></Response>',
+            media_type="application/xml",
+        )
+
     # Vobiz re-fetches the Answer URL when our stream closes on a call we
     # already ended (keepCallAlive). Hang the call up instead of re-ringing.
     if manager.was_recently_ended(call_uuid):
@@ -63,6 +84,29 @@ async def vobiz_answer(request: Request):
         streamTimeout="3600">{ws_url}</Stream>
 </Response>"""
     return Response(content=xml, media_type="application/xml")
+
+
+@router.api_route("/vobiz/ring", methods=["GET", "POST"])
+async def vobiz_ring(request: Request):
+    await manager.outbound_ringing()
+    return Response(content="OK")
+
+
+@router.api_route("/vobiz/hangup", methods=["GET", "POST"])
+async def vobiz_hangup(request: Request):
+    params = dict(request.query_params)
+    if request.method == "POST":
+        body = (await request.body()).decode("utf-8", "replace")
+        if body:
+            try:
+                params.update(json.loads(body))
+            except json.JSONDecodeError:
+                from urllib.parse import parse_qs
+                params.update({k: v[0] for k, v in parse_qs(body).items()})
+    cause = params.get("HangupCause") or params.get("HangupReason") or "call ended"
+    logger.info("vobiz hangup callback: %s", cause)
+    await manager.vobiz_hangup_event(str(cause))
+    return Response(content="OK")
 
 
 @router.websocket("/ws/vobiz")

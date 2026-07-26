@@ -43,6 +43,29 @@ async def api_calls():
     return {"calls": history.list_calls()}
 
 
+@app.get("/api/contacts")
+async def api_contacts_list():
+    import contacts
+    return {"contacts": contacts.list_contacts()}
+
+
+@app.post("/api/contacts")
+async def api_contacts_add(payload: dict):
+    import contacts
+    name = (payload.get("name") or "").strip()
+    number = (payload.get("number") or "").strip()
+    if not name or not number:
+        return Response(status_code=422)
+    return contacts.add_contact(name, number)
+
+
+@app.delete("/api/contacts/{contact_id}")
+async def api_contacts_delete(contact_id: int):
+    import contacts
+    contacts.delete_contact(contact_id)
+    return {"ok": True}
+
+
 @app.get("/api/calls/{call_uuid}/audio/{track}")
 async def api_call_audio(call_uuid: str, track: str):
     import recorder

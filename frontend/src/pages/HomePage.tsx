@@ -18,6 +18,13 @@ export default function HomePage() {
           <small>Answer phone calls with live captions</small>
         </span>
       </button>
+      <button className="home-btn" onClick={() => navigate('/contacts')}>
+        <span className="emoji">📱</span>
+        <span>
+          New Call
+          <small>Call your contacts or any number</small>
+        </span>
+      </button>
       <button className="home-btn" onClick={() => navigate('/alerts')}>
         <span className="emoji">🔔</span>
         <span>

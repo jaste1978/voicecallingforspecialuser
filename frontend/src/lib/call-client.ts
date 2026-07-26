@@ -3,8 +3,18 @@
 import type { LanguageKey } from './stt-client'
 
 export interface CallEvent {
-  type: 'ring' | 'call_started' | 'transcript' | 'vad' | 'call_ended' | 'error' | 'language_set'
+  type:
+    | 'ring'
+    | 'call_started'
+    | 'transcript'
+    | 'vad'
+    | 'call_ended'
+    | 'error'
+    | 'language_set'
+    | 'dialing'
+    | 'outbound_ringing'
   from?: string
+  to?: string
   callId?: string
   text?: string
   language_code?: string
@@ -15,6 +25,7 @@ export interface CallEvent {
 }
 
 export interface CallClient {
+  dial: (number: string, name: string, language: LanguageKey) => void
   accept: (language: LanguageKey) => void
   decline: () => void
   end: () => void
@@ -52,6 +63,7 @@ export function connectCall(
   }
 
   return {
+    dial: (number, name, language) => sendJson({ type: 'dial', number, name, language }),
     accept: (language) => sendJson({ type: 'accept', language }),
     decline: () => sendJson({ type: 'decline' }),
     end: () => sendJson({ type: 'end' }),

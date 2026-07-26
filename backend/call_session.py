@@ -21,6 +21,7 @@ from typing import Optional
 from fastapi import WebSocket
 
 import history
+import outbound
 import tts_prompts
 from recorder import CallRecorder
 from sarvam_relay import SarvamSTTSession
@@ -59,8 +60,11 @@ class Call:
         self.call_uuid = call_uuid
         self.from_number = from_number
         self.to_number = to_number
-        # pending (webhook, no media yet) -> ringing (stream up) -> active -> ended
+        # inbound: pending (webhook, no media) -> ringing (stream up) -> active -> ended
+        # outbound: dialing (REST fired) -> pending (answered) -> active -> ended
         self.state = "pending"
+        self.direction = "in"
+        self.request_uuid: Optional[str] = None
         self.stream_id: Optional[str] = None
         self.vobiz_ws: Optional[WebSocket] = None
         self.sarvam: Optional[SarvamSTTSession] = None
@@ -130,13 +134,21 @@ class CallManager:
     async def on_browser_message(self, msg: dict) -> None:
         mtype = msg.get("type")
         call = self.call
-        if mtype == "accept" and call and call.state == "ringing":
+        if mtype == "dial":
+            await self.start_outbound(
+                msg.get("number", ""), msg.get("name", ""), msg.get("language", "auto")
+            )
+        elif mtype == "accept" and call and call.state == "ringing":
             call.language = msg.get("language", "auto")
             await self._activate(call)
         elif mtype == "decline" and call and call.state == "ringing":
             await self.end_call("declined")
         elif mtype == "end":
-            await self.end_call("ended by user")
+            if call and call.state == "dialing" and call.request_uuid:
+                await outbound.hangup_call(call.request_uuid)
+                await self.end_call("cancelled")
+            else:
+                await self.end_call("ended by user")
         elif mtype == "prompt" and call and call.state == "active":
             await self._play_prompt(call, msg.get("name", ""))
         elif mtype == "set_language" and call and call.state == "active":
@@ -200,6 +212,69 @@ class CallManager:
             except Exception:
                 logger.exception("failed sending playAudio to vobiz")
 
+    # ---------- outbound ----------
+
+    async def start_outbound(self, number: str, name: str, language: str) -> None:
+        if not number.strip():
+            await self._to_browser({"type": "error", "message": "No number to call"})
+            return
+        if not outbound.configured():
+            await self._to_browser({
+                "type": "error",
+                "message": "Outbound calling is not configured yet",
+            })
+            return
+        async with self._lock:
+            if self.call and self.call.state != "ended":
+                await self._to_browser({"type": "error", "message": "Another call is in progress"})
+                return
+            self.call = Call("outbound-pending", name or number, number)
+        call = self.call
+        call.direction = "out"
+        call.state = "dialing"
+        call.language = language
+        call.trace.event("outbound_dialing", to=number)
+        await self._to_browser({"type": "dialing", "to": name or number})
+        try:
+            data = await outbound.place_call(number)
+            call.request_uuid = data.get("request_uuid")
+        except Exception as exc:
+            logger.exception("outbound place_call failed")
+            await self.end_call(f"could not place call: {exc}")
+            return
+        # safety net if no answer/hangup callback ever arrives
+        asyncio.get_running_loop().call_later(
+            90, lambda: asyncio.ensure_future(self._dial_timeout(call)),
+        )
+
+    async def _dial_timeout(self, call: Call) -> None:
+        if self.call is call and call.state == "dialing":
+            if call.request_uuid:
+                await outbound.hangup_call(call.request_uuid)
+            await self.end_call("no answer")
+
+    async def outbound_answered(self, call_uuid: str) -> bool:
+        """Answer webhook fired for our outbound call: bind the call UUID."""
+        call = self.call
+        if call and call.direction == "out" and call.state == "dialing":
+            call.call_uuid = call_uuid
+            call.recorder.call_uuid = call_uuid
+            call.state = "pending"  # media stream comes next
+            call.trace.event("outbound_answered")
+            return True
+        return False
+
+    async def outbound_ringing(self) -> None:
+        call = self.call
+        if call and call.direction == "out" and call.state == "dialing":
+            call.trace.event("outbound_ringing")
+            await self._to_browser({"type": "outbound_ringing"})
+
+    async def vobiz_hangup_event(self, reason: str) -> None:
+        call = self.call
+        if call and call.state != "ended":
+            await self.end_call(reason or "call ended")
+
     # ---------- vobiz side ----------
 
     async def register_pending(self, call_uuid: str, from_number: str, to_number: str) -> None:
@@ -254,7 +329,10 @@ class CallManager:
         fmt = start.get("mediaFormat", {})
         call.trace.event("vobiz_stream_started", format=str(fmt))
         logger.info("vobiz stream %s started for call %s (%s)", stream_id, call_id, fmt)
-        if call.state == "pending":
+        if call.direction == "out" and call.state in ("dialing", "pending"):
+            # user initiated this call; no accept step needed
+            await self._activate(call)
+        elif call.state == "pending":
             await self._ring(call)
 
     async def vobiz_media(self, payload_b64: str) -> None:
@@ -363,6 +441,7 @@ class CallManager:
                 call.call_uuid, call.from_number, call.to_number,
                 call.created_at, call.answered_at, reason,
                 call.language, call.transcript, call.trace.finish(),
+                call.direction,
             )
         except Exception:
             logger.exception("failed saving call history")
