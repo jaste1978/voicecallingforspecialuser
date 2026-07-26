@@ -1,0 +1,9 @@
+**/node_modules
+**/venv
+**/.expo
+**/dist
+**/__pycache__
+mobile
+.git
+*.db
+backend/.env
