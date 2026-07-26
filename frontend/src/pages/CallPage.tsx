@@ -58,8 +58,16 @@ export default function CallPage() {
   const [muted, setMuted] = useState(false)
   const [endReason, setEndReason] = useState('')
   const [error, setError] = useState('')
+  const [promptNote, setPromptNote] = useState('')
   const [historyList, setHistoryList] = useState<CallRecord[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const promptNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function showPromptNote(note: string) {
+    setPromptNote(note)
+    if (promptNoteTimer.current) clearTimeout(promptNoteTimer.current)
+    promptNoteTimer.current = setTimeout(() => setPromptNote(''), 4000)
+  }
   const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
   // Calls are fixed to Hindi for now; language fine-tuning comes later
   const language: LanguageKey = 'hi'
@@ -190,7 +198,41 @@ export default function CallPage() {
     return (
       <main className="captions-page">
         <div className="status-line">
-          On call with <strong>{caller}</strong> — speak normally, they can hear you
+          {promptNote ||
+            (
+              <>
+                On call with <strong>{caller}</strong> — speak normally, they can hear you
+              </>
+            )}
+        </div>
+        <div className="prompt-row">
+          <button
+            className="promptbtn"
+            onClick={() => {
+              clientRef.current?.sendPrompt('slow_down')
+              showPromptNote('Asked the caller to speak slower 🐢')
+            }}
+          >
+            🐢 धीरे बोलिए
+          </button>
+          <button
+            className="promptbtn"
+            onClick={() => {
+              clientRef.current?.sendPrompt('repeat')
+              showPromptNote('Asked the caller to repeat 🔁')
+            }}
+          >
+            🔁 फिर से कहिए
+          </button>
+          <button
+            className="promptbtn"
+            onClick={() => {
+              clientRef.current?.sendPrompt('wait')
+              showPromptNote('Asked the caller to wait ✋')
+            }}
+          >
+            ✋ एक क्षण रुकिए
+          </button>
         </div>
         <div ref={scrollRef} className="caption-scroll" style={{ fontSize }}>
           {segments.length === 0 && (

@@ -16,6 +16,7 @@ export interface CallClient {
   accept: (language: LanguageKey) => void
   decline: () => void
   end: () => void
+  sendPrompt: (name: 'slow_down' | 'repeat' | 'wait') => void
   sendAudio: (pcm: ArrayBuffer) => void
   close: () => void
 }
@@ -51,6 +52,7 @@ export function connectCall(
     accept: (language) => sendJson({ type: 'accept', language }),
     decline: () => sendJson({ type: 'decline' }),
     end: () => sendJson({ type: 'end' }),
+    sendPrompt: (name) => sendJson({ type: 'prompt', name }),
     sendAudio: (pcm) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(pcm)
     },

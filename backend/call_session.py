@@ -21,6 +21,7 @@ from typing import Optional
 from fastapi import WebSocket
 
 import history
+import tts_prompts
 from sarvam_relay import SarvamSTTSession
 
 logger = logging.getLogger("call_session")
@@ -131,6 +132,31 @@ class CallManager:
             await self.end_call("declined")
         elif mtype == "end":
             await self.end_call("ended by user")
+        elif mtype == "prompt" and call and call.state == "active":
+            await self._play_prompt(call, msg.get("name", ""))
+
+    async def _play_prompt(self, call: Call, name: str) -> None:
+        """Speak a canned TTS phrase (e.g. 'please speak slower') into the call."""
+        pcm = await tts_prompts.get_prompt_pcm(name)
+        if pcm is None or not (call.vobiz_ws and call.stream_id):
+            return
+        call.trace.event("tts_prompt_played", prompt=name, kb=len(pcm) // 1024)
+        chunk = 3200
+        for i in range(0, len(pcm), chunk):
+            payload = base64.b64encode(pcm[i:i + chunk]).decode("ascii")
+            try:
+                await call.vobiz_ws.send_text(json.dumps({
+                    "event": "playAudio",
+                    "streamId": call.stream_id,
+                    "media": {
+                        "contentType": "audio/x-l16",
+                        "sampleRate": 16000,
+                        "payload": payload,
+                    },
+                }))
+            except Exception:
+                logger.exception("failed sending prompt audio")
+                break
 
     async def on_browser_audio(self, pcm: bytes) -> None:
         """User's mic -> into the phone call."""
