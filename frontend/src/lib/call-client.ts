@@ -3,10 +3,12 @@
 import type { LanguageKey } from './stt-client'
 
 export interface CallEvent {
-  type: 'ring' | 'call_started' | 'transcript' | 'vad' | 'call_ended' | 'error'
+  type: 'ring' | 'call_started' | 'transcript' | 'vad' | 'call_ended' | 'error' | 'language_set'
   from?: string
   callId?: string
   text?: string
+  language_code?: string
+  language?: string
   signal?: string
   reason?: string
   message?: string
@@ -16,6 +18,7 @@ export interface CallClient {
   accept: (language: LanguageKey) => void
   decline: () => void
   end: () => void
+  setLanguage: (language: LanguageKey) => void
   sendPrompt: (name: 'slow_down' | 'repeat' | 'wait') => void
   sendAudio: (pcm: ArrayBuffer) => void
   close: () => void
@@ -52,6 +55,7 @@ export function connectCall(
     accept: (language) => sendJson({ type: 'accept', language }),
     decline: () => sendJson({ type: 'decline' }),
     end: () => sendJson({ type: 'end' }),
+    setLanguage: (language) => sendJson({ type: 'set_language', language }),
     sendPrompt: (name) => sendJson({ type: 'prompt', name }),
     sendAudio: (pcm) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(pcm)

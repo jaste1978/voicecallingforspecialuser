@@ -40,6 +40,14 @@ function eventDetail(e: TimelineEvent): string {
 
 type CallState = 'idle' | 'ringing' | 'active' | 'disconnected'
 
+const LANG_LABELS: Record<string, string> = {
+  auto: 'Auto 🌐',
+  hi: 'हिन्दी',
+  gu: 'ગુજરાતી',
+  en: 'English',
+  hinglish: 'हिं+En',
+}
+
 function formatWhen(ts: number): string {
   return new Date(ts * 1000).toLocaleString([], {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -69,8 +77,18 @@ export default function CallPage() {
     promptNoteTimer.current = setTimeout(() => setPromptNote(''), 4000)
   }
   const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
-  // Calls are fixed to Hindi for now; language fine-tuning comes later
-  const language: LanguageKey = 'hi'
+  const [language, setLanguage] = useState<LanguageKey>(
+    () => (localStorage.getItem('lang') as LanguageKey) || 'auto',
+  )
+
+  function changeLanguage(lang: LanguageKey) {
+    setLanguage(lang)
+    localStorage.setItem('lang', lang)
+    if (clientRef.current) {
+      clientRef.current.setLanguage(lang)
+      showPromptNote(`Caption language: ${LANG_LABELS[lang]}`)
+    }
+  }
 
   const clientRef = useRef<CallClient | null>(null)
   const captureRef = useRef<AudioCapture | null>(null)
@@ -206,6 +224,18 @@ export default function CallPage() {
             )}
         </div>
         <div className="prompt-row">
+          <select
+            className="lang"
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value as LanguageKey)}
+            aria-label="Caption language"
+          >
+            {Object.entries(LANG_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
           <button
             className="promptbtn"
             onClick={() => {

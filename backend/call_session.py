@@ -63,7 +63,7 @@ class Call:
         self.stream_id: Optional[str] = None
         self.vobiz_ws: Optional[WebSocket] = None
         self.sarvam: Optional[SarvamSTTSession] = None
-        self.language = "hi"
+        self.language = "auto"
         self.created_at = time.time()
         self.answered_at: Optional[float] = None
         self.transcript: list[str] = []
@@ -129,7 +129,7 @@ class CallManager:
         mtype = msg.get("type")
         call = self.call
         if mtype == "accept" and call and call.state == "ringing":
-            call.language = msg.get("language", "hi")
+            call.language = msg.get("language", "auto")
             await self._activate(call)
         elif mtype == "decline" and call and call.state == "ringing":
             await self.end_call("declined")
@@ -137,6 +137,14 @@ class CallManager:
             await self.end_call("ended by user")
         elif mtype == "prompt" and call and call.state == "active":
             await self._play_prompt(call, msg.get("name", ""))
+        elif mtype == "set_language" and call and call.state == "active":
+            language = msg.get("language", "auto")
+            call.language = language
+            if call.sarvam:
+                await call.sarvam.close()
+            await self._start_sarvam(call)
+            call.trace.event("language_changed", language=language)
+            await self._to_browser({"type": "language_set", "language": language})
 
     async def _play_prompt(self, call: Call, name: str) -> None:
         """Speak a canned TTS phrase (e.g. 'please speak slower') into the call."""
@@ -274,7 +282,7 @@ class CallManager:
 
     # ---------- lifecycle ----------
 
-    async def _activate(self, call: Call) -> None:
+    async def _start_sarvam(self, call: Call) -> None:
         async def on_stt_event(event: dict) -> None:
             now_ms = round((time.time() - call.trace.t0) * 1000)
             if event["type"] == "transcript":
@@ -288,10 +296,14 @@ class CallManager:
                 call.trace.event(
                     "caption", chars=len(event["text"]),
                     after_speech_end_ms=latency,
-                    mid_speech=latency is None or None,
+                    lang=event.get("language_code"),
                 )
                 call.transcript.append(event["text"])
-                await self._to_browser({"type": "transcript", "text": event["text"]})
+                await self._to_browser({
+                    "type": "transcript",
+                    "text": event["text"],
+                    "language_code": event.get("language_code"),
+                })
             elif event["type"] == "vad":
                 if event["signal"] == "START_SPEECH":
                     call.last_speech_end_ms = None
@@ -304,7 +316,6 @@ class CallManager:
                 call.trace.event("stt_error", message=event["message"])
                 await self._to_browser({"type": "error", "message": event["message"]})
 
-        call.trace.event("user_accepted")
         call.sarvam = SarvamSTTSession(call.language, on_stt_event)
         t_connect = time.time()
         await call.sarvam.start()
@@ -313,6 +324,10 @@ class CallManager:
             connect_ms=round((time.time() - t_connect) * 1000),
             language=call.language,
         )
+
+    async def _activate(self, call: Call) -> None:
+        call.trace.event("user_accepted")
+        await self._start_sarvam(call)
         call.state = "active"
         call.answered_at = time.time()
         await self._to_browser({"type": "call_started", "from": call.from_number})
