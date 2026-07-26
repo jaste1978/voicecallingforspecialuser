@@ -58,7 +58,8 @@ class Call:
         self.call_uuid = call_uuid
         self.from_number = from_number
         self.to_number = to_number
-        self.state = "ringing"  # ringing -> active -> ended
+        # pending (webhook, no media yet) -> ringing (stream up) -> active -> ended
+        self.state = "pending"
         self.stream_id: Optional[str] = None
         self.vobiz_ws: Optional[WebSocket] = None
         self.sarvam: Optional[SarvamSTTSession] = None
@@ -92,6 +93,8 @@ class CallManager:
         return call_uuid in self._ended_uuids
 
     # ---------- browser side ----------
+
+    PENDING_TIMEOUT_S = 10
 
     async def browser_connected(self, ws: WebSocket) -> None:
         self.browser_ws = ws
@@ -198,11 +201,28 @@ class CallManager:
                 logger.warning("second call %s while busy — ignoring", call_uuid)
                 return
             self.call = Call(call_uuid, from_number, to_number)
+        # Do NOT ring yet: wait for the Vobiz media stream so the user can
+        # never accept a call with a dead audio path.
+        asyncio.get_running_loop().call_later(
+            self.PENDING_TIMEOUT_S,
+            lambda: asyncio.ensure_future(self._pending_timeout(call_uuid)),
+        )
+
+    async def _pending_timeout(self, call_uuid: str) -> None:
+        call = self.call
+        if call and call.call_uuid == call_uuid and call.state == "pending":
+            logger.warning("call %s: media stream never connected", call_uuid)
+            await self.end_call("no media stream from Vobiz")
+
+    async def _ring(self, call: Call) -> None:
+        call.state = "ringing"
+        call.trace.event("ring_browser")
         await self._to_browser({
-            "type": "ring", "from": from_number, "callId": call_uuid,
+            "type": "ring", "from": call.from_number, "callId": call.call_uuid,
         })
         asyncio.get_running_loop().call_later(
-            RING_TIMEOUT_S, lambda: asyncio.ensure_future(self._ring_timeout(call_uuid))
+            RING_TIMEOUT_S,
+            lambda: asyncio.ensure_future(self._ring_timeout(call.call_uuid)),
         )
 
     async def _ring_timeout(self, call_uuid: str) -> None:
@@ -217,12 +237,13 @@ class CallManager:
         if call is None:
             # Stream arrived with no webhook context (e.g. backend restarted)
             self.call = call = Call(call_id or "unknown", "Unknown caller", "")
-            await self._to_browser({"type": "ring", "from": "Unknown caller", "callId": call.call_uuid})
         call.vobiz_ws = ws
         call.stream_id = stream_id
         fmt = start.get("mediaFormat", {})
         call.trace.event("vobiz_stream_started", format=str(fmt))
         logger.info("vobiz stream %s started for call %s (%s)", stream_id, call_id, fmt)
+        if call.state == "pending":
+            await self._ring(call)
 
     async def vobiz_media(self, payload_b64: str) -> None:
         """Caller audio frame."""

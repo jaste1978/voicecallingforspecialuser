@@ -59,6 +59,7 @@ async def vobiz_answer(request: Request):
         audioTrack="inbound"
         contentType="audio/x-l16;rate=16000"
         keepCallAlive="true"
+        maxRetries="3"
         streamTimeout="3600">{ws_url}</Stream>
 </Response>"""
     return Response(content=xml, media_type="application/xml")
