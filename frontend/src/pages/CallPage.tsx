@@ -4,6 +4,7 @@ import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { connectCall, type CallClient } from '../lib/call-client'
 import { PcmPlayer } from '../lib/audio-playback'
 import { notifyNative } from '../lib/native-bridge'
+import { Ringtone } from '../lib/ringtone'
 import type { LanguageKey } from '../lib/stt-client'
 
 interface Segment {
@@ -59,6 +60,7 @@ export default function CallPage() {
   const clientRef = useRef<CallClient | null>(null)
   const captureRef = useRef<AudioCapture | null>(null)
   const playerRef = useRef<PcmPlayer | null>(null)
+  const ringtoneRef = useRef<Ringtone | null>(null)
   const mutedRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const nextId = useRef(1)
@@ -81,6 +83,8 @@ export default function CallPage() {
           setState('ringing')
           navigator.vibrate?.([400, 150, 400, 150, 400])
           notifyNative('ring')
+          if (!ringtoneRef.current) ringtoneRef.current = new Ringtone()
+          ringtoneRef.current.start()
         } else if (e.type === 'dialing') {
           setCaller(e.to || '')
           setSegments([])
@@ -141,6 +145,7 @@ export default function CallPage() {
   }
 
   function stopCallMedia() {
+    ringtoneRef.current?.stop()
     captureRef.current?.stop()
     captureRef.current = null
     playerRef.current?.close()
@@ -151,6 +156,7 @@ export default function CallPage() {
 
   async function accept() {
     setError('')
+    ringtoneRef.current?.stop()
     try {
       playerRef.current = new PcmPlayer()
       await playerRef.current.resume()
@@ -166,6 +172,7 @@ export default function CallPage() {
 
   function decline() {
     notifyNative('ring_stop')
+    ringtoneRef.current?.stop()
     clientRef.current?.decline()
     setState('idle')
   }
