@@ -234,3 +234,84 @@ select.lang {
   color: var(--dim);
   line-height: 1.5;
 }
+
+/* Call screens */
+.call-ring {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  animation: ringflash 1s infinite;
+}
+
+@keyframes ringflash {
+  0%,
+  100% {
+    background: var(--bg);
+  }
+  50% {
+    background: #332b00;
+  }
+}
+
+.ring-pulse {
+  font-size: 80px;
+  animation: pulse 0.8s infinite;
+}
+
+.call-ring h2 {
+  font-size: 30px;
+  margin: 0;
+}
+
+.caller-number {
+  font-size: 26px;
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0;
+}
+
+.ring-actions {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin-top: 24px;
+}
+
+.call-idle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.idle-icon {
+  font-size: 64px;
+  margin: 0;
+}
+
+.call-idle h2 {
+  font-size: 26px;
+  margin: 0;
+}
+
+.idle-hint {
+  color: var(--dim);
+  font-size: 18px;
+  max-width: 420px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.iconbtn.active {
+  background: var(--danger);
+  border-color: var(--danger);
+}

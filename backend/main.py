@@ -16,11 +16,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from sarvam_relay import SarvamSTTSession
+from vobiz_handler import router as vobiz_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
 
 app = FastAPI(title="SunoSathi backend")
+app.include_router(vobiz_router)
 
 app.add_middleware(
     CORSMiddleware,

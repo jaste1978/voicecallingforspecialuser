@@ -1,0 +1,62 @@
+// WebSocket client for the backend call bridge (/ws/call)
+
+import type { LanguageKey } from './stt-client'
+
+export interface CallEvent {
+  type: 'ring' | 'call_started' | 'transcript' | 'vad' | 'call_ended' | 'error'
+  from?: string
+  callId?: string
+  text?: string
+  signal?: string
+  reason?: string
+  message?: string
+}
+
+export interface CallClient {
+  accept: (language: LanguageKey) => void
+  decline: () => void
+  end: () => void
+  sendAudio: (pcm: ArrayBuffer) => void
+  close: () => void
+}
+
+export function connectCall(
+  onEvent: (e: CallEvent) => void,
+  onAudio: (pcm: ArrayBuffer) => void,
+  onClose: () => void,
+): CallClient {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  const ws = new WebSocket(`${proto}://${location.host}/ws/call`)
+  ws.binaryType = 'arraybuffer'
+
+  ws.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) {
+      onAudio(e.data)
+      return
+    }
+    try {
+      onEvent(JSON.parse(e.data as string) as CallEvent)
+    } catch {
+      /* ignore */
+    }
+  }
+  ws.onclose = onClose
+  ws.onerror = () => onClose()
+
+  const sendJson = (obj: unknown) => {
+    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj))
+  }
+
+  return {
+    accept: (language) => sendJson({ type: 'accept', language }),
+    decline: () => sendJson({ type: 'decline' }),
+    end: () => sendJson({ type: 'end' }),
+    sendAudio: (pcm) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(pcm)
+    },
+    close: () => {
+      ws.onclose = null
+      ws.close()
+    },
+  }
+}
