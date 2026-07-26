@@ -19,6 +19,7 @@ from typing import Optional
 
 from fastapi import WebSocket
 
+import history
 from sarvam_relay import SarvamSTTSession
 
 logger = logging.getLogger("call_session")
@@ -37,6 +38,8 @@ class Call:
         self.sarvam: Optional[SarvamSTTSession] = None
         self.language = "hi"
         self.created_at = time.time()
+        self.answered_at: Optional[float] = None
+        self.transcript: list[str] = []
 
 
 class CallManager:
@@ -164,6 +167,7 @@ class CallManager:
     async def _activate(self, call: Call) -> None:
         async def on_stt_event(event: dict) -> None:
             if event["type"] == "transcript":
+                call.transcript.append(event["text"])
                 await self._to_browser({"type": "transcript", "text": event["text"]})
             elif event["type"] == "vad":
                 await self._to_browser({"type": "vad", "signal": event["signal"]})
@@ -173,6 +177,7 @@ class CallManager:
         call.sarvam = SarvamSTTSession(call.language, on_stt_event)
         await call.sarvam.start()
         call.state = "active"
+        call.answered_at = time.time()
         await self._to_browser({"type": "call_started", "from": call.from_number})
         logger.info("call %s active (language=%s)", call.call_uuid, call.language)
 
@@ -193,6 +198,14 @@ class CallManager:
                 await call.vobiz_ws.close()
             except Exception:
                 pass
+        try:
+            history.save_call(
+                call.call_uuid, call.from_number, call.to_number,
+                call.created_at, call.answered_at, reason,
+                call.language, call.transcript,
+            )
+        except Exception:
+            logger.exception("failed saving call history")
         await self._to_browser({"type": "call_ended", "reason": reason})
         self.call = None
 

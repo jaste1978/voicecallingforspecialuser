@@ -9,7 +9,27 @@ interface Segment {
   text: string
 }
 
+interface CallRecord {
+  id: number
+  from_number: string
+  started_at: number
+  answered: boolean
+  duration_s: number
+  reason: string
+  transcript: string[]
+}
+
 type CallState = 'idle' | 'ringing' | 'active' | 'disconnected'
+
+function formatWhen(ts: number): string {
+  return new Date(ts * 1000).toLocaleString([], {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+  })
+}
+
+function formatDuration(s: number): string {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
 
 export default function CallPage() {
   const [state, setState] = useState<CallState>('idle')
@@ -19,6 +39,8 @@ export default function CallPage() {
   const [muted, setMuted] = useState(false)
   const [endReason, setEndReason] = useState('')
   const [error, setError] = useState('')
+  const [historyList, setHistoryList] = useState<CallRecord[]>([])
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
   // Calls are fixed to Hindi for now; language fine-tuning comes later
   const language: LanguageKey = 'hi'
@@ -37,6 +59,15 @@ export default function CallPage() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [segments, speaking])
+
+  // load call history whenever we're back on the idle screen
+  useEffect(() => {
+    if (state !== 'idle') return
+    fetch('/api/calls')
+      .then((r) => r.json())
+      .then((d) => setHistoryList(d.calls ?? []))
+      .catch(() => {})
+  }, [state])
 
   useEffect(() => {
     const client = connectCall(
@@ -178,15 +209,52 @@ export default function CallPage() {
 
   return (
     <main className="call-idle">
-      <p className="idle-icon">☎️</p>
-      <h2>{state === 'disconnected' ? 'Connection lost' : 'Waiting for calls'}</h2>
-      <p className="idle-hint">
-        {state === 'disconnected'
-          ? 'Reload the page to reconnect.'
-          : 'When someone calls your SunoSathi number, it will ring here. Keep this page open.'}
-      </p>
-      {endReason && <p className="idle-hint">Last call: {endReason}</p>}
-      {error && <p className="status-line error">{error}</p>}
+      <div className="idle-top">
+        <p className="idle-icon">☎️</p>
+        <h2>{state === 'disconnected' ? 'Connection lost' : 'Waiting for calls'}</h2>
+        <p className="idle-hint">
+          {state === 'disconnected'
+            ? 'Reload the page to reconnect.'
+            : 'When someone calls your SunoSathi number, it will ring here. Keep this page open.'}
+        </p>
+        {endReason && <p className="idle-hint">Last call: {endReason}</p>}
+        {error && <p className="status-line error">{error}</p>}
+      </div>
+
+      {historyList.length > 0 && (
+        <section className="history">
+          <h3>Call history</h3>
+          {historyList.map((c) => (
+            <div key={c.id} className="history-item">
+              <button
+                className="history-row"
+                onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
+              >
+                <span className={`history-badge${c.answered ? '' : ' missed'}`}>
+                  {c.answered ? '✓' : '✕'}
+                </span>
+                <span className="history-number">{c.from_number}</span>
+                <span className="history-meta">
+                  {formatWhen(c.started_at)}
+                  {c.answered ? ` · ${formatDuration(c.duration_s)}` : ` · ${c.reason}`}
+                </span>
+                <span className="history-chevron">
+                  {expandedId === c.id ? '▲' : '▼'}
+                </span>
+              </button>
+              {expandedId === c.id && (
+                <div className="history-transcript">
+                  {c.transcript.length === 0 ? (
+                    <p className="idle-hint">No captions for this call.</p>
+                  ) : (
+                    c.transcript.map((line, i) => <p key={i}>{line}</p>)
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
     </main>
   )
 }

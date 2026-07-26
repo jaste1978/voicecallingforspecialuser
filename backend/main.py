@@ -37,6 +37,12 @@ async def health():
     return {"ok": True}
 
 
+@app.get("/api/calls")
+async def api_calls():
+    import history
+    return {"calls": history.list_calls()}
+
+
 @app.websocket("/ws/stt")
 async def ws_stt(ws: WebSocket):
     await ws.accept()
