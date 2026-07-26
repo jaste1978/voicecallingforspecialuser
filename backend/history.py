@@ -1,11 +1,14 @@
 """Call history persistence (SQLite, stdlib only)."""
 
 import json
+import os
 import sqlite3
 import time
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent / "sunosathi.db"
+# On Railway a volume is mounted and DB_PATH points into it so call
+# history survives redeploys; locally it sits next to the code.
+DB_PATH = Path(os.environ.get("DB_PATH", Path(__file__).resolve().parent / "sunosathi.db"))
 
 
 def _conn() -> sqlite3.Connection:
