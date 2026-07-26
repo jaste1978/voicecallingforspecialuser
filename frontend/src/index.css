@@ -112,6 +112,13 @@ body,
   color: #3d3200;
 }
 
+.version-line {
+  text-align: center;
+  color: var(--dim);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
 /* Captions */
 .captions-page {
   display: flex;
