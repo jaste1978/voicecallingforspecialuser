@@ -209,15 +209,6 @@ export default function CallPage() {
           <button
             className="promptbtn"
             onClick={() => {
-              clientRef.current?.sendPrompt('slow_down')
-              showPromptNote('Asked the caller to speak slower 🐢')
-            }}
-          >
-            🐢 धीरे बोलिए
-          </button>
-          <button
-            className="promptbtn"
-            onClick={() => {
               clientRef.current?.sendPrompt('repeat')
               showPromptNote('Asked the caller to repeat 🔁')
             }}
