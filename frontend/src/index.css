@@ -129,13 +129,20 @@ body,
   gap: 14px;
 }
 
-.caption-segment {
-  line-height: 1.35;
+.caption-flow {
+  line-height: 1.5;
   word-break: break-word;
+  margin: 0;
 }
 
-.caption-segment.latest {
+.caption-flow .latest {
   color: var(--accent);
+}
+
+.caption-flow-history {
+  line-height: 1.5;
+  word-break: break-word;
+  margin: 0 0 8px;
 }
 
 .caption-placeholder {

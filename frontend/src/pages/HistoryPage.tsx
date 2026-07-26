@@ -79,7 +79,7 @@ export default function HistoryPage() {
                 {c.transcript.length === 0 ? (
                   <p className="idle-hint">No captions for this call.</p>
                 ) : (
-                  c.transcript.map((line, i) => <p key={i}>{line}</p>)
+                  <p className="caption-flow-history">{c.transcript.join(' ')}</p>
                 )}
                 {c.timeline.length > 0 && (
                   <details className="timeline">

@@ -112,14 +112,18 @@ export default function CaptionsPage() {
         {segments.length === 0 && !speaking && (
           <p className="caption-placeholder">Captions will appear here 👋</p>
         )}
-        {segments.map((s, i) => (
-          <p
-            key={s.id}
-            className={`caption-segment${i === segments.length - 1 ? ' latest' : ''}`}
-          >
-            {s.text}
+        {segments.length > 0 && (
+          <p className="caption-flow">
+            {segments.map((s, i) => (
+              <span
+                key={s.id}
+                className={i === segments.length - 1 ? 'latest' : ''}
+              >
+                {s.text}{' '}
+              </span>
+            ))}
           </p>
-        ))}
+        )}
       </div>
       <div className="speaking-indicator">
         {speaking && (
