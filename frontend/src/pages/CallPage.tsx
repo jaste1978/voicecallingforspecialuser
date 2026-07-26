@@ -9,6 +9,12 @@ interface Segment {
   text: string
 }
 
+interface TimelineEvent {
+  t_ms: number
+  event: string
+  [key: string]: string | number | boolean | undefined
+}
+
 interface CallRecord {
   id: number
   from_number: string
@@ -17,6 +23,18 @@ interface CallRecord {
   duration_s: number
   reason: string
   transcript: string[]
+  timeline: TimelineEvent[]
+}
+
+function formatOffset(ms: number): string {
+  return `+${(ms / 1000).toFixed(2)}s`
+}
+
+function eventDetail(e: TimelineEvent): string {
+  return Object.entries(e)
+    .filter(([k]) => k !== 't_ms' && k !== 'event')
+    .map(([k, v]) => `${k}=${v}`)
+    .join('  ')
 }
 
 type CallState = 'idle' | 'ringing' | 'active' | 'disconnected'
@@ -248,6 +266,23 @@ export default function CallPage() {
                     <p className="idle-hint">No captions for this call.</p>
                   ) : (
                     c.transcript.map((line, i) => <p key={i}>{line}</p>)
+                  )}
+                  {c.timeline.length > 0 && (
+                    <details className="timeline">
+                      <summary>Data timeline ({c.timeline.length} events)</summary>
+                      <div className="timeline-events">
+                        {c.timeline.map((e, i) => (
+                          <div
+                            key={i}
+                            className={`timeline-row${e.event === 'caption' ? ' caption-ev' : ''}`}
+                          >
+                            <span className="timeline-t">{formatOffset(e.t_ms)}</span>
+                            <span className="timeline-name">{e.event}</span>
+                            <span className="timeline-detail">{eventDetail(e)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                   )}
                 </div>
               )}

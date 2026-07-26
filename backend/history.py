@@ -27,9 +27,14 @@ def init() -> None:
                 ended_at REAL,
                 reason TEXT,
                 language TEXT,
-                transcript TEXT
+                transcript TEXT,
+                timeline TEXT
             )
         """)
+        try:
+            conn.execute("ALTER TABLE calls ADD COLUMN timeline TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def save_call(
@@ -41,16 +46,18 @@ def save_call(
     reason: str,
     language: str,
     transcript: list[str],
+    timeline: list[dict] | None = None,
 ) -> None:
     with _conn() as conn:
         conn.execute(
             "INSERT INTO calls (call_uuid, from_number, to_number, started_at,"
-            " answered_at, ended_at, reason, language, transcript)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " answered_at, ended_at, reason, language, transcript, timeline)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 call_uuid, from_number, to_number, started_at,
                 answered_at, time.time(), reason, language,
                 json.dumps(transcript, ensure_ascii=False),
+                json.dumps(timeline or [], ensure_ascii=False),
             ),
         )
 
@@ -64,6 +71,7 @@ def list_calls(limit: int = 50) -> list[dict]:
     for r in rows:
         d = dict(r)
         d["transcript"] = json.loads(d["transcript"] or "[]")
+        d["timeline"] = json.loads(d["timeline"] or "[]")
         d["answered"] = r["answered_at"] is not None
         d["duration_s"] = (
             int(r["ended_at"] - r["answered_at"]) if r["answered_at"] else 0

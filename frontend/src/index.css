@@ -382,6 +382,58 @@ select.lang {
   margin: 0 0 8px;
 }
 
+/* Pipeline timeline (debug/optimisation view) */
+.timeline {
+  margin-top: 10px;
+  border-top: 1px solid #2a2a30;
+  padding-top: 10px;
+}
+
+.timeline summary {
+  color: var(--dim);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.timeline-events {
+  margin-top: 8px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.timeline-row {
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+  color: var(--dim);
+}
+
+.timeline-row.caption-ev {
+  color: var(--accent);
+}
+
+.timeline-t {
+  min-width: 72px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.timeline-name {
+  min-width: 170px;
+  flex-shrink: 0;
+  color: var(--text);
+}
+
+.timeline-row.caption-ev .timeline-name {
+  color: var(--accent);
+}
+
+.timeline-detail {
+  word-break: break-all;
+}
+
 .idle-icon {
   font-size: 64px;
   margin: 0;
