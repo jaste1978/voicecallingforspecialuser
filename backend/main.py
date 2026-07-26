@@ -11,7 +11,7 @@ import logging
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -41,6 +41,17 @@ async def health():
 async def api_calls():
     import history
     return {"calls": history.list_calls()}
+
+
+@app.get("/api/calls/{call_uuid}/audio/{track}")
+async def api_call_audio(call_uuid: str, track: str):
+    import recorder
+    from fastapi.responses import FileResponse
+
+    path = recorder.path_for(call_uuid, track)
+    if path is None:
+        return Response(status_code=404)
+    return FileResponse(path, media_type="audio/wav")
 
 
 @app.websocket("/ws/stt")

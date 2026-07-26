@@ -8,6 +8,7 @@ interface TimelineEvent {
 
 export interface CallRecord {
   id: number
+  call_uuid: string
   from_number: string
   started_at: number
   answered: boolean
@@ -80,6 +81,18 @@ export default function HistoryPage() {
                   <p className="idle-hint">No captions for this call.</p>
                 ) : (
                   <p className="caption-flow-history">{c.transcript.join(' ')}</p>
+                )}
+                {c.answered && (
+                  <div className="audio-row">
+                    <div className="audio-track">
+                      <small>📞 Caller audio</small>
+                      <audio controls preload="none" src={`/api/calls/${c.call_uuid}/audio/caller`} />
+                    </div>
+                    <div className="audio-track">
+                      <small>🎤 Your audio</small>
+                      <audio controls preload="none" src={`/api/calls/${c.call_uuid}/audio/user`} />
+                    </div>
+                  </div>
                 )}
                 {c.timeline.length > 0 && (
                   <details className="timeline">

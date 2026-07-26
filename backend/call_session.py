@@ -22,6 +22,7 @@ from fastapi import WebSocket
 
 import history
 import tts_prompts
+from recorder import CallRecorder
 from sarvam_relay import SarvamSTTSession
 
 logger = logging.getLogger("call_session")
@@ -69,6 +70,7 @@ class Call:
         self.transcript: list[str] = []
         self.trace = Tracer()
         self.last_speech_end_ms: Optional[int] = None
+        self.recorder = CallRecorder(call_uuid)
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -151,6 +153,7 @@ class CallManager:
         pcm = await tts_prompts.get_prompt_pcm(name)
         if pcm is None or not (call.vobiz_ws and call.stream_id):
             return
+        call.recorder.write("user", pcm)
         call.trace.event("tts_prompt_played", prompt=name, kb=len(pcm) // 1024)
         chunk = 3200
         for i in range(0, len(pcm), chunk):
@@ -182,6 +185,7 @@ class CallManager:
                     "user_audio_stats", frames=n,
                     kb=call.trace.counters["user_audio_bytes"] // 1024,
                 )
+            call.recorder.write("user", pcm)
             payload = base64.b64encode(pcm).decode("ascii")
             try:
                 await call.vobiz_ws.send_text(json.dumps({
@@ -259,6 +263,7 @@ class CallManager:
         if call is None or call.state != "active":
             return  # ignore audio while ringing
         pcm = base64.b64decode(payload_b64)
+        call.recorder.write("caller", pcm)
         n = call.trace.count("caller_audio_frames")
         call.trace.count("caller_audio_bytes", len(pcm))
         if n == 1:
@@ -352,6 +357,7 @@ class CallManager:
             except Exception:
                 pass
         call.trace.event("call_ended", reason=reason)
+        call.recorder.close()
         try:
             history.save_call(
                 call.call_uuid, call.from_number, call.to_number,

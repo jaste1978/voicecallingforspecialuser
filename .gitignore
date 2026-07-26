@@ -16,3 +16,6 @@ frontend/dist/
 # OS / editor
 .DS_Store
 *.log
+
+# call recordings
+backend/recordings/

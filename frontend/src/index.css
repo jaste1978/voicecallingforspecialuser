@@ -413,6 +413,30 @@ select.lang {
   margin-top: 18px;
 }
 
+.audio-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.audio-track {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.audio-track small {
+  color: var(--dim);
+}
+
+.audio-track audio {
+  width: 100%;
+  height: 40px;
+}
+
 /* Pipeline timeline (debug/optimisation view) */
 .timeline {
   margin-top: 10px;
