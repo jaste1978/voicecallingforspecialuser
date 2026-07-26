@@ -3,12 +3,14 @@ import HomePage from './pages/HomePage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
 import AlertsPage from './pages/AlertsPage'
+import HistoryPage from './pages/HistoryPage'
 
 const TITLES: Record<string, string> = {
   '/': 'SunoSathi',
   '/captions': 'Live Captions',
   '/call': 'Calls',
   '/alerts': 'Sound Alerts',
+  '/history': 'Call History',
 }
 
 export default function App() {
@@ -30,6 +32,7 @@ export default function App() {
         <Route path="/captions" element={<CaptionsPage />} />
         <Route path="/call" element={<CallPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/history" element={<HistoryPage />} />
       </Routes>
     </div>
   )

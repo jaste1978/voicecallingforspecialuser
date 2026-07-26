@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { connectCall, type CallClient } from '../lib/call-client'
 import { PcmPlayer } from '../lib/audio-playback'
@@ -8,34 +9,6 @@ import type { LanguageKey } from '../lib/stt-client'
 interface Segment {
   id: number
   text: string
-}
-
-interface TimelineEvent {
-  t_ms: number
-  event: string
-  [key: string]: string | number | boolean | undefined
-}
-
-interface CallRecord {
-  id: number
-  from_number: string
-  started_at: number
-  answered: boolean
-  duration_s: number
-  reason: string
-  transcript: string[]
-  timeline: TimelineEvent[]
-}
-
-function formatOffset(ms: number): string {
-  return `+${(ms / 1000).toFixed(2)}s`
-}
-
-function eventDetail(e: TimelineEvent): string {
-  return Object.entries(e)
-    .filter(([k]) => k !== 't_ms' && k !== 'event')
-    .map(([k, v]) => `${k}=${v}`)
-    .join('  ')
 }
 
 type CallState = 'idle' | 'ringing' | 'active' | 'disconnected'
@@ -48,16 +21,6 @@ const LANG_LABELS: Record<string, string> = {
   hinglish: 'हिं+En',
 }
 
-function formatWhen(ts: number): string {
-  return new Date(ts * 1000).toLocaleString([], {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  })
-}
-
-function formatDuration(s: number): string {
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
 export default function CallPage() {
   const [state, setState] = useState<CallState>('idle')
   const [caller, setCaller] = useState('')
@@ -67,8 +30,6 @@ export default function CallPage() {
   const [endReason, setEndReason] = useState('')
   const [error, setError] = useState('')
   const [promptNote, setPromptNote] = useState('')
-  const [historyList, setHistoryList] = useState<CallRecord[]>([])
-  const [expandedId, setExpandedId] = useState<number | null>(null)
   const promptNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function showPromptNote(note: string) {
@@ -77,13 +38,15 @@ export default function CallPage() {
     promptNoteTimer.current = setTimeout(() => setPromptNote(''), 4000)
   }
   const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
+  const navigate = useNavigate()
+  // fresh storage key: legacy 'lang' values pre-date auto-detect
   const [language, setLanguage] = useState<LanguageKey>(
-    () => (localStorage.getItem('lang') as LanguageKey) || 'auto',
+    () => (localStorage.getItem('capLang') as LanguageKey) || 'auto',
   )
 
   function changeLanguage(lang: LanguageKey) {
     setLanguage(lang)
-    localStorage.setItem('lang', lang)
+    localStorage.setItem('capLang', lang)
     if (clientRef.current) {
       clientRef.current.setLanguage(lang)
       showPromptNote(`Caption language: ${LANG_LABELS[lang]}`)
@@ -104,15 +67,6 @@ export default function CallPage() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [segments, speaking])
-
-  // load call history whenever we're back on the idle screen
-  useEffect(() => {
-    if (state !== 'idle') return
-    fetch('/api/calls')
-      .then((r) => r.json())
-      .then((d) => setHistoryList(d.calls ?? []))
-      .catch(() => {})
-  }, [state])
 
   useEffect(() => {
     const client = connectCall(
@@ -307,57 +261,9 @@ export default function CallPage() {
         {error && <p className="status-line error">{error}</p>}
       </div>
 
-      {historyList.length > 0 && (
-        <section className="history">
-          <h3>Call history</h3>
-          {historyList.map((c) => (
-            <div key={c.id} className="history-item">
-              <button
-                className="history-row"
-                onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
-              >
-                <span className={`history-badge${c.answered ? '' : ' missed'}`}>
-                  {c.answered ? '✓' : '✕'}
-                </span>
-                <span className="history-number">{c.from_number}</span>
-                <span className="history-meta">
-                  {formatWhen(c.started_at)}
-                  {c.answered ? ` · ${formatDuration(c.duration_s)}` : ` · ${c.reason}`}
-                </span>
-                <span className="history-chevron">
-                  {expandedId === c.id ? '▲' : '▼'}
-                </span>
-              </button>
-              {expandedId === c.id && (
-                <div className="history-transcript">
-                  {c.transcript.length === 0 ? (
-                    <p className="idle-hint">No captions for this call.</p>
-                  ) : (
-                    c.transcript.map((line, i) => <p key={i}>{line}</p>)
-                  )}
-                  {c.timeline.length > 0 && (
-                    <details className="timeline">
-                      <summary>Data timeline ({c.timeline.length} events)</summary>
-                      <div className="timeline-events">
-                        {c.timeline.map((e, i) => (
-                          <div
-                            key={i}
-                            className={`timeline-row${e.event === 'caption' ? ' caption-ev' : ''}`}
-                          >
-                            <span className="timeline-t">{formatOffset(e.t_ms)}</span>
-                            <span className="timeline-name">{e.event}</span>
-                            <span className="timeline-detail">{eventDetail(e)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
+      <button className="historylink" onClick={() => navigate('/history')}>
+        🕓 View call history
+      </button>
     </main>
   )
 }

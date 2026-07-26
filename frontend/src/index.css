@@ -382,6 +382,30 @@ select.lang {
   margin: 0 0 8px;
 }
 
+.history-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.history-page .history {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 0;
+}
+
+.historylink {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 18px;
+}
+
 /* Pipeline timeline (debug/optimisation view) */
 .timeline {
   margin-top: 10px;

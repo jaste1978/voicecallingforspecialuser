@@ -25,6 +25,13 @@ export default function HomePage() {
           <small>Get alerted to doorbells, alarms &amp; more</small>
         </span>
       </button>
+      <button className="home-btn" onClick={() => navigate('/history')}>
+        <span className="emoji">🕓</span>
+        <span>
+          Call History
+          <small>Past calls with full transcripts</small>
+        </span>
+      </button>
     </main>
   )
 }

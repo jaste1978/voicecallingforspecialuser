@@ -18,7 +18,7 @@ const LANGS: { key: LanguageKey; label: string }[] = [
 export default function CaptionsPage() {
   const [running, setRunning] = useState(false)
   const [language, setLanguage] = useState<LanguageKey>(
-    () => (localStorage.getItem('lang') as LanguageKey) || 'auto',
+    () => (localStorage.getItem('capLang') as LanguageKey) || 'auto',
   )
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
   const [segments, setSegments] = useState<Segment[]>([])
@@ -32,7 +32,7 @@ export default function CaptionsPage() {
   const nextId = useRef(1)
 
   useEffect(() => {
-    localStorage.setItem('lang', language)
+    localStorage.setItem('capLang', language)
   }, [language])
   useEffect(() => {
     localStorage.setItem('fontSize', String(fontSize))
