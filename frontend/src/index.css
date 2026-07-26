@@ -420,6 +420,33 @@ select.lang {
   margin-top: 18px;
 }
 
+/* Settings */
+.settings-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.setting-block h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.setting-block .idle-hint {
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+select.lang.wide {
+  width: 100%;
+}
+
 /* Contacts / dialer */
 .contacts-page {
   flex: 1;

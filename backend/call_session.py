@@ -22,9 +22,9 @@ from fastapi import WebSocket
 
 import history
 import outbound
+import providers
 import tts_prompts
 from recorder import CallRecorder
-from sarvam_relay import SarvamSTTSession
 
 logger = logging.getLogger("call_session")
 
@@ -156,7 +156,7 @@ class CallManager:
             call.language = language
             if call.sarvam:
                 await call.sarvam.close()
-            await self._start_sarvam(call)
+            await self._start_stt(call)
             call.trace.event("language_changed", language=language)
             await self._to_browser({"type": "language_set", "language": language})
 
@@ -365,7 +365,7 @@ class CallManager:
 
     # ---------- lifecycle ----------
 
-    async def _start_sarvam(self, call: Call) -> None:
+    async def _start_stt(self, call: Call) -> None:
         async def on_stt_event(event: dict) -> None:
             now_ms = round((time.time() - call.trace.t0) * 1000)
             if event["type"] == "transcript":
@@ -399,18 +399,20 @@ class CallManager:
                 call.trace.event("stt_error", message=event["message"])
                 await self._to_browser({"type": "error", "message": event["message"]})
 
-        call.sarvam = SarvamSTTSession(call.language, on_stt_event)
+        provider = providers.get_stt()
+        call.sarvam = provider.create_session(call.language, on_stt_event)
         t_connect = time.time()
         await call.sarvam.start()
         call.trace.event(
-            "sarvam_connected",
+            "stt_connected",
+            provider=provider.name,
             connect_ms=round((time.time() - t_connect) * 1000),
             language=call.language,
         )
 
     async def _activate(self, call: Call) -> None:
         call.trace.event("user_accepted")
-        await self._start_sarvam(call)
+        await self._start_stt(call)
         call.state = "active"
         call.answered_at = time.time()
         await self._to_browser({"type": "call_started", "from": call.from_number})

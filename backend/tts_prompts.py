@@ -1,15 +1,12 @@
-"""Short spoken prompts the user can play into the call (Sarvam Bulbul TTS).
+"""Short spoken prompts the user can play into the call.
 
-Generated once on first use, cached as raw 16kHz pcm_s16le ready for
-Vobiz playAudio frames.
+Synthesized via the active TTS provider (see providers.py), cached per
+provider as raw 16kHz pcm_s16le ready for Vobiz playAudio frames.
 """
 
-import base64
-import io
 import logging
-import wave
 
-from sarvam_relay import get_client
+import providers
 
 logger = logging.getLogger("tts_prompts")
 
@@ -22,29 +19,15 @@ PROMPTS = {
 _cache: dict[str, bytes] = {}
 
 
-def _wav_to_pcm(wav_bytes: bytes) -> bytes:
-    with wave.open(io.BytesIO(wav_bytes), "rb") as w:
-        assert w.getsampwidth() == 2 and w.getframerate() == 16000, "expected 16k PCM16"
-        return w.readframes(w.getnframes())
-
-
 async def get_prompt_pcm(name: str) -> bytes | None:
     if name not in PROMPTS:
         return None
-    if name in _cache:
-        return _cache[name]
-    try:
-        client = get_client()
-        resp = await client.text_to_speech.convert(
-            text=PROMPTS[name],
-            target_language_code="hi-IN",
-            speech_sample_rate=16000,
-        )
-        wav_bytes = base64.b64decode(resp.audios[0])
-        pcm = _wav_to_pcm(wav_bytes)
-        _cache[name] = pcm
-        logger.info("TTS prompt '%s' generated (%d bytes pcm)", name, len(pcm))
-        return pcm
-    except Exception:
-        logger.exception("TTS prompt '%s' failed", name)
-        return None
+    tts = providers.get_tts()
+    cache_key = f"{tts.name}:{name}"
+    if cache_key in _cache:
+        return _cache[cache_key]
+    pcm = await tts.synthesize(PROMPTS[name], "hi-IN")
+    if pcm:
+        _cache[cache_key] = pcm
+        logger.info("TTS prompt '%s' generated via %s (%d bytes)", name, tts.name, len(pcm))
+    return pcm

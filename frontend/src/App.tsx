@@ -5,6 +5,7 @@ import CallPage from './pages/CallPage'
 import AlertsPage from './pages/AlertsPage'
 import HistoryPage from './pages/HistoryPage'
 import ContactsPage from './pages/ContactsPage'
+import SettingsPage from './pages/SettingsPage'
 
 const TITLES: Record<string, string> = {
   '/': 'SunoSathi',
@@ -13,6 +14,7 @@ const TITLES: Record<string, string> = {
   '/alerts': 'Sound Alerts',
   '/history': 'Call History',
   '/contacts': 'New Call',
+  '/settings': 'Settings',
 }
 
 export default function App() {
@@ -28,6 +30,15 @@ export default function App() {
           </button>
         )}
         <h1>{TITLES[pathname] ?? 'SunoSathi'}</h1>
+        {pathname === '/' && (
+          <button
+            className="iconbtn"
+            aria-label="Settings"
+            onClick={() => navigate('/settings')}
+          >
+            ⚙️
+          </button>
+        )}
       </header>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -36,6 +47,7 @@ export default function App() {
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </div>
   )

@@ -15,7 +15,7 @@ from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from sarvam_relay import SarvamSTTSession
+import providers
 from vobiz_handler import router as vobiz_router
 
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +41,23 @@ async def health():
 async def api_calls():
     import history
     return {"calls": history.list_calls()}
+
+
+@app.get("/api/settings")
+async def api_settings():
+    return providers.describe()
+
+
+@app.put("/api/settings")
+async def api_settings_update(payload: dict):
+    ok = True
+    for kind in ("stt", "tts"):
+        name = payload.get(f"{kind}_provider")
+        if name:
+            ok = providers.set_active(kind, name) and ok
+    if not ok:
+        return Response(status_code=422)
+    return providers.describe()
 
 
 @app.get("/api/contacts")
@@ -80,7 +97,7 @@ async def api_call_audio(call_uuid: str, track: str):
 @app.websocket("/ws/stt")
 async def ws_stt(ws: WebSocket):
     await ws.accept()
-    session: SarvamSTTSession | None = None
+    session = None
 
     async def forward(event: dict) -> None:
         try:
@@ -95,7 +112,9 @@ async def ws_stt(ws: WebSocket):
         language = config.get("language", "auto")
         sample_rate = int(config.get("sample_rate", 16000))
 
-        session = SarvamSTTSession(language, forward, sample_rate=sample_rate)
+        session = providers.get_stt().create_session(
+            language, forward, sample_rate=sample_rate
+        )
         await session.start()
         await forward({"type": "ready", "language": language})
 
@@ -107,8 +126,10 @@ async def ws_stt(ws: WebSocket):
                 await session.send_pcm(frame["bytes"])
             elif frame.get("text"):
                 msg = json.loads(frame["text"])
-                if msg.get("type") == "flush" and session._ws is not None:
-                    await session._ws.flush()
+                # provider-specific manual flush (supported by Sarvam sessions)
+                inner_ws = getattr(session, "_ws", None)
+                if msg.get("type") == "flush" and inner_ws is not None:
+                    await inner_ws.flush()
     except WebSocketDisconnect:
         pass
     except Exception:
