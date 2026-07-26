@@ -20,7 +20,8 @@ export default function CallPage() {
   const [endReason, setEndReason] = useState('')
   const [error, setError] = useState('')
   const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
-  const language = (localStorage.getItem('lang') as LanguageKey) || 'hinglish'
+  // Calls are fixed to Hindi for now; language fine-tuning comes later
+  const language: LanguageKey = 'hi'
 
   const clientRef = useRef<CallClient | null>(null)
   const captureRef = useRef<AudioCapture | null>(null)

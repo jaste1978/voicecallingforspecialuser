@@ -49,7 +49,7 @@ class SarvamSTTSession:
         on_event: Callable[[dict], Awaitable[None]],
         sample_rate: int = SAMPLE_RATE,
     ):
-        preset = LANGUAGE_PRESETS.get(language, LANGUAGE_PRESETS["auto"])
+        preset = LANGUAGE_PRESETS.get(language, LANGUAGE_PRESETS["hi"])
         self.language_code = preset["language_code"]
         self.mode = preset["mode"]
         self.sample_rate = sample_rate
@@ -57,6 +57,8 @@ class SarvamSTTSession:
         self._ws = None
         self._ctx = None
         self._reader_task: Optional[asyncio.Task] = None
+        self._flusher_task: Optional[asyncio.Task] = None
+        self._speech_active = False
         self._closed = False
 
     async def start(self) -> None:
@@ -69,9 +71,11 @@ class SarvamSTTSession:
             input_audio_codec="pcm_s16le",
             high_vad_sensitivity=True,
             vad_signals=True,
+            flush_signal=True,
         )
         self._ws = await self._ctx.__aenter__()
         self._reader_task = asyncio.create_task(self._read_loop())
+        self._flusher_task = asyncio.create_task(self._flush_loop())
         logger.info(
             "Sarvam session started (language=%s mode=%s rate=%s)",
             self.language_code, self.mode, self.sample_rate,
@@ -85,6 +89,20 @@ class SarvamSTTSession:
         await self._ws.transcribe(
             audio=audio_b64, encoding="audio/wav", sample_rate=self.sample_rate
         )
+
+    async def _flush_loop(self) -> None:
+        """Force partial results out every couple of seconds while speech is
+        ongoing, so captions feel live instead of waiting for a pause."""
+        try:
+            while not self._closed:
+                await asyncio.sleep(2.0)
+                if self._speech_active and self._ws is not None:
+                    try:
+                        await self._ws.flush()
+                    except Exception:
+                        pass
+        except asyncio.CancelledError:
+            raise
 
     async def _read_loop(self) -> None:
         try:
@@ -102,6 +120,7 @@ class SarvamSTTSession:
                 elif mtype == "events" and data is not None:
                     signal = getattr(data, "signal_type", None)
                     if signal:
+                        self._speech_active = str(signal) == "START_SPEECH"
                         await self.on_event({"type": "vad", "signal": str(signal)})
                 elif mtype == "error":
                     msg = str(getattr(data, "message", data))
@@ -118,6 +137,8 @@ class SarvamSTTSession:
         if self._closed:
             return
         self._closed = True
+        if self._flusher_task:
+            self._flusher_task.cancel()
         if self._reader_task:
             self._reader_task.cancel()
         if self._ctx is not None:

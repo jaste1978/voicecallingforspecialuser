@@ -35,7 +35,7 @@ class Call:
         self.stream_id: Optional[str] = None
         self.vobiz_ws: Optional[WebSocket] = None
         self.sarvam: Optional[SarvamSTTSession] = None
-        self.language = "hinglish"
+        self.language = "hi"
         self.created_at = time.time()
 
 
@@ -82,7 +82,7 @@ class CallManager:
         mtype = msg.get("type")
         call = self.call
         if mtype == "accept" and call and call.state == "ringing":
-            call.language = msg.get("language", "hinglish")
+            call.language = msg.get("language", "hi")
             await self._activate(call)
         elif mtype == "decline" and call and call.state == "ringing":
             await self.end_call("declined")

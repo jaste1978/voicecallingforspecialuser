@@ -8,17 +8,15 @@ interface Segment {
 }
 
 const LANGS: { key: LanguageKey; label: string }[] = [
-  { key: 'hinglish', label: 'हिं+En Hinglish' },
   { key: 'hi', label: 'हिन्दी Hindi' },
   { key: 'gu', label: 'ગુજરાતી Gujarati' },
   { key: 'en', label: 'English' },
+  { key: 'hinglish', label: 'हिं+En Hinglish' },
 ]
 
 export default function CaptionsPage() {
   const [running, setRunning] = useState(false)
-  const [language, setLanguage] = useState<LanguageKey>(
-    () => (localStorage.getItem('lang') as LanguageKey) || 'hinglish',
-  )
+  const [language, setLanguage] = useState<LanguageKey>('hi')
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
   const [segments, setSegments] = useState<Segment[]>([])
   const [speaking, setSpeaking] = useState(false)
