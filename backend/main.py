@@ -85,10 +85,20 @@ async def ws_stt(ws: WebSocket):
             await session.close()
 
 
-# Serve the built frontend when frontend/dist exists (single-service deploy)
+# Serve the built frontend when frontend/dist exists (single-service deploy).
+# Unknown paths fall back to index.html so SPA routes survive reloads.
 _dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if _dist.is_dir():
-    app.mount("/", StaticFiles(directory=_dist, html=True), name="frontend")
+    from fastapi.responses import FileResponse
+
+    app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
+
+    @app.get("/{path:path}")
+    async def spa(path: str):
+        candidate = _dist / path
+        if path and ".." not in path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_dist / "index.html")
 
 
 if __name__ == "__main__":

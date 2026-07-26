@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { connectCall, type CallClient } from '../lib/call-client'
 import { PcmPlayer } from '../lib/audio-playback'
+import { notifyNative } from '../lib/native-bridge'
 import type { LanguageKey } from '../lib/stt-client'
 
 interface Segment {
@@ -96,7 +97,9 @@ export default function CallPage() {
           setEndReason('')
           setState('ringing')
           navigator.vibrate?.([400, 150, 400, 150, 400])
+          notifyNative('ring')
         } else if (e.type === 'call_started') {
+          notifyNative('ring_stop')
           setState('active')
         } else if (e.type === 'transcript' && e.text) {
           setSpeaking(false)
@@ -110,6 +113,7 @@ export default function CallPage() {
         } else if (e.type === 'vad') {
           setSpeaking(e.signal === 'START_SPEECH')
         } else if (e.type === 'call_ended') {
+          notifyNative('ring_stop')
           setEndReason(e.reason || 'Call ended')
           stopCallMedia()
           setState('idle')
@@ -152,6 +156,7 @@ export default function CallPage() {
   }
 
   function decline() {
+    notifyNative('ring_stop')
     clientRef.current?.decline()
     setState('idle')
   }
