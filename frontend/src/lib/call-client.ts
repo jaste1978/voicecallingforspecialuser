@@ -56,6 +56,7 @@ export function connectCall(
     },
     close: () => {
       ws.onclose = null
+      ws.onerror = null
       ws.close()
     },
   }

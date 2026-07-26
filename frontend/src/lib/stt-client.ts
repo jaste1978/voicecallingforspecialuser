@@ -55,6 +55,7 @@ export function connectStt(
     },
     close() {
       ws.onclose = null
+      ws.onerror = null
       ws.close()
     },
   }
