@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: sunosathi
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: SARVAM_API_KEY
+        sync: false
