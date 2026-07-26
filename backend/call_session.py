@@ -73,10 +73,22 @@ class Call:
 class CallManager:
     """Single-user MVP: one browser session, one active call at a time."""
 
+    ENDED_TTL_S = 600
+
     def __init__(self) -> None:
         self.browser_ws: Optional[WebSocket] = None
         self.call: Optional[Call] = None
         self._lock = asyncio.Lock()
+        # call UUIDs we already tore down; Vobiz re-hits the Answer URL for a
+        # live call whose stream we closed, and that must NOT ring again
+        self._ended_uuids: dict[str, float] = {}
+
+    def was_recently_ended(self, call_uuid: str) -> bool:
+        now = time.time()
+        self._ended_uuids = {
+            u: t for u, t in self._ended_uuids.items() if now - t < self.ENDED_TTL_S
+        }
+        return call_uuid in self._ended_uuids
 
     # ---------- browser side ----------
 
@@ -151,6 +163,10 @@ class CallManager:
 
     async def register_pending(self, call_uuid: str, from_number: str, to_number: str) -> None:
         async with self._lock:
+            if self.call and self.call.call_uuid == call_uuid:
+                # Duplicate webhook for the call we're already handling
+                logger.info("duplicate answer webhook for %s — ignoring", call_uuid)
+                return
             if self.call and self.call.state != "ended":
                 # Busy with another call; MVP handles one at a time
                 logger.warning("second call %s while busy — ignoring", call_uuid)
@@ -260,6 +276,7 @@ class CallManager:
         if call is None or call.state == "ended":
             return
         call.state = "ended"
+        self._ended_uuids[call.call_uuid] = time.time()
         logger.info("call %s ended: %s", call.call_uuid, reason)
         if call.sarvam:
             await call.sarvam.close()

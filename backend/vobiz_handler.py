@@ -40,6 +40,15 @@ async def vobiz_answer(request: Request):
     to_number = params.get("To") or ""
     logger.info("incoming call %s from %s to %s", call_uuid, from_number, to_number)
 
+    # Vobiz re-fetches the Answer URL when our stream closes on a call we
+    # already ended (keepCallAlive). Hang the call up instead of re-ringing.
+    if manager.was_recently_ended(call_uuid):
+        logger.info("call %s already ended — sending Hangup", call_uuid)
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?>\n<Response><Hangup/></Response>',
+            media_type="application/xml",
+        )
+
     await manager.register_pending(call_uuid, from_number, to_number)
 
     ws_url = f"wss://{_public_host(request)}/ws/vobiz"
