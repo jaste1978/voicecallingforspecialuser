@@ -32,9 +32,13 @@ app.add_middleware(
 )
 
 
+_version_file = Path(__file__).resolve().parent.parent / "VERSION"
+APP_VERSION = _version_file.read_text().strip() if _version_file.is_file() else "dev"
+
+
 @app.get("/api/health")
 async def health():
-    return {"ok": True}
+    return {"ok": True, "version": APP_VERSION}
 
 
 @app.get("/api/calls")

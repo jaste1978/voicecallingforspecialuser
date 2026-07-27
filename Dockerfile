@@ -13,6 +13,7 @@ WORKDIR /app/backend
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./
+COPY VERSION /app/VERSION
 COPY --from=webbuild /app/frontend/dist /app/frontend/dist
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
