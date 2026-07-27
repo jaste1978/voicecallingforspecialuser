@@ -60,6 +60,23 @@ async def api_settings_update(payload: dict):
     return providers.describe()
 
 
+@app.get("/api/monitor")
+async def api_monitor():
+    import history
+    import observability
+    from call_session import manager
+
+    call = manager.call
+    return {
+        "live": {
+            "screens_connected": len(manager.browser_sockets),
+            "call_state": call.state if call else "none",
+            "call_from": call.from_number if call else None,
+        },
+        "calls": [observability.analyze(c) for c in history.list_calls(30)],
+    }
+
+
 @app.post("/api/providers")
 async def api_provider_add(payload: dict):
     ok = providers.add_config(

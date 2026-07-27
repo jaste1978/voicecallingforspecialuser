@@ -29,6 +29,7 @@ export interface CallEvent {
 }
 
 export interface CallClient {
+  ackRing: () => void
   accept: (language: LanguageKey) => void
   decline: () => void
   end: () => void
@@ -137,6 +138,7 @@ export function connectCall(
   }
 
   return {
+    ackRing: () => sendJson({ type: 'ring_ack' }),
     accept: (language) => sendJson({ type: 'accept', language }),
     decline: () => sendJson({ type: 'decline' }),
     end: () => sendJson({ type: 'end' }),

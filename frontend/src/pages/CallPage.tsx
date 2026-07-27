@@ -90,6 +90,7 @@ export default function CallPage() {
           setSegments([])
           setEndReason('')
           setState('ringing')
+          clientRef.current?.ackRing()
           navigator.vibrate?.([400, 150, 400, 150, 400])
           notifyNative('ring')
           if (!ringtoneRef.current) ringtoneRef.current = new Ringtone()

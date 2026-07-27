@@ -11,6 +11,13 @@ export default function AdminPage() {
           <small>Choose which model powers captions &amp; voice</small>
         </span>
       </button>
+      <button className="home-btn" onClick={() => navigate('/monitor')}>
+        <span className="emoji">📊</span>
+        <span>
+          Call Monitor
+          <small>Live status &amp; per-call health checks</small>
+        </span>
+      </button>
       <button className="home-btn" onClick={() => navigate('/history')}>
         <span className="emoji">🕓</span>
         <span>

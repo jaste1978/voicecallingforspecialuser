@@ -744,6 +744,111 @@ select.lang.wide {
   height: 32px;
 }
 
+/* ---------- call monitor ---------- */
+.live-card.live-bad {
+  border-color: var(--danger);
+}
+
+.monitor-heading {
+  margin: 0;
+  color: var(--dim);
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.monitor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 2px 0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 16px;
+}
+
+.verdict-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.verdict-ok {
+  background: var(--ok);
+}
+
+.verdict-warn {
+  background: #f7b731;
+}
+
+.verdict-bad {
+  background: var(--danger);
+}
+
+.monitor-main {
+  flex: 1;
+}
+
+.monitor-main small {
+  display: block;
+  color: var(--dim);
+}
+
+.monitor-verdict {
+  color: var(--dim);
+  font-size: 13px;
+  max-width: 40%;
+  text-align: right;
+}
+
+.funnel {
+  margin-top: 12px;
+  border-top: 1px solid var(--divider);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.funnel-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.funnel-ok {
+  color: var(--ok);
+  font-weight: 800;
+  width: 18px;
+}
+
+.funnel-bad {
+  color: var(--danger);
+  font-weight: 800;
+  width: 18px;
+}
+
+.funnel-name {
+  min-width: 120px;
+  font-weight: 600;
+}
+
+.funnel-time {
+  color: var(--dim);
+  font-family: ui-monospace, Menlo, monospace;
+  min-width: 70px;
+}
+
+.funnel-note {
+  color: var(--dim);
+}
+
 /* ---------- contacts / dialer ---------- */
 .contacts-page {
   flex: 1;

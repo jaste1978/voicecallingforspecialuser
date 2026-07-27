@@ -147,7 +147,10 @@ class CallManager:
     async def on_browser_message(self, msg: dict) -> None:
         mtype = msg.get("type")
         call = self.call
-        if mtype == "dial":
+        if mtype == "ring_ack":
+            if call and call.state == "ringing":
+                call.trace.event("ring_ack")
+        elif mtype == "dial":
             await self.start_outbound(
                 msg.get("number", ""), msg.get("name", ""), msg.get("language", "auto")
             )
@@ -320,7 +323,7 @@ class CallManager:
 
     async def _ring(self, call: Call) -> None:
         call.state = "ringing"
-        call.trace.event("ring_browser")
+        call.trace.event("ring_sent", screens=len(self.browser_sockets))
         await self._to_browser({
             "type": "ring", "from": call.from_number, "callId": call.call_uuid,
         })
