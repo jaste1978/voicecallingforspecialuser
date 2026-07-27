@@ -9,7 +9,9 @@ import type { LanguageKey } from '../lib/stt-client'
 
 interface Segment {
   id: number
+  who: 'caller' | 'me' | 'sys'
   text: string
+  at: number
 }
 
 type CallState = 'idle' | 'ringing' | 'dialing' | 'active' | 'disconnected'
@@ -22,9 +24,29 @@ const LANG_LABELS: Record<string, string> = {
   hinglish: 'हिं+En',
 }
 
+const PROMPT_TEXTS: Record<string, string> = {
+  repeat: '🔁 कृपया अपनी बात दोबारा कहिए।',
+  wait: '✋ कृपया एक क्षण रुकिए।',
+}
+
+function timeNow(): number {
+  return Date.now()
+}
+
+function fmtTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function initialOf(name: string): string {
+  const ch = (name || '?').trim().charAt(0)
+  return /[0-9+]/.test(ch) ? '📞' : ch.toUpperCase()
+}
+
 export default function CallPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const pendingDial = (location.state as { dial?: { number: string; name: string } } | null)?.dial
+
   const [state, setState] = useState<CallState>('idle')
   const [caller, setCaller] = useState('')
   const [ringingStatus, setRingingStatus] = useState('Connecting…')
@@ -33,29 +55,10 @@ export default function CallPage() {
   const [muted, setMuted] = useState(false)
   const [endReason, setEndReason] = useState('')
   const [error, setError] = useState('')
-  const [promptNote, setPromptNote] = useState('')
-  const promptNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function showPromptNote(note: string) {
-    setPromptNote(note)
-    if (promptNoteTimer.current) clearTimeout(promptNoteTimer.current)
-    promptNoteTimer.current = setTimeout(() => setPromptNote(''), 4000)
-  }
-  const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 30)
-  const navigate = useNavigate()
-  // fresh storage key: legacy 'lang' values pre-date auto-detect
+  const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 22)
   const [language, setLanguage] = useState<LanguageKey>(
     () => (localStorage.getItem('capLang') as LanguageKey) || 'auto',
   )
-
-  function changeLanguage(lang: LanguageKey) {
-    setLanguage(lang)
-    localStorage.setItem('capLang', lang)
-    if (clientRef.current) {
-      clientRef.current.setLanguage(lang)
-      showPromptNote(`Caption language: ${LANG_LABELS[lang]}`)
-    }
-  }
 
   const clientRef = useRef<CallClient | null>(null)
   const captureRef = useRef<AudioCapture | null>(null)
@@ -64,6 +67,19 @@ export default function CallPage() {
   const mutedRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const nextId = useRef(1)
+
+  function addSegment(who: Segment['who'], text: string) {
+    setSegments((prev) => [...prev, { id: nextId.current++, who, text, at: timeNow() }])
+  }
+
+  function changeLanguage(lang: LanguageKey) {
+    setLanguage(lang)
+    localStorage.setItem('capLang', lang)
+    if (clientRef.current) {
+      clientRef.current.setLanguage(lang)
+      addSegment('sys', `Caption language: ${LANG_LABELS[lang]}`)
+    }
+  }
 
   useEffect(() => {
     mutedRef.current = muted
@@ -95,15 +111,23 @@ export default function CallPage() {
           setRingingStatus('Ringing…')
         } else if (e.type === 'call_started') {
           notifyNative('ring_stop')
+          ringtoneRef.current?.stop()
+          addSegment('sys', '✓ Call connected')
           setState('active')
         } else if (e.type === 'transcript' && e.text) {
           setSpeaking(false)
           setSegments((prev) => {
             const last = prev[prev.length - 1]
-            if (last && e.text!.startsWith(last.text)) {
-              return [...prev.slice(0, -1), { id: last.id, text: e.text! }]
+            if (last && last.who === 'caller' && e.text!.startsWith(last.text)) {
+              return [
+                ...prev.slice(0, -1),
+                { ...last, text: e.text!, at: timeNow() },
+              ]
             }
-            return [...prev, { id: nextId.current++, text: e.text! }]
+            return [
+              ...prev,
+              { id: nextId.current++, who: 'caller', text: e.text!, at: timeNow() },
+            ]
           })
         } else if (e.type === 'vad') {
           setSpeaking(e.signal === 'START_SPEECH')
@@ -126,6 +150,16 @@ export default function CallPage() {
     }
   }, [])
 
+  function stopCallMedia() {
+    ringtoneRef.current?.stop()
+    captureRef.current?.stop()
+    captureRef.current = null
+    playerRef.current?.close()
+    playerRef.current = null
+    setSpeaking(false)
+    setMuted(false)
+  }
+
   async function startDial(number: string, contactName: string) {
     setError('')
     try {
@@ -142,16 +176,6 @@ export default function CallPage() {
       setError('Microphone permission is needed to call')
       stopCallMedia()
     }
-  }
-
-  function stopCallMedia() {
-    ringtoneRef.current?.stop()
-    captureRef.current?.stop()
-    captureRef.current = null
-    playerRef.current?.close()
-    playerRef.current = null
-    setSpeaking(false)
-    setMuted(false)
   }
 
   async function accept() {
@@ -183,17 +207,25 @@ export default function CallPage() {
     setState('idle')
   }
 
+  function sendPrompt(name: 'repeat' | 'wait') {
+    clientRef.current?.sendPrompt(name)
+    addSegment('me', PROMPT_TEXTS[name])
+  }
+
   if (state === 'dialing') {
     return (
-      <main className="call-ring dialing">
-        <div className="ring-pulse">📞</div>
+      <main className="call-ring">
+        <div className="avatar">{initialOf(caller)}</div>
         <h2>{ringingStatus}</h2>
         <p className="caller-number">{caller}</p>
         {error && <p className="status-line error">{error}</p>}
         <div className="ring-actions">
-          <button className="bigbtn stop" onClick={endCall}>
-            ✕ Cancel
-          </button>
+          <span>
+            <button className="roundbtn decline" onClick={endCall} aria-label="Cancel">
+              ✕
+            </button>
+            <span className="roundbtn-label">Cancel</span>
+          </span>
         </div>
       </main>
     )
@@ -201,18 +233,24 @@ export default function CallPage() {
 
   if (state === 'ringing') {
     return (
-      <main className="call-ring">
-        <div className="ring-pulse">📞</div>
+      <main className="call-ring incoming">
+        <div className="avatar">{initialOf(caller)}</div>
         <h2>Incoming call</h2>
         <p className="caller-number">{caller}</p>
         {error && <p className="status-line error">{error}</p>}
         <div className="ring-actions">
-          <button className="bigbtn stop" onClick={decline}>
-            ✕ Decline
-          </button>
-          <button className="bigbtn start" onClick={() => void accept()}>
-            ✓ Accept
-          </button>
+          <span>
+            <button className="roundbtn decline" onClick={decline} aria-label="Decline">
+              ✕
+            </button>
+            <span className="roundbtn-label">Decline</span>
+          </span>
+          <span>
+            <button className="roundbtn accept" onClick={() => void accept()} aria-label="Accept">
+              📞
+            </button>
+            <span className="roundbtn-label">Accept</span>
+          </span>
         </div>
       </main>
     )
@@ -221,14 +259,6 @@ export default function CallPage() {
   if (state === 'active') {
     return (
       <main className="captions-page">
-        <div className="status-line">
-          {promptNote ||
-            (
-              <>
-                On call with <strong>{caller}</strong> — speak normally, they can hear you
-              </>
-            )}
-        </div>
         <div className="prompt-row">
           <select
             className="lang"
@@ -242,42 +272,29 @@ export default function CallPage() {
               </option>
             ))}
           </select>
-          <button
-            className="promptbtn"
-            onClick={() => {
-              clientRef.current?.sendPrompt('repeat')
-              showPromptNote('Asked the caller to repeat 🔁')
-            }}
-          >
-            🔁 फिर से कहिए
+          <button className="promptbtn" onClick={() => sendPrompt('repeat')}>
+            🔁 दोबारा
           </button>
-          <button
-            className="promptbtn"
-            onClick={() => {
-              clientRef.current?.sendPrompt('wait')
-              showPromptNote('Asked the caller to wait ✋')
-            }}
-          >
-            ✋ एक क्षण रुकिए
+          <button className="promptbtn" onClick={() => sendPrompt('wait')}>
+            ✋ रुकिए
           </button>
         </div>
-        <div ref={scrollRef} className="caption-scroll" style={{ fontSize }}>
-          {segments.length === 0 && (
-            <p className="caption-placeholder">
-              What the caller says will appear here…
-            </p>
+        <div ref={scrollRef} className="chat-scroll" style={{ fontSize }}>
+          <div className="sys-chip">📞 On call with {caller} — speak normally</div>
+          {segments.map((s) =>
+            s.who === 'sys' ? (
+              <div key={s.id} className="sys-chip">
+                {s.text}
+              </div>
+            ) : (
+              <div key={s.id} className={`bubble ${s.who === 'me' ? 'out' : 'in'}`}>
+                {s.text}
+                <span className="bubble-time">{fmtTime(s.at)}</span>
+              </div>
+            ),
           )}
-          {segments.length > 0 && (
-            <p className="caption-flow">
-              {segments.map((s, i) => (
-                <span
-                  key={s.id}
-                  className={i === segments.length - 1 ? 'latest' : ''}
-                >
-                  {s.text}{' '}
-                </span>
-              ))}
-            </p>
+          {segments.filter((s) => s.who !== 'sys').length === 0 && (
+            <p className="caption-placeholder">The caller's words will appear here…</p>
           )}
         </div>
         <div className="speaking-indicator">
@@ -306,23 +323,35 @@ export default function CallPage() {
   if (pendingDial) {
     return (
       <main className="call-ring">
-        <div className="ring-pulse">📞</div>
-        <h2>Call {pendingDial.name}?</h2>
-        <p className="caller-number">{pendingDial.number}</p>
+        <div className="avatar">{initialOf(pendingDial.name)}</div>
+        <h2>Call</h2>
+        <p className="caller-number">{pendingDial.name}</p>
+        <p className="idle-hint">{pendingDial.number}</p>
         {error && <p className="status-line error">{error}</p>}
         <div className="ring-actions">
-          <button className="bigbtn stop" onClick={() => navigate('/contacts')}>
-            ✕ Back
-          </button>
-          <button
-            className="bigbtn start"
-            onClick={() => {
-              navigate('/call', { replace: true })
-              void startDial(pendingDial.number, pendingDial.name)
-            }}
-          >
-            📞 Call now
-          </button>
+          <span>
+            <button
+              className="roundbtn decline"
+              onClick={() => navigate('/contacts')}
+              aria-label="Back"
+            >
+              ✕
+            </button>
+            <span className="roundbtn-label">Back</span>
+          </span>
+          <span>
+            <button
+              className="roundbtn accept"
+              onClick={() => {
+                navigate('/call', { replace: true })
+                void startDial(pendingDial.number, pendingDial.name)
+              }}
+              aria-label="Call now"
+            >
+              📞
+            </button>
+            <span className="roundbtn-label">Call now</span>
+          </span>
         </div>
       </main>
     )
@@ -341,7 +370,6 @@ export default function CallPage() {
         {endReason && <p className="idle-hint">Last call: {endReason}</p>}
         {error && <p className="status-line error">{error}</p>}
       </div>
-
       <button className="historylink" onClick={() => navigate('/history')}>
         🕓 View call history
       </button>

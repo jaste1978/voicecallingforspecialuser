@@ -73,8 +73,11 @@ export default function ContactsPage() {
         {contacts.map((c) => (
           <div key={c.id} className="contact-row">
             <button className="contact-main" onClick={() => call(c.number, c.name)}>
-              <span className="contact-name">{c.name}</span>
-              <span className="contact-number">{c.number}</span>
+              <span className="contact-avatar">{c.name.trim().charAt(0).toUpperCase()}</span>
+              <span>
+                <span className="contact-name">{c.name}</span>
+                <span className="contact-number">{c.number}</span>
+              </span>
             </button>
             <button className="contact-callbtn" onClick={() => call(c.number, c.name)}>
               📞
