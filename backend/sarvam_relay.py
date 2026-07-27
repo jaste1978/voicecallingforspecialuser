@@ -32,6 +32,8 @@ LANGUAGE_PRESETS = {
     # Hinglish / mixed speech: codemix keeps both scripts, language auto-detected
     "hinglish": {"language_code": "unknown", "mode": "codemix"},
     "auto": {"language_code": "unknown", "mode": "transcribe"},
+    # rescue mode: write whatever is heard as it sounds, in Roman letters
+    "romanized": {"language_code": "unknown", "mode": "translit"},
 }
 
 

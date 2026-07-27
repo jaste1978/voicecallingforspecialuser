@@ -100,8 +100,9 @@ class DeepgramSTTSession:
 
 
 class DeepgramSTT:
-    # languages this adapter can genuinely transcribe; others must fall back
-    supports = {"auto", "hi", "en", "hinglish"}
+    # languages this adapter can genuinely transcribe; others must fall back.
+    # No 'auto': Deepgram cannot auto-detect Indic languages in streaming.
+    supports = {"hi", "en", "hinglish"}
 
     def __init__(self, name: str, label: str, api_key: str, model: str | None):
         self.name = name

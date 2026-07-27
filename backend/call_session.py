@@ -14,6 +14,8 @@ import asyncio
 import base64
 import json
 import logging
+import os
+import struct
 import time
 from collections import defaultdict
 from typing import Optional
@@ -30,6 +32,11 @@ logger = logging.getLogger("call_session")
 
 RING_TIMEOUT_S = 60
 AUDIO_STATS_EVERY = 250  # frames (~5s of 20ms telephony frames)
+
+# Romanized rescue: if this much loud speech passes with zero captions,
+# the language is likely unidentifiable — switch to as-it-sounds Roman output
+RESCUE_AFTER_MS = int(os.environ.get("RESCUE_AFTER_MS", "8000"))
+LOUDNESS_RMS = 400  # int16 RMS above which a frame counts as speech-ish
 
 
 class Tracer:
@@ -76,6 +83,8 @@ class Call:
         self.last_speech_end_ms: Optional[int] = None
         self.recorder = CallRecorder(call_uuid)
         self.stt_label = ""
+        self.loud_ms = 0        # loud caller audio since the last caption
+        self.rescued = False    # already switched to romanized output
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -347,6 +356,7 @@ class CallManager:
             return  # ignore audio while ringing
         pcm = base64.b64decode(payload_b64)
         call.recorder.write("caller", pcm)
+        await self._rescue_check(call, pcm)
         n = call.trace.count("caller_audio_frames")
         call.trace.count("caller_audio_bytes", len(pcm))
         if n == 1:
@@ -362,6 +372,33 @@ class CallManager:
             except Exception:
                 logger.exception("sarvam send failed")
         await self._to_browser_audio(pcm)
+
+    async def _rescue_check(self, call: Call, pcm: bytes) -> None:
+        """If plenty of loud speech produced zero captions, the language is
+        likely one the model can't identify — switch to romanized output that
+        writes the sounds in English letters."""
+        if call.rescued or call.language == "romanized" or len(pcm) < 4:
+            return
+        n_samples = len(pcm) // 2
+        samples = struct.unpack(f"<{n_samples}h", pcm[: n_samples * 2])
+        mean_abs = sum(abs(s) for s in samples) // n_samples
+        frame_ms = (n_samples * 1000) // 16000
+        if mean_abs >= LOUDNESS_RMS:
+            call.loud_ms += frame_ms
+        if call.loud_ms >= RESCUE_AFTER_MS:
+            call.rescued = True
+            call.language = "romanized"
+            call.trace.event("romanized_rescue", after_loud_ms=call.loud_ms)
+            logger.info("call %s: no captions after %dms of speech — "
+                        "switching to romanized output", call.call_uuid, call.loud_ms)
+            if call.sarvam:
+                await call.sarvam.close()
+            await self._start_stt(call)
+            await self._to_browser({
+                "type": "language_set",
+                "language": "romanized",
+                "provider": call.stt_label,
+            })
 
     async def vobiz_disconnected(self, ws: WebSocket) -> None:
         call = self.call
@@ -387,6 +424,7 @@ class CallManager:
                     lang=event.get("language_code"),
                 )
                 call.transcript.append(event["text"])
+                call.loud_ms = 0  # captions are flowing; no rescue needed
                 await self._to_browser({
                     "type": "transcript",
                     "text": event["text"],

@@ -22,6 +22,7 @@ const LANG_LABELS: Record<string, string> = {
   gu: 'ગુજરાતી',
   en: 'English',
   hinglish: 'हिं+En',
+  romanized: 'Writing as it sounds (ABC)',
 }
 
 const PROMPT_TEXTS: Record<string, string> = {
@@ -56,9 +57,9 @@ export default function CallPage() {
   const [endReason, setEndReason] = useState('')
   const [error, setError] = useState('')
   const [fontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 22)
-  const [language, setLanguage] = useState<LanguageKey>(
-    () => (localStorage.getItem('capLang') as LanguageKey) || 'auto',
-  )
+  // language is always auto-detected; the backend switches to romanized
+  // output by itself when it can't identify the language
+  const language: LanguageKey = 'auto'
 
   const clientRef = useRef<CallClient | null>(null)
   const captureRef = useRef<AudioCapture | null>(null)
@@ -70,12 +71,6 @@ export default function CallPage() {
 
   function addSegment(who: Segment['who'], text: string) {
     setSegments((prev) => [...prev, { id: nextId.current++, who, text, at: timeNow() }])
-  }
-
-  function changeLanguage(lang: LanguageKey) {
-    setLanguage(lang)
-    localStorage.setItem('capLang', lang)
-    clientRef.current?.setLanguage(lang)
   }
 
   useEffect(() => {
@@ -263,18 +258,6 @@ export default function CallPage() {
     return (
       <main className="captions-page">
         <div className="prompt-row">
-          <select
-            className="lang"
-            value={language}
-            onChange={(e) => changeLanguage(e.target.value as LanguageKey)}
-            aria-label="Caption language"
-          >
-            {Object.entries(LANG_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
           <button className="promptbtn" onClick={() => sendPrompt('repeat')}>
             🔁 दोबारा
           </button>
