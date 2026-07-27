@@ -19,3 +19,9 @@ frontend/dist/
 
 # call recordings
 backend/recordings/
+
+# google service account keys
+*.json
+!frontend/**/*.json
+!mobile/**/*.json
+!backend/**/*.json
