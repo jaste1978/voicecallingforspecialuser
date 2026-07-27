@@ -130,13 +130,28 @@ _G_CHUNK_BYTES = 16000 * 2 * 3   # ~3s of 16kHz pcm16 per request
 _G_SILENCE_MEAN = 150            # skip near-silent chunks to save quota
 
 
+def _google_bearer(sa_json: str) -> str:
+    """Mint an OAuth2 access token from pasted service-account JSON."""
+    import json as _json
+
+    from google.auth.transport.requests import Request as _GRequest
+    from google.oauth2 import service_account as _sa
+
+    creds = _sa.Credentials.from_service_account_info(
+        _json.loads(sa_json),
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+    )
+    creds.refresh(_GRequest())
+    return creds.token
+
+
 class GoogleSTTSession:
     def __init__(self, language: str, on_event: OnEvent, sample_rate: int,
                  api_key: str):
         self.language = language
         self.on_event = on_event
         self.sample_rate = sample_rate
-        self.api_key = api_key
+        self.api_key = api_key.strip()
         self._buf = bytearray()
         self._queue: asyncio.Queue = asyncio.Queue()
         self._worker: Optional[asyncio.Task] = None
@@ -167,8 +182,23 @@ class GoogleSTTSession:
         }
         if alts:
             config["alternativeLanguageCodes"] = alts
-        url = f"https://speech.googleapis.com/v1/speech:recognize?key={self.api_key}"
-        async with httpx.AsyncClient(timeout=20) as client:
+        headers = {}
+        if self.api_key.startswith("{"):
+            # service-account JSON pasted as the key -> proper OAuth token
+            try:
+                token = await asyncio.to_thread(_google_bearer, self.api_key)
+                headers["Authorization"] = f"Bearer {token}"
+                url = "https://speech.googleapis.com/v1/speech:recognize"
+            except Exception as exc:
+                logger.exception("google service-account auth failed")
+                await self.on_event({
+                    "type": "error",
+                    "message": f"Google auth failed: {exc}",
+                })
+                return
+        else:
+            url = f"https://speech.googleapis.com/v1/speech:recognize?key={self.api_key}"
+        async with httpx.AsyncClient(timeout=20, headers=headers) as client:
             while True:
                 chunk = await self._queue.get()
                 if chunk is None:

@@ -101,7 +101,7 @@ ADDABLE = {
         {"adapter": "deepgram", "label": "Deepgram (streaming STT)",
          "model_hint": "model id, e.g. nova-2 (optional)"},
         {"adapter": "google", "label": "Google Speech-to-Text",
-         "model_hint": "no model id needed"},
+         "model_hint": "paste service-account JSON as the API key"},
     ],
     "tts": [
         {"adapter": "elevenlabs", "label": "ElevenLabs (TTS)",
