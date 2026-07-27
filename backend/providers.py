@@ -90,7 +90,7 @@ class SarvamTTS:
 # ---------- registry ----------
 
 import provider_store
-from adapters_extra import DeepgramSTT, ElevenLabsTTS
+from adapters_extra import DeepgramSTT, ElevenLabsTTS, GoogleSTT
 
 BUILTIN_STT: dict[str, STTProvider] = {p.name: p for p in [SarvamSTT()]}
 BUILTIN_TTS: dict[str, TTSProvider] = {p.name: p for p in [SarvamTTS()]}
@@ -100,6 +100,8 @@ ADDABLE = {
     "stt": [
         {"adapter": "deepgram", "label": "Deepgram (streaming STT)",
          "model_hint": "model id, e.g. nova-2 (optional)"},
+        {"adapter": "google", "label": "Google Speech-to-Text",
+         "model_hint": "no model id needed"},
     ],
     "tts": [
         {"adapter": "elevenlabs", "label": "ElevenLabs (TTS)",
@@ -112,6 +114,8 @@ def _build_from_config(cfg: dict):
     name = f"cfg:{cfg['id']}"
     if cfg["adapter"] == "deepgram":
         return DeepgramSTT(name, cfg["label"], cfg["api_key"], cfg.get("model"))
+    if cfg["adapter"] == "google":
+        return GoogleSTT(name, cfg["label"], cfg["api_key"], cfg.get("model"))
     if cfg["adapter"] == "elevenlabs":
         return ElevenLabsTTS(name, cfg["label"], cfg["api_key"], cfg.get("model"))
     return None

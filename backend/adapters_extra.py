@@ -115,6 +115,124 @@ class DeepgramSTT:
                                   self._api_key, self._model)
 
 
+# ---------- Google Cloud Speech-to-Text (REST, API-key) ----------
+
+# primary language + alternates: Google detects among these per request
+_GOOGLE_LANGS = {
+    "auto": ("hi-IN", ["gu-IN", "en-IN"]),
+    "hi": ("hi-IN", []),
+    "gu": ("gu-IN", []),
+    "en": ("en-IN", []),
+    "hinglish": ("hi-IN", ["en-IN"]),
+}
+
+_G_CHUNK_BYTES = 16000 * 2 * 3   # ~3s of 16kHz pcm16 per request
+_G_SILENCE_MEAN = 150            # skip near-silent chunks to save quota
+
+
+class GoogleSTTSession:
+    def __init__(self, language: str, on_event: OnEvent, sample_rate: int,
+                 api_key: str):
+        self.language = language
+        self.on_event = on_event
+        self.sample_rate = sample_rate
+        self.api_key = api_key
+        self._buf = bytearray()
+        self._queue: asyncio.Queue = asyncio.Queue()
+        self._worker: Optional[asyncio.Task] = None
+        self._closed = False
+        self._errored = False
+
+    async def start(self) -> None:
+        self._worker = asyncio.create_task(self._work_loop())
+        logger.info("google stt session started (language=%s)", self.language)
+
+    async def send_pcm(self, pcm: bytes) -> None:
+        if self._closed:
+            return
+        self._buf += pcm
+        if len(self._buf) >= _G_CHUNK_BYTES:
+            self._queue.put_nowait(bytes(self._buf))
+            self._buf.clear()
+
+    async def _work_loop(self) -> None:
+        import base64 as b64
+        import struct as st
+        primary, alts = _GOOGLE_LANGS.get(self.language, _GOOGLE_LANGS["auto"])
+        config = {
+            "encoding": "LINEAR16",
+            "sampleRateHertz": self.sample_rate,
+            "languageCode": primary,
+            "enableAutomaticPunctuation": True,
+        }
+        if alts:
+            config["alternativeLanguageCodes"] = alts
+        url = f"https://speech.googleapis.com/v1/speech:recognize?key={self.api_key}"
+        async with httpx.AsyncClient(timeout=20) as client:
+            while True:
+                chunk = await self._queue.get()
+                if chunk is None:
+                    return
+                n = len(chunk) // 2
+                mean_abs = sum(
+                    abs(s) for s in st.unpack(f"<{n}h", chunk[: n * 2])
+                ) // max(n, 1)
+                if mean_abs < _G_SILENCE_MEAN:
+                    continue
+                try:
+                    resp = await client.post(url, json={
+                        "config": config,
+                        "audio": {"content": b64.b64encode(chunk).decode()},
+                    })
+                    if resp.status_code >= 300:
+                        logger.error("google stt %s: %s",
+                                     resp.status_code, resp.text[:200])
+                        if not self._errored:
+                            self._errored = True
+                            await self.on_event({
+                                "type": "error",
+                                "message": f"Google STT error {resp.status_code}",
+                            })
+                        continue
+                    for result in resp.json().get("results", []):
+                        alt = (result.get("alternatives") or [{}])[0]
+                        text = (alt.get("transcript") or "").strip()
+                        if text:
+                            await self.on_event({
+                                "type": "transcript",
+                                "text": text,
+                                "language_code": result.get("languageCode"),
+                            })
+                except Exception:
+                    logger.exception("google stt request failed")
+
+    async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        if self._buf:
+            self._queue.put_nowait(bytes(self._buf))
+            self._buf.clear()
+        self._queue.put_nowait(None)
+        if self._worker:
+            try:
+                await asyncio.wait_for(self._worker, timeout=8)
+            except Exception:
+                self._worker.cancel()
+
+
+class GoogleSTT:
+    supports = {"auto", "hi", "gu", "en", "hinglish"}
+
+    def __init__(self, name: str, label: str, api_key: str, model: str | None):
+        self.name = name
+        self.label = label
+        self._api_key = api_key
+
+    def create_session(self, language, on_event, sample_rate=16000):
+        return GoogleSTTSession(language, on_event, sample_rate, self._api_key)
+
+
 # ---------- ElevenLabs TTS ----------
 
 class ElevenLabsTTS:
