@@ -2,20 +2,25 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
-import AlertsPage from './pages/AlertsPage'
 import HistoryPage from './pages/HistoryPage'
 import ContactsPage from './pages/ContactsPage'
 import SettingsPage from './pages/SettingsPage'
+import AdminPage from './pages/AdminPage'
+import RingtonePage from './pages/RingtonePage'
 
 const TITLES: Record<string, string> = {
   '/': 'SunoSathi',
-  '/captions': 'Live Captions',
+  '/captions': 'Caption Tester',
   '/call': 'Calls',
-  '/alerts': 'Sound Alerts',
-  '/history': 'Call History',
   '/contacts': 'New Call',
-  '/settings': 'Settings',
+  '/history': 'Call History',
+  '/settings': 'AI Models',
+  '/admin': 'Admin',
+  '/ringtone': 'Ringtone',
 }
+
+// pages that belong to the admin area go back to /admin, others to home
+const ADMIN_CHILDREN = new Set(['/captions', '/history', '/settings', '/ringtone'])
 
 export default function App() {
   const navigate = useNavigate()
@@ -25,7 +30,11 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         {pathname !== '/' && (
-          <button className="iconbtn" aria-label="Back" onClick={() => navigate('/')}>
+          <button
+            className="iconbtn"
+            aria-label="Back"
+            onClick={() => navigate(ADMIN_CHILDREN.has(pathname) ? '/admin' : '/')}
+          >
             ←
           </button>
         )}
@@ -33,8 +42,8 @@ export default function App() {
         {pathname === '/' && (
           <button
             className="iconbtn"
-            aria-label="Settings"
-            onClick={() => navigate('/settings')}
+            aria-label="Admin"
+            onClick={() => navigate('/admin')}
           >
             ⚙️
           </button>
@@ -44,10 +53,11 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/captions" element={<CaptionsPage />} />
         <Route path="/call" element={<CallPage />} />
-        <Route path="/alerts" element={<AlertsPage />} />
-        <Route path="/history" element={<HistoryPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/ringtone" element={<RingtonePage />} />
       </Routes>
     </div>
   )

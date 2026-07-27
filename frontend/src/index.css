@@ -447,6 +447,12 @@ select.lang.wide {
   width: 100%;
 }
 
+.volume-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  height: 32px;
+}
+
 /* Contacts / dialer */
 .contacts-page {
   flex: 1;

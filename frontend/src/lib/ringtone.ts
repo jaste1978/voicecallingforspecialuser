@@ -1,24 +1,28 @@
 // Synthesized Indian-style double-ring (400+450Hz), looped while ringing.
 // No audio asset needed; stops cleanly on accept/decline/end.
 
+import { ringtoneEnabled, ringtoneVolume } from './ringtone-settings'
+
 export class Ringtone {
   private ctx: AudioContext | null = null
   private timer: number | null = null
 
   start() {
     if (this.ctx) return
+    if (!ringtoneEnabled()) return
     try {
       const ctx = new AudioContext()
       this.ctx = ctx
       void ctx.resume()
+      const peak = ringtoneVolume()
 
       const ringOnce = () => {
         const t = ctx.currentTime + 0.05
         for (const offset of [0, 0.6]) {
           const gain = ctx.createGain()
           gain.gain.setValueAtTime(0.0001, t + offset)
-          gain.gain.exponentialRampToValueAtTime(0.5, t + offset + 0.04)
-          gain.gain.setValueAtTime(0.5, t + offset + 0.32)
+          gain.gain.exponentialRampToValueAtTime(peak, t + offset + 0.04)
+          gain.gain.setValueAtTime(peak, t + offset + 0.32)
           gain.gain.exponentialRampToValueAtTime(0.0001, t + offset + 0.4)
           gain.connect(ctx.destination)
           for (const freq of [400, 450]) {
