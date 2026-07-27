@@ -60,6 +60,24 @@ async def api_settings_update(payload: dict):
     return providers.describe()
 
 
+@app.post("/api/providers")
+async def api_provider_add(payload: dict):
+    ok = providers.add_config(
+        payload.get("kind", ""), payload.get("adapter", ""),
+        payload.get("label", ""), payload.get("api_key", ""),
+        payload.get("model"),
+    )
+    if not ok:
+        return Response(status_code=422)
+    return providers.describe()
+
+
+@app.delete("/api/providers/{config_id}")
+async def api_provider_delete(config_id: int):
+    providers.delete_config(config_id)
+    return providers.describe()
+
+
 @app.get("/api/contacts")
 async def api_contacts_list():
     import contacts

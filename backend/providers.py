@@ -89,18 +89,57 @@ class SarvamTTS:
 
 # ---------- registry ----------
 
-STT_PROVIDERS: dict[str, STTProvider] = {p.name: p for p in [SarvamSTT()]}
-TTS_PROVIDERS: dict[str, TTSProvider] = {p.name: p for p in [SarvamTTS()]}
+import provider_store
+from adapters_extra import DeepgramSTT, ElevenLabsTTS
+
+BUILTIN_STT: dict[str, STTProvider] = {p.name: p for p in [SarvamSTT()]}
+BUILTIN_TTS: dict[str, TTSProvider] = {p.name: p for p in [SarvamTTS()]}
+
+# Adapters a user can activate by adding an API key in the Admin UI.
+ADDABLE = {
+    "stt": [
+        {"adapter": "deepgram", "label": "Deepgram (streaming STT)",
+         "model_hint": "model id, e.g. nova-2 (optional)"},
+    ],
+    "tts": [
+        {"adapter": "elevenlabs", "label": "ElevenLabs (TTS)",
+         "model_hint": "voice id (optional)"},
+    ],
+}
+
+
+def _build_from_config(cfg: dict):
+    name = f"cfg:{cfg['id']}"
+    if cfg["adapter"] == "deepgram":
+        return DeepgramSTT(name, cfg["label"], cfg["api_key"], cfg.get("model"))
+    if cfg["adapter"] == "elevenlabs":
+        return ElevenLabsTTS(name, cfg["label"], cfg["api_key"], cfg.get("model"))
+    return None
+
+
+def _registry(kind: str) -> dict:
+    reg = dict(BUILTIN_STT if kind == "stt" else BUILTIN_TTS)
+    for cfg in provider_store.list_configs(kind):
+        p = _build_from_config(cfg)
+        if p is not None:
+            reg[p.name] = p
+    return reg
 
 
 def get_stt() -> STTProvider:
     name = settings_store.get("stt_provider") or os.environ.get("STT_PROVIDER", "sarvam")
-    return STT_PROVIDERS.get(name, STT_PROVIDERS["sarvam"])
+    reg = _registry("stt")
+    return reg.get(name, reg["sarvam"])
 
 
 def get_tts() -> TTSProvider:
     name = settings_store.get("tts_provider") or os.environ.get("TTS_PROVIDER", "sarvam")
-    return TTS_PROVIDERS.get(name, TTS_PROVIDERS["sarvam"])
+    reg = _registry("tts")
+    return reg.get(name, reg["sarvam"])
+
+
+def _mask(key: str) -> str:
+    return key[:4] + "…" + key[-4:] if len(key) > 10 else "•••"
 
 
 def describe() -> dict:
@@ -108,15 +147,46 @@ def describe() -> dict:
         "stt_provider": get_stt().name,
         "tts_provider": get_tts().name,
         "available": {
-            "stt": [{"name": p.name, "label": p.label} for p in STT_PROVIDERS.values()],
-            "tts": [{"name": p.name, "label": p.label} for p in TTS_PROVIDERS.values()],
+            kind: [{"name": p.name, "label": p.label} for p in _registry(kind).values()]
+            for kind in ("stt", "tts")
+        },
+        "addable": ADDABLE,
+        "configured": {
+            kind: [
+                {"id": c["id"], "name": f"cfg:{c['id']}", "adapter": c["adapter"],
+                 "label": c["label"], "model": c.get("model"),
+                 "api_key_masked": _mask(c["api_key"])}
+                for c in provider_store.list_configs(kind)
+            ]
+            for kind in ("stt", "tts")
         },
     }
 
 
+def add_config(kind: str, adapter: str, label: str, api_key: str, model: str | None) -> bool:
+    if kind not in ("stt", "tts"):
+        return False
+    if adapter not in {a["adapter"] for a in ADDABLE[kind]}:
+        return False
+    if not label.strip() or not api_key.strip():
+        return False
+    provider_store.add(kind, adapter, label.strip(), api_key.strip(), model or None)
+    logger.info("added %s provider config: %s (%s)", kind, label, adapter)
+    return True
+
+
+def delete_config(config_id: int) -> None:
+    cfg = provider_store.get(config_id)
+    provider_store.delete(config_id)
+    # if the deleted model was active, fall back to sarvam
+    if cfg:
+        for kind in ("stt", "tts"):
+            if settings_store.get(f"{kind}_provider") == f"cfg:{config_id}":
+                settings_store.set(f"{kind}_provider", "sarvam")
+
+
 def set_active(kind: str, name: str) -> bool:
-    registry = STT_PROVIDERS if kind == "stt" else TTS_PROVIDERS
-    if name not in registry:
+    if name not in _registry(kind):
         return False
     settings_store.set(f"{kind}_provider", name)
     logger.info("active %s provider set to %s", kind, name)
