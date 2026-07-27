@@ -94,7 +94,8 @@ class CallManager:
     ENDED_TTL_S = 600
 
     def __init__(self) -> None:
-        self.browser_ws: Optional[WebSocket] = None
+        # every open app screen (phone, desktop tab...) — rings broadcast to all
+        self.browser_sockets: set[WebSocket] = set()
         self.call: Optional[Call] = None
         self._lock = asyncio.Lock()
         # call UUIDs we already tore down; Vobiz re-hits the Answer URL for a
@@ -113,33 +114,35 @@ class CallManager:
     PENDING_TIMEOUT_S = 10
 
     async def browser_connected(self, ws: WebSocket) -> None:
-        self.browser_ws = ws
+        self.browser_sockets.add(ws)
+        # a screen (re)connecting while a call is ringing must ring immediately
         if self.call and self.call.state == "ringing":
-            await self._to_browser({
-                "type": "ring",
-                "from": self.call.from_number,
-                "callId": self.call.call_uuid,
-            })
+            try:
+                await ws.send_text(json.dumps({
+                    "type": "ring",
+                    "from": self.call.from_number,
+                    "callId": self.call.call_uuid,
+                }, ensure_ascii=False))
+            except Exception:
+                pass
 
     def browser_disconnected(self, ws: WebSocket) -> None:
-        if self.browser_ws is ws:
-            self.browser_ws = None
+        self.browser_sockets.discard(ws)
 
     async def _to_browser(self, event: dict) -> None:
-        if self.browser_ws is None:
-            return
-        try:
-            await self.browser_ws.send_text(json.dumps(event, ensure_ascii=False))
-        except Exception:
-            pass
+        payload = json.dumps(event, ensure_ascii=False)
+        for ws in list(self.browser_sockets):
+            try:
+                await ws.send_text(payload)
+            except Exception:
+                self.browser_sockets.discard(ws)
 
     async def _to_browser_audio(self, pcm: bytes) -> None:
-        if self.browser_ws is None:
-            return
-        try:
-            await self.browser_ws.send_bytes(pcm)
-        except Exception:
-            pass
+        for ws in list(self.browser_sockets):
+            try:
+                await ws.send_bytes(pcm)
+            except Exception:
+                self.browser_sockets.discard(ws)
 
     async def on_browser_message(self, msg: dict) -> None:
         mtype = msg.get("type")

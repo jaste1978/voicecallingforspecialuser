@@ -14,7 +14,7 @@ interface Segment {
   at: number
 }
 
-type CallState = 'idle' | 'ringing' | 'dialing' | 'active' | 'disconnected'
+type CallState = 'idle' | 'ringing' | 'dialing' | 'active'
 
 const LANG_LABELS: Record<string, string> = {
   auto: 'Auto 🌐',
@@ -49,6 +49,7 @@ export default function CallPage() {
   const pendingDial = (location.state as { dial?: { number: string; name: string } } | null)?.dial
 
   const [state, setState] = useState<CallState>('idle')
+  const [connected, setConnected] = useState(false)
   const [caller, setCaller] = useState('')
   const [ringingStatus, setRingingStatus] = useState('Connecting…')
   const [segments, setSegments] = useState<Segment[]>([])
@@ -139,7 +140,7 @@ export default function CallPage() {
         }
       },
       (pcm) => playerRef.current?.play(pcm),
-      () => setState('disconnected'),
+      (up) => setConnected(up),
     )
     clientRef.current = client
     return () => {
@@ -346,12 +347,12 @@ export default function CallPage() {
   return (
     <main className="call-idle">
       <div className="idle-top">
-        <p className="idle-icon">☎️</p>
-        <h2>{state === 'disconnected' ? 'Connection lost' : 'Waiting for calls'}</h2>
+        <p className="idle-icon">{connected ? '☎️' : '📡'}</p>
+        <h2>{connected ? 'Waiting for calls' : 'Reconnecting…'}</h2>
         <p className="idle-hint">
-          {state === 'disconnected'
-            ? 'Reload the page to reconnect.'
-            : 'When someone calls your SunoSathi number, it will ring here. Keep this page open.'}
+          {connected
+            ? 'When someone calls your SunoSathi number, it will ring here. Keep this page open.'
+            : 'Connection to the call server dropped — reconnecting automatically.'}
         </p>
         {endReason && <p className="idle-hint">Last call: {endReason}</p>}
         {error && <p className="status-line error">{error}</p>}

@@ -151,9 +151,13 @@ async def ws_call(ws: WebSocket):
                 await manager.on_browser_audio(frame["bytes"])
             elif frame.get("text"):
                 try:
-                    await manager.on_browser_message(json.loads(frame["text"]))
+                    msg = json.loads(frame["text"])
                 except json.JSONDecodeError:
-                    pass
+                    continue
+                if msg.get("type") == "ping":
+                    await ws.send_text('{"type": "pong"}')
+                else:
+                    await manager.on_browser_message(msg)
     except WebSocketDisconnect:
         pass
     except Exception:
