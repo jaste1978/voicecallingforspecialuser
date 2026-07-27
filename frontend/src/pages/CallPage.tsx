@@ -75,10 +75,7 @@ export default function CallPage() {
   function changeLanguage(lang: LanguageKey) {
     setLanguage(lang)
     localStorage.setItem('capLang', lang)
-    if (clientRef.current) {
-      clientRef.current.setLanguage(lang)
-      addSegment('sys', `Caption language: ${LANG_LABELS[lang]}`)
-    }
+    clientRef.current?.setLanguage(lang)
   }
 
   useEffect(() => {
@@ -136,6 +133,12 @@ export default function CallPage() {
           setEndReason(e.reason || 'Call ended')
           stopCallMedia()
           setState('idle')
+        } else if (e.type === 'language_set') {
+          addSegment(
+            'sys',
+            `Caption language: ${LANG_LABELS[e.language ?? ''] ?? e.language}` +
+              (e.provider ? ` · ${e.provider}` : ''),
+          )
         } else if (e.type === 'error') {
           setError(e.message || 'Something went wrong')
         }

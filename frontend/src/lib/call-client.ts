@@ -19,6 +19,7 @@ export interface CallEvent {
   text?: string
   language_code?: string
   language?: string
+  provider?: string
   signal?: string
   reason?: string
   message?: string

@@ -126,10 +126,21 @@ def _registry(kind: str) -> dict:
     return reg
 
 
-def get_stt() -> STTProvider:
+def get_stt(language: str | None = None) -> STTProvider:
     name = settings_store.get("stt_provider") or os.environ.get("STT_PROVIDER", "sarvam")
     reg = _registry("stt")
-    return reg.get(name, reg["sarvam"])
+    provider = reg.get(name, reg["sarvam"])
+    # capability routing: if the chosen provider can't transcribe this
+    # language, fall back to Sarvam (supports all app languages) rather
+    # than silently producing no captions
+    supports = getattr(provider, "supports", None)
+    if language and supports is not None and language not in supports:
+        logger.info(
+            "%s does not support language '%s' — falling back to sarvam",
+            provider.name, language,
+        )
+        return reg["sarvam"]
+    return provider
 
 
 def get_tts() -> TTSProvider:

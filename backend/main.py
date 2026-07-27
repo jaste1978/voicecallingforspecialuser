@@ -130,7 +130,7 @@ async def ws_stt(ws: WebSocket):
         language = config.get("language", "auto")
         sample_rate = int(config.get("sample_rate", 16000))
 
-        session = providers.get_stt().create_session(
+        session = providers.get_stt(language).create_session(
             language, forward, sample_rate=sample_rate
         )
         await session.start()

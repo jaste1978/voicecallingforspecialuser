@@ -75,6 +75,7 @@ class Call:
         self.trace = Tracer()
         self.last_speech_end_ms: Optional[int] = None
         self.recorder = CallRecorder(call_uuid)
+        self.stt_label = ""
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -158,7 +159,11 @@ class CallManager:
                 await call.sarvam.close()
             await self._start_stt(call)
             call.trace.event("language_changed", language=language)
-            await self._to_browser({"type": "language_set", "language": language})
+            await self._to_browser({
+                "type": "language_set",
+                "language": language,
+                "provider": call.stt_label,
+            })
 
     async def _play_prompt(self, call: Call, name: str) -> None:
         """Speak a canned TTS phrase (e.g. 'please speak slower') into the call."""
@@ -399,7 +404,8 @@ class CallManager:
                 call.trace.event("stt_error", message=event["message"])
                 await self._to_browser({"type": "error", "message": event["message"]})
 
-        provider = providers.get_stt()
+        provider = providers.get_stt(call.language)
+        call.stt_label = provider.label
         call.sarvam = provider.create_session(call.language, on_stt_event)
         t_connect = time.time()
         await call.sarvam.start()
