@@ -19,12 +19,15 @@ OnEvent = Callable[[dict], Awaitable[None]]
 
 # ---------- Deepgram streaming STT ----------
 
+# Deepgram has no reliable auto-detect for Indic streaming ('multi' returns
+# empty transcripts for Hindi on nova-2), so 'auto' leans Hindi. Gujarati is
+# unsupported and approximates to Hindi — use Sarvam for Gujarati callers.
 _DG_LANG = {
     "en": "en-IN",
     "hi": "hi",
     "hinglish": "hi-Latn",
-    "gu": None,   # not supported by Deepgram; omit -> model default
-    "auto": None,
+    "gu": "hi",
+    "auto": "hi",
 }
 
 
