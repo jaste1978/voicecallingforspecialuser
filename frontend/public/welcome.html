@@ -46,6 +46,35 @@ nav .cta{margin-left:auto}
 .momentum b{display:block;font-size:26px;color:var(--accent)}
 .momentum span{color:var(--dim);font-size:14px}
 
+/* animated scene */
+.scene{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px}
+.caller-card{position:relative;display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--divider);border-radius:18px;padding:14px 18px;min-width:280px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.caller-ava{width:52px;height:52px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:28px}
+.caller-info b{display:block;font-size:17px}
+.caller-info span{color:var(--dim);font-size:12.5px}
+.waves{display:flex;gap:3px;align-items:flex-end;height:22px;margin-left:auto;opacity:0;transition:opacity .3s}
+.waves.on{opacity:1}
+.waves i{width:4px;background:var(--accent);border-radius:2px;animation:wv 0.9s infinite ease-in-out}
+.waves i:nth-child(1){height:8px}.waves i:nth-child(2){height:18px;animation-delay:.15s}
+.waves i:nth-child(3){height:12px;animation-delay:.3s}.waves i:nth-child(4){height:20px;animation-delay:.45s}
+@keyframes wv{50%{transform:scaleY(.35)}}
+.callout{position:absolute;background:#fff;color:#111;font-weight:600;font-size:15px;padding:10px 14px;border-radius:16px;max-width:250px;opacity:0;transform:translateY(8px) scale(.95);transition:all .35s ease;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:5}
+.callout.show{opacity:1;transform:none}
+.caller-callout{top:calc(100% + 10px);left:8px}
+.caller-callout::before{content:"";position:absolute;top:-7px;left:26px;border:8px solid transparent;border-bottom-color:#fff;border-top:0}
+.user-callout{bottom:104px;right:6px;background:var(--accent);color:#fff}
+.user-callout::before{content:"";position:absolute;bottom:-7px;right:26px;border:8px solid transparent;border-top-color:var(--accent);border-bottom:0}
+.heard{position:absolute;top:calc(100% + 10px);right:8px;background:var(--chip);color:var(--accent);font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:12px;opacity:0;transition:opacity .35s;border:1px solid var(--divider)}
+.heard.show{opacity:1}
+.flowline{height:34px;width:2px;background:var(--divider);position:relative;margin:6px 0}
+.flowline span{position:absolute;left:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:0}
+.flowline span.run{animation:flow .7s linear forwards}
+@keyframes flow{from{top:0;opacity:1}to{top:26px;opacity:0}}
+.scene-label{color:var(--dim);font-size:13px}
+.typing{display:inline-flex;gap:4px;padding:4px 2px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:wv .8s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+
 /* phone mockup */
 .phone{width:300px;margin:0 auto;background:var(--panel);border:1px solid var(--divider);border-radius:34px;padding:14px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
 .phone .screen{background:var(--bg);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;height:520px;
@@ -123,16 +152,29 @@ footer .right{margin-left:auto}
       <div><b>4</b><span>languages, auto-detected</span></div>
     </div>
   </div>
-  <div class="phone"><div class="screen">
-    <div class="bar"><span class="dot"></span> On call with Amma</div>
-    <div class="chat">
-      <div class="chipd">✓ Call connected</div>
-      <div class="b in">बेटा, कल शादी में आ रहे हो ना?<small>6:42 pm</small></div>
-      <div class="b in">खाना वहीं खा लेना, माँ बना रही है<small>6:42 pm</small></div>
-      <div class="b out">✋ कृपया एक क्षण रुकिए।<small>6:43 pm</small></div>
-      <div class="b in">ठीक है, आराम से बोलो<small>6:43 pm</small></div>
+  <div class="scene">
+    <!-- caller side -->
+    <div class="caller-card">
+      <div class="caller-ava">👩🏽</div>
+      <div class="caller-info">
+        <b>Amma</b>
+        <span>calling from her normal phone</span>
+      </div>
+      <div class="waves" id="callerWaves"><i></i><i></i><i></i><i></i></div>
+      <div class="callout caller-callout" id="callerSay"></div>
+      <div class="heard" id="heardChip">👂 hears your real voice</div>
     </div>
-  </div></div>
+
+    <div class="flowline"><span id="flowDot"></span></div>
+
+    <!-- user's phone -->
+    <div class="phone"><div class="screen">
+      <div class="bar"><span class="dot"></span> On call with Amma</div>
+      <div class="chat" id="sceneChat"></div>
+    </div></div>
+    <div class="callout user-callout" id="userSay"></div>
+    <div class="scene-label">You — reading her words, replying with your voice</div>
+  </div>
 </div></header>
 
 <section id="how"><div class="wrap">
@@ -195,6 +237,72 @@ footer .right{margin-left:auto}
 </div></footer>
 
 <script>
+// ---- hero conversation animation: caller speaks -> phone captions ->
+// ---- user speaks -> caller hears. Loops forever.
+const chat = document.getElementById('sceneChat')
+const callerSay = document.getElementById('callerSay')
+const userSay = document.getElementById('userSay')
+const waves = document.getElementById('callerWaves')
+const heard = document.getElementById('heardChip')
+const flowDot = document.getElementById('flowDot')
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+function chip(text) {
+  const el = document.createElement('div')
+  el.className = 'chipd'
+  el.style.animation = 'pop .4s forwards'
+  el.textContent = text
+  chat.appendChild(el)
+}
+
+async function callerSpeaks(text) {
+  callerSay.textContent = '🗣 ' + text
+  callerSay.classList.add('show')
+  waves.classList.add('on')
+  await sleep(1400)
+  // words travel to the phone
+  flowDot.classList.remove('run'); void flowDot.offsetWidth
+  flowDot.classList.add('run')
+  const t = document.createElement('div')
+  t.className = 'b in'
+  t.style.animation = 'pop .3s forwards'
+  t.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>'
+  chat.appendChild(t)
+  chat.scrollTop = chat.scrollHeight
+  await sleep(700)
+  t.innerHTML = text + '<small>' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</small>'
+  await sleep(900)
+  callerSay.classList.remove('show')
+  waves.classList.remove('on')
+}
+
+async function userSpeaks(text) {
+  userSay.textContent = '🎙 ' + text
+  userSay.classList.add('show')
+  await sleep(900)
+  heard.classList.add('show')
+  await sleep(1500)
+  userSay.classList.remove('show')
+  heard.classList.remove('show')
+  await sleep(300)
+}
+
+async function scene() {
+  for (;;) {
+    chat.innerHTML = ''
+    chip('✓ Call connected')
+    await sleep(900)
+    await callerSpeaks('बेटा, कल शादी में आ रहे हो ना?')
+    await userSpeaks('हाँ माँ, ज़रूर आऊँगा!')
+    await callerSpeaks('खाना यहीं खा लेना, मैं बना रही हूँ')
+    await userSpeaks('ठीक है! आलू के पराठे बनाना 😄')
+    await sleep(400)
+    chip('✓ Conversation complete — no middleman, no help needed')
+    await sleep(3200)
+  }
+}
+if (chat) scene()
+
 document.getElementById('wl').addEventListener('submit', async (e) => {
   e.preventDefault()
   const f = e.target

@@ -19,6 +19,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // marketing site + backend endpoints must never be hijacked by the
+        // app shell's navigation fallback
+        navigateFallbackDenylist: [/^\/welcome/, /^\/site/, /^\/about/, /^\/api/, /^\/vobiz/, /^\/ws/],
+      },
       manifest: {
         name: 'SunoSathi — Hearing Helper',
         short_name: 'SunoSathi',
