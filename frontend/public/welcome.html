@@ -9,6 +9,9 @@
 <meta property="og:description" content="A real phone number with live captions in Indian languages. Built in one day, now in pilot. Join the waitlist." />
 <meta property="og:type" content="website" />
 <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Kalam:wght@400;700&display=swap" rel="stylesheet" />
 <style>
 :root{
   /* warm white + western orange; deep orange keeps WCAG contrast */
@@ -19,6 +22,31 @@
   --pbg:#0b141a; --ppanel:#111b21; --psurface:#202c33; --ptext:#e9edef;
   --pdim:#8696a0; --pchip:#182229; --pdivider:#222d34;
 }
+
+/* --- human touches --- */
+h1,h2{font-family:'Fraunces',Georgia,serif;letter-spacing:-.01em}
+.hand{font-family:'Kalam',cursive}
+/* hand-drawn underline squiggle */
+.hi{position:relative;white-space:nowrap}
+.hi::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:12px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12' preserveAspectRatio='none'><path d='M2 8 Q 18 2 34 7 T 66 7 T 98 6 T 118 8' fill='none' stroke='%23E4590A' stroke-width='3.5' stroke-linecap='round'/></svg>") no-repeat;background-size:100% 100%}
+/* film grain */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:99;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='0.55'/></svg>")}
+/* photo album */
+.album{padding-top:0}
+.album h2 .hand{color:var(--accent-ink);font-size:.6em;display:block;transform:rotate(-1.5deg);margin-top:4px}
+.polas{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+.pola{background:#fff;padding:12px 12px 14px;border:1px solid var(--divider);box-shadow:0 14px 34px rgba(120,60,10,.16);transform:rotate(var(--rot,0deg));transition:transform .25s ease;position:relative;width:250px}
+.pola:hover{transform:rotate(0) scale(1.03);z-index:3}
+.pola img{width:100%;height:280px;object-fit:cover;display:block;filter:saturate(1.04) contrast(1.02)}
+.pola .tape{position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-3deg);width:92px;height:26px;background:rgba(228,180,110,.45);border-left:1px dashed rgba(120,60,10,.2);border-right:1px dashed rgba(120,60,10,.2)}
+.pola figcaption{font-family:'Kalam',cursive;font-size:16.5px;text-align:center;margin-top:10px;color:#3d2c1c}
+.pola .arrow{position:absolute;right:-34px;top:46%;font-size:26px;color:var(--accent-ink);transform:rotate(8deg)}
+@media(max-width:860px){.pola .arrow{display:none}}
+.quote{transform:rotate(-.4deg)}
+.quote:nth-child(2n){transform:rotate(.4deg)}
+.quote p{font-family:'Fraunces',Georgia,serif;font-weight:600}
+.credit{color:var(--dim);font-size:12.5px}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari','Noto Sans Gujarati',sans-serif;line-height:1.6}
@@ -181,6 +209,18 @@ footer .right{margin-left:auto}
   </div>
 </div></header>
 
+
+<section class="album"><div class="wrap" style="text-align:center">
+  <h2>The moment we're building for
+    <span class="hand">— हर घर की एक सच्ची कहानी</span>
+  </h2>
+  <div class="polas">
+    <figure class="pola" style="--rot:-4deg"><span class="tape"></span><img src="/img/amma.jpg" alt="A mother calling from her phone" /><figcaption>माँ का फ़ोन आया…</figcaption><span class="arrow">→</span></figure>
+    <figure class="pola" style="--rot:2.5deg"><span class="tape"></span><img src="/img/reader.jpg" alt="A young man reading his phone and smiling" /><figcaption>…पहली बार ख़ुद उठाया, पढ़ा</figcaption><span class="arrow">→</span></figure>
+    <figure class="pola" style="--rot:-2deg"><span class="tape"></span><img src="/img/joy.jpg" alt="A woman laughing on a phone call" /><figcaption>पूरी बात हुई — बिना किसी सहारे के</figcaption></figure>
+  </div>
+</div></section>
+
 <section id="how"><div class="wrap">
   <h2>A normal phone call. That's the whole point.</h2>
   <p class="sub">Assistive tech usually asks the world to change. SunoSathi doesn't — the caller dials a normal number and talks normally.</p>
@@ -237,7 +277,7 @@ footer .right{margin-left:auto}
 
 <footer><div class="wrap">
   <span>SunoSathi · सुनोसाथी — giving people back the phone call.</span>
-  <span class="right">Born at the GrowthX buildathon · Powered by Sarvam AI</span>
+  <span class="right">Born at the GrowthX buildathon · Powered by Sarvam AI · <span class="credit">photos by Pexels photographers</span></span>
 </div></footer>
 
 <script>
