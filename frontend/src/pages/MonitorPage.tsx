@@ -20,7 +20,14 @@ interface CallReport {
   verdict_note: string
   captions: number
   caption_latency_median_ms: number | null
+  quality_score: number | null
   stages: Stage[]
+}
+
+function qualityClass(score: number): string {
+  if (score >= 75) return 'verdict-ok'
+  if (score >= 50) return 'verdict-warn'
+  return 'verdict-bad'
 }
 
 interface MonitorData {
@@ -103,6 +110,14 @@ export default function MonitorPage() {
               <small>
                 {fmtWhen(c.started_at)} · {c.duration_s}s · {c.captions} captions
                 {c.caption_latency_median_ms != null && ` · ${c.caption_latency_median_ms}ms median`}
+                {c.quality_score != null && (
+                  <>
+                    {' · '}
+                    <span className={`quality-chip ${qualityClass(c.quality_score)}`}>
+                      {c.quality_score}% accurate
+                    </span>
+                  </>
+                )}
               </small>
             </span>
             <span className="monitor-verdict">

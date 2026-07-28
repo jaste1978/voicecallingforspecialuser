@@ -25,6 +25,7 @@ from fastapi import WebSocket
 import history
 import outbound
 import providers
+import quality
 import tts_prompts
 from recorder import CallRecorder
 
@@ -497,6 +498,8 @@ class CallManager:
             )
         except Exception:
             logger.exception("failed saving call history")
+        if call.answered_at:
+            quality.schedule(call.call_uuid)
         await self._to_browser({"type": "call_ended", "reason": reason})
         self.call = None
 

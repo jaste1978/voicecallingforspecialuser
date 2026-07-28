@@ -38,6 +38,8 @@ def init() -> None:
         for ddl in (
             "ALTER TABLE calls ADD COLUMN timeline TEXT",
             "ALTER TABLE calls ADD COLUMN direction TEXT DEFAULT 'in'",
+            "ALTER TABLE calls ADD COLUMN quality_score INTEGER",
+            "ALTER TABLE calls ADD COLUMN batch_transcript TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -69,6 +71,28 @@ def save_call(
                 json.dumps(timeline or [], ensure_ascii=False),
                 direction,
             ),
+        )
+
+
+def get_by_uuid(call_uuid: str) -> dict | None:
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM calls WHERE call_uuid = ? ORDER BY id DESC LIMIT 1",
+            (call_uuid,),
+        ).fetchone()
+    if row is None:
+        return None
+    d = dict(row)
+    d["transcript"] = json.loads(d["transcript"] or "[]")
+    return d
+
+
+def update_quality(call_uuid: str, score: int, batch_transcript: str) -> None:
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE calls SET quality_score = ?, batch_transcript = ?"
+            " WHERE call_uuid = ?",
+            (score, batch_transcript, call_uuid),
         )
 
 

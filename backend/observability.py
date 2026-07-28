@@ -112,5 +112,6 @@ def analyze(call: dict) -> dict:
         "verdict_note": verdict_note,
         "captions": len(call.get("transcript") or []),
         "caption_latency_median_ms": median,
+        "quality_score": call.get("quality_score"),
         "stages": stages,
     }

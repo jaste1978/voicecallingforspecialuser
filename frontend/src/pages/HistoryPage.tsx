@@ -17,6 +17,8 @@ export interface CallRecord {
   direction?: string
   transcript: string[]
   timeline: TimelineEvent[]
+  quality_score: number | null
+  batch_transcript: string | null
 }
 
 export function formatWhen(ts: number): string {
@@ -81,10 +83,33 @@ export default function HistoryPage() {
             </button>
             {expandedId === c.id && (
               <div className="history-transcript">
+                {c.quality_score != null && (
+                  <p className="quality-line">
+                    Caption accuracy:{' '}
+                    <strong
+                      className={
+                        c.quality_score >= 75
+                          ? 'q-ok'
+                          : c.quality_score >= 50
+                            ? 'q-warn'
+                            : 'q-bad'
+                      }
+                    >
+                      {c.quality_score}%
+                    </strong>{' '}
+                    <small>(live captions vs full-context AI re-check)</small>
+                  </p>
+                )}
                 {c.transcript.length === 0 ? (
                   <p className="idle-hint">No captions for this call.</p>
                 ) : (
                   <p className="caption-flow-history">{c.transcript.join(' ')}</p>
+                )}
+                {c.batch_transcript && (
+                  <details className="timeline">
+                    <summary>AI reference transcript (full-context re-check)</summary>
+                    <p className="caption-flow-history">{c.batch_transcript}</p>
+                  </details>
                 )}
                 {c.answered && (
                   <div className="audio-row">

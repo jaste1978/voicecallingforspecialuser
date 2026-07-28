@@ -744,6 +744,42 @@ select.lang.wide {
   height: 32px;
 }
 
+/* ---------- quality scores ---------- */
+.quality-chip {
+  background: transparent !important;
+  font-weight: 700;
+}
+
+.quality-chip.verdict-ok {
+  color: var(--ok);
+}
+
+.quality-chip.verdict-warn {
+  color: #f7b731;
+}
+
+.quality-chip.verdict-bad {
+  color: var(--danger);
+}
+
+.quality-line {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--dim);
+}
+
+.q-ok {
+  color: var(--ok);
+}
+
+.q-warn {
+  color: #f7b731;
+}
+
+.q-bad {
+  color: var(--danger);
+}
+
 /* ---------- call monitor ---------- */
 .live-card.live-bad {
   border-color: var(--danger);
