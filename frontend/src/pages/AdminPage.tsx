@@ -11,6 +11,13 @@ export default function AdminPage() {
           <small>Choose which model powers captions &amp; voice</small>
         </span>
       </button>
+      <button className="home-btn" onClick={() => navigate('/waitlist')}>
+        <span className="emoji">📥</span>
+        <span>
+          Pilot Waitlist
+          <small>Signups from sunosathi.com</small>
+        </span>
+      </button>
       <button className="home-btn" onClick={() => navigate('/monitor')}>
         <span className="emoji">📊</span>
         <span>

@@ -8,6 +8,7 @@ import SettingsPage from './pages/SettingsPage'
 import AdminPage from './pages/AdminPage'
 import RingtonePage from './pages/RingtonePage'
 import MonitorPage from './pages/MonitorPage'
+import WaitlistPage from './pages/WaitlistPage'
 
 const TITLES: Record<string, string> = {
   '/': 'SunoSathi',
@@ -19,10 +20,11 @@ const TITLES: Record<string, string> = {
   '/admin': 'Admin',
   '/ringtone': 'Ringtone',
   '/monitor': 'Call Monitor',
+  '/waitlist': 'Pilot Waitlist',
 }
 
 // pages that belong to the admin area go back to /admin, others to home
-const ADMIN_CHILDREN = new Set(['/captions', '/history', '/settings', '/ringtone', '/monitor'])
+const ADMIN_CHILDREN = new Set(['/captions', '/history', '/settings', '/ringtone', '/monitor', '/waitlist'])
 
 export default function App() {
   const navigate = useNavigate()
@@ -61,6 +63,7 @@ export default function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/ringtone" element={<RingtonePage />} />
         <Route path="/monitor" element={<MonitorPage />} />
+        <Route path="/waitlist" element={<WaitlistPage />} />
       </Routes>
     </div>
   )
