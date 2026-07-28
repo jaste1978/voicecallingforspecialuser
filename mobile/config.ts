@@ -1,2 +1,2 @@
-// Public HTTPS URL of the SunoSathi backend (serves the web app too).
-export const APP_URL = 'https://sunosathi-production-e85a.up.railway.app'
+// Public HTTPS URL of the SunoSathi app.
+export const APP_URL = 'https://app.sunosathi.com'
