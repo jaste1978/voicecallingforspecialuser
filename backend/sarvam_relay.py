@@ -24,6 +24,12 @@ logger = logging.getLogger("sarvam_relay")
 
 SAMPLE_RATE = 16000
 
+# Accuracy-first flushing: only force partial output when speech has run this
+# long without a natural pause (VAD finals still arrive immediately at pauses).
+# Short forced windows chop fast Hinglish mid-word and wreck accuracy — a real
+# call measured 116% WER at 2s forced flushing vs batch-quality otherwise.
+FLUSH_AFTER_S = float(os.environ.get("FLUSH_AFTER_S", "6.0"))
+
 # UI language choices -> Sarvam streaming params
 LANGUAGE_PRESETS = {
     "hi": {"language_code": "hi-IN", "mode": "transcribe"},
@@ -61,6 +67,7 @@ class SarvamSTTSession:
         self._reader_task: Optional[asyncio.Task] = None
         self._flusher_task: Optional[asyncio.Task] = None
         self._speech_active = False
+        self._last_emit = 0.0
         self._closed = False
 
     async def start(self) -> None:
@@ -93,12 +100,19 @@ class SarvamSTTSession:
         )
 
     async def _flush_loop(self) -> None:
-        """Force partial results out every couple of seconds while speech is
-        ongoing, so captions feel live instead of waiting for a pause."""
+        """Force output only for long uninterrupted speech. Captions still
+        arrive instantly at natural pauses via VAD finals; this is just a
+        bound on how long a nonstop talker can go uncaptioned."""
+        import time as _time
         try:
             while not self._closed:
-                await asyncio.sleep(2.0)
-                if self._speech_active and self._ws is not None:
+                await asyncio.sleep(0.5)
+                if (
+                    self._speech_active
+                    and self._ws is not None
+                    and _time.monotonic() - self._last_emit >= FLUSH_AFTER_S
+                ):
+                    self._last_emit = _time.monotonic()
                     try:
                         await self._ws.flush()
                     except Exception:
@@ -114,6 +128,8 @@ class SarvamSTTSession:
                 if mtype == "data" and data is not None:
                     text = (getattr(data, "transcript", "") or "").strip()
                     if text:
+                        import time as _time
+                        self._last_emit = _time.monotonic()
                         await self.on_event({
                             "type": "transcript",
                             "text": text,
@@ -122,7 +138,11 @@ class SarvamSTTSession:
                 elif mtype == "events" and data is not None:
                     signal = getattr(data, "signal_type", None)
                     if signal:
-                        self._speech_active = str(signal) == "START_SPEECH"
+                        started = str(signal) == "START_SPEECH"
+                        if started and not self._speech_active:
+                            import time as _time
+                            self._last_emit = _time.monotonic()
+                        self._speech_active = started
                         await self.on_event({"type": "vad", "signal": str(signal)})
                 elif mtype == "error":
                     msg = str(getattr(data, "message", data))
