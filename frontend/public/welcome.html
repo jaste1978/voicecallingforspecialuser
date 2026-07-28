@@ -199,8 +199,8 @@ footer .right{margin-left:auto}
     <div class="caller-card">
       <div class="caller-ava">👩🏽</div>
       <div class="caller-info">
-        <b>Amma</b>
-        <span>calling from her normal phone</span>
+        <b id="callerName">Amma</b>
+        <span id="callerSub">calling from her normal phone</span>
       </div>
       <div class="waves" id="callerWaves"><i></i><i></i><i></i><i></i></div>
       <div class="callout caller-callout" id="callerSay"></div>
@@ -211,7 +211,7 @@ footer .right{margin-left:auto}
 
     <!-- user's phone -->
     <div class="phone"><div class="screen">
-      <div class="bar"><span class="dot"></span> On call with Amma</div>
+      <div class="bar"><span class="dot"></span> On call with <span id="barName">Amma</span>&nbsp;</div>
       <div class="chat" id="sceneChat"></div>
     </div></div>
     <div class="callout user-callout" id="userSay"></div>
@@ -375,17 +375,59 @@ async function userSpeaks(text) {
   await sleep(300)
 }
 
+const CONVOS = [
+  {
+    name: 'Amma', sub: 'calling from her normal phone', lang: '\ud83c\udf10 \u0939\u093f\u0928\u094d\u0926\u0940 \u2014 auto-detected',
+    turns: [
+      ['c', '\u092c\u0947\u091f\u093e, \u0915\u0932 \u0936\u093e\u0926\u0940 \u092e\u0947\u0902 \u0906 \u0930\u0939\u0947 \u0939\u094b \u0928\u093e?'],
+      ['u', '\u0939\u093e\u0901 \u092e\u093e\u0901, \u095b\u0930\u0942\u0930 \u0906\u090a\u0901\u0917\u093e!'],
+      ['c', '\u0916\u093e\u0928\u093e \u092f\u0939\u0940\u0902 \u0916\u093e \u0932\u0947\u0928\u093e, \u092e\u0948\u0902 \u092c\u0928\u093e \u0930\u0939\u0940 \u0939\u0942\u0901'],
+      ['u', '\u0920\u0940\u0915 \u0939\u0948! \u0906\u0932\u0942 \u0915\u0947 \u092a\u0930\u093e\u0920\u0947 \u092c\u0928\u093e\u0928\u093e \ud83d\ude04'],
+    ],
+  },
+  {
+    name: 'Ba', sub: 'calling about mandir', lang: '\ud83c\udf10 \u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0 \u2014 auto-detected',
+    turns: [
+      ['c', '\u0a95\u0abe\u0ab2\u0ac7 \u0aae\u0a82\u0aa6\u0abf\u0ab0 \u0a86\u0ab5\u0ac7 \u0a9b\u0ac7 \u0aa8\u0ac7? \u0ab8\u0abe\u0a82\u0a9c\u0ac7 \u0a86\u0ab0\u0aa4\u0ac0 \u0a9b\u0ac7.'],
+      ['u', '\u0ab9\u0abe \u0aac\u0abe, \u0a9a\u0acb\u0a95\u0acd\u0a95\u0ab8 \u0a86\u0ab5\u0ac0\u0ab6!'],
+      ['c', '\u0a86\u0ab0\u0aa4\u0ac0 \u0aaa\u0a9b\u0ac0 \u0aaa\u0acd\u0ab0\u0ab8\u0abe\u0aa6 \u0ab2\u0ac7\u0ab5\u0abe\u0aa8\u0ac1\u0a82 \u0aad\u0ac2\u0ab2\u0aa4\u0acb \u0aa8\u0ab9\u0ac0\u0a82'],
+      ['u', '\u0aaa\u0acd\u0ab0\u0ab8\u0abe\u0aa6 \u0a95\u0ac7\u0aae \u0aad\u0ac1\u0ab2\u0abe\u0aaf! \ud83d\ude04'],
+    ],
+  },
+  {
+    name: 'Priya', sub: 'planning the evening', lang: '\ud83c\udf10 Hinglish \u2014 auto-detected',
+    turns: [
+      ['c', 'Kal mandir chalega? Evening \u0915\u0940 \u0906\u0930\u0924\u0940 miss \u092e\u0924 \u0915\u0930\u0928\u093e!'],
+      ['u', 'Sure! \u0906\u0930\u0924\u0940 \u0915\u0947 time \u092a\u0939\u0941\u0901\u091a \u091c\u093e\u090a\u0901\u0917\u093e'],
+      ['c', 'Great, 6 baje sharp. \u092b\u093f\u0930 \u092a\u094d\u0930\u0938\u093e\u0926 \u092d\u0940 \u092e\u093f\u0932\u0947\u0917\u093e \ud83d\ude04'],
+      ['u', 'Done, see you at 6!'],
+    ],
+  },
+]
+
 async function scene() {
-  for (;;) {
+  const nameEl = document.getElementById('callerName')
+  const subEl = document.getElementById('callerSub')
+  const barEl = document.getElementById('barName')
+  for (let i = 0; ; i = (i + 1) % CONVOS.length) {
+    const c = CONVOS[i]
+    nameEl.textContent = c.name
+    subEl.textContent = c.sub
+    barEl.textContent = c.name
     chat.innerHTML = ''
-    chip('✓ Call connected')
+    chip('\u2713 Call connected')
     await sleep(900)
-    await callerSpeaks('बेटा, कल शादी में आ रहे हो ना?')
-    await userSpeaks('हाँ माँ, ज़रूर आऊँगा!')
-    await callerSpeaks('खाना यहीं खा लेना, मैं बना रही हूँ')
-    await userSpeaks('ठीक है! आलू के पराठे बनाना 😄')
+    let first = true
+    for (const [who, text] of c.turns) {
+      if (who === 'c') {
+        await callerSpeaks(text)
+        if (first) { chip(c.lang); first = false; await sleep(700) }
+      } else {
+        await userSpeaks(text)
+      }
+    }
     await sleep(400)
-    chip('✓ Conversation complete — no middleman, no help needed')
+    chip('\u2713 Conversation complete \u2014 no middleman, no help needed')
     await sleep(3200)
   }
 }
