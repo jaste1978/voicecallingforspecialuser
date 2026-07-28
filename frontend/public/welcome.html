@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SunoSathi — सुनोसाथी | Phone calls for the deaf, in every Indian language</title>
+<meta name="description" content="63 million deaf and hard-of-hearing Indians can't take a phone call. SunoSathi gives them a real phone number with live captions in Hindi, Gujarati, English & Hinglish — they read the caller, and reply with their own voice." />
+<meta property="og:title" content="SunoSathi — giving deaf people back the phone call" />
+<meta property="og:description" content="A real phone number with live captions in Indian languages. Built in one day, now in pilot. Join the waitlist." />
+<meta property="og:type" content="website" />
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<style>
+:root{
+  --bg:#0b141a; --panel:#111b21; --surface:#202c33; --bubble-out:#005c4b;
+  --text:#e9edef; --dim:#8696a0; --accent:#00a884; --danger:#ea4f5e;
+  --chip:#182229; --divider:#222d34;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari','Noto Sans Gujarati',sans-serif;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+section{padding:72px 0}
+h2{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
+.sub{color:var(--dim);font-size:18px;max-width:640px}
+
+/* nav */
+nav{position:sticky;top:0;background:rgba(11,20,26,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--divider);z-index:10}
+nav .wrap{display:flex;align-items:center;gap:14px;padding:14px 20px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+.logo .mark{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px}
+nav .cta{margin-left:auto}
+.btn{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:13px 26px;border-radius:28px;border:none;font-size:16px;cursor:pointer}
+.btn.ghost{background:transparent;border:1.5px solid var(--divider);color:var(--text)}
+.btn:active{transform:scale(.98)}
+
+/* hero */
+.hero{padding:84px 0 60px}
+.hero .wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+@media(max-width:820px){.hero .wrap{grid-template-columns:1fr}}
+.hero h1{font-size:clamp(32px,5.2vw,52px);line-height:1.15;font-weight:800}
+.hero h1 .hi{color:var(--accent)}
+.hero p.lead{color:var(--dim);font-size:19px;margin:20px 0 28px;max-width:520px}
+.hero .actions{display:flex;gap:14px;flex-wrap:wrap}
+.momentum{display:flex;gap:26px;margin-top:34px;flex-wrap:wrap}
+.momentum b{display:block;font-size:26px;color:var(--accent)}
+.momentum span{color:var(--dim);font-size:14px}
+
+/* phone mockup */
+.phone{width:300px;margin:0 auto;background:var(--panel);border:1px solid var(--divider);border-radius:34px;padding:14px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.phone .screen{background:var(--bg);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;height:520px;
+ background-image:radial-gradient(rgba(134,150,160,.06) 1px,transparent 1.5px);background-size:20px 20px}
+.phone .bar{background:var(--panel);padding:12px 14px;font-weight:700;border-bottom:1px solid var(--divider);display:flex;gap:8px;align-items:center;font-size:14px}
+.phone .bar .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.chat{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:8px;font-size:14.5px;overflow:hidden}
+.b{max-width:85%;padding:8px 11px;border-radius:12px;opacity:0;animation:pop .4s forwards}
+.b.in{align-self:flex-start;background:var(--surface);border-top-left-radius:4px}
+.b.out{align-self:flex-end;background:var(--bubble-out);border-top-right-radius:4px}
+.b small{display:block;text-align:right;font-size:10px;color:rgba(233,237,239,.5)}
+.chipd{align-self:center;background:var(--chip);color:var(--dim);font-size:11px;padding:3px 10px;border-radius:8px;opacity:0;animation:pop .4s forwards}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.b:nth-child(2){animation-delay:.6s}.b:nth-child(3){animation-delay:1.6s}
+.b:nth-child(4){animation-delay:2.8s}.b:nth-child(5){animation-delay:4s}
+.chipd:first-child{animation-delay:.1s}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+@media(max-width:820px){.steps{grid-template-columns:1fr}}
+.step{background:var(--panel);border:1px solid var(--divider);border-radius:18px;padding:26px}
+.step .n{width:40px;height:40px;border-radius:50%;background:var(--surface);color:var(--accent);font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:18px}
+.step h3{margin-bottom:6px;font-size:19px}
+.step p{color:var(--dim);font-size:15px}
+
+/* features */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.feat{background:var(--panel);border:1px solid var(--divider);border-radius:18px;padding:22px}
+.feat .e{font-size:26px;margin-bottom:8px}
+.feat h3{font-size:17px;margin-bottom:4px}
+.feat p{color:var(--dim);font-size:14.5px}
+
+/* voices */
+.voices{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:36px}
+@media(max-width:820px){.voices{grid-template-columns:1fr}}
+.quote{background:var(--panel);border:1px solid var(--divider);border-radius:18px;padding:24px}
+.quote p{font-size:16.5px}
+.quote .who{margin-top:12px;color:var(--dim);font-size:14px}
+.quote .who b{color:var(--accent)}
+
+/* form */
+.pilot{background:var(--panel);border-top:1px solid var(--divider);border-bottom:1px solid var(--divider)}
+form{display:grid;gap:12px;max-width:520px;margin-top:28px}
+input,select,textarea{background:var(--surface);border:1px solid var(--divider);border-radius:14px;color:var(--text);font-size:16px;padding:14px 16px;font-family:inherit;width:100%}
+input::placeholder,textarea::placeholder{color:var(--dim)}
+.ok-msg{background:rgba(0,168,132,.12);border:1px solid var(--accent);color:var(--text);border-radius:14px;padding:18px;font-size:16px;display:none}
+.err-msg{color:var(--danger);font-size:14px;display:none}
+
+footer{padding:40px 0;color:var(--dim);font-size:14px;border-top:1px solid var(--divider)}
+footer .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+footer .right{margin-left:auto}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="logo"><span class="mark">📞</span> SunoSathi <span style="color:var(--dim);font-weight:400">सुनोसाथी</span></div>
+  <a class="btn cta" href="#pilot">Join the pilot</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <h1>63 million Indians can't answer a phone call.<br/><span class="hi">We're changing that.</span></h1>
+    <p class="lead">SunoSathi gives deaf and hard-of-hearing people a real phone number. When someone calls, they <b>read live subtitles</b> of the caller's words — in हिन्दी, ગુજરાતી, English or Hinglish, detected automatically — and <b>reply with their own voice</b>. The caller just… calls. No app, no link, nothing special.</p>
+    <div class="actions">
+      <a class="btn" href="#pilot">Join the pilot — it's free</a>
+      <a class="btn ghost" href="#how">How it works</a>
+    </div>
+    <div class="momentum">
+      <div><b>99,000+</b><span>views in 48 hours</span></div>
+      <div><b>63M</b><span>Indians who need this</span></div>
+      <div><b>&lt;1s</b><span>caption latency</span></div>
+      <div><b>4</b><span>languages, auto-detected</span></div>
+    </div>
+  </div>
+  <div class="phone"><div class="screen">
+    <div class="bar"><span class="dot"></span> On call with Amma</div>
+    <div class="chat">
+      <div class="chipd">✓ Call connected</div>
+      <div class="b in">बेटा, कल शादी में आ रहे हो ना?<small>6:42 pm</small></div>
+      <div class="b in">खाना वहीं खा लेना, माँ बना रही है<small>6:42 pm</small></div>
+      <div class="b out">✋ कृपया एक क्षण रुकिए।<small>6:43 pm</small></div>
+      <div class="b in">ठीक है, आराम से बोलो<small>6:43 pm</small></div>
+    </div>
+  </div></div>
+</div></header>
+
+<section id="how"><div class="wrap">
+  <h2>A normal phone call. That's the whole point.</h2>
+  <p class="sub">Assistive tech usually asks the world to change. SunoSathi doesn't — the caller dials a normal number and talks normally.</p>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3>Someone calls your number</h3><p>A real Indian phone number rings your SunoSathi app — with sound, vibration and a flashing screen.</p></div>
+    <div class="step"><div class="n">2</div><h3>You read, like a chat</h3><p>The caller's words appear as live chat bubbles in the language they speak — Hindi, Gujarati, English, or mixed. If a language can't be identified, it's written the way it sounds — "kem cho".</p></div>
+    <div class="step"><div class="n">3</div><h3>You reply with your voice</h3><p>Speak — the caller hears you directly. Can't speak right now? One tap politely says "please repeat" or "one moment" in a natural voice.</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <h2>Built for India, not translated for it</h2>
+  <div class="grid">
+    <div class="feat"><div class="e">🌐</div><h3>Speaks your India</h3><p>Auto-detects Hindi, Gujarati, English and Hinglish mid-sentence — powered by Sarvam AI, built for Indian speech.</p></div>
+    <div class="feat"><div class="e">⚡</div><h3>Truly live</h3><p>Captions land in under a second at natural pauses. A real conversation, not a transcript afterwards.</p></div>
+    <div class="feat"><div class="e">📞</div><h3>Calls out too</h3><p>Call your contacts or any number. They see a normal call from your number — and hear your real voice.</p></div>
+    <div class="feat"><div class="e">📚</div><h3>Never lose a word</h3><p>Every call saved as transcript + audio. The doctor's instructions, the delivery address — always there to re-read.</p></div>
+    <div class="feat"><div class="e">🔔</div><h3>Rings your way</h3><p>Vibration, flashing screen and an audible ring for family nearby — every call gets noticed.</p></div>
+    <div class="feat"><div class="e">🛡️</div><h3>Quality, measured</h3><p>Every call is automatically re-checked for caption accuracy. We publish our numbers to ourselves before anyone else.</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <h2>What people said in the first 48 hours</h2>
+  <div class="voices">
+    <div class="quote"><p>"Such a need of the hour! How can one get this tested? I run an NGO for around 70 deaf children and adults… This could be incredibly useful for the deaf community."</p><div class="who"><b>NGO founder</b> · deaf-community organisation, pan-India network</div></div>
+    <div class="quote"><p>"Execution is impressive, but choosing the right problem is what makes this stand out."</p><div class="who"><b>Founder</b> · accountability platform</div></div>
+    <div class="quote"><p>"Didn't think of a problem like that could be solved using speech models. Great stuff."</p><div class="who"><b>Product Lead</b> · major private bank</div></div>
+    <div class="quote"><p>"Possibly useful for people without hearing difficulties also — when you're in a quiet room and don't want anyone else to listen."</p><div class="who"><b>AI consultant</b> · on wider use-cases</div></div>
+  </div>
+</div></section>
+
+<section class="pilot" id="pilot"><div class="wrap">
+  <h2>Join the pilot</h2>
+  <p class="sub">We're onboarding early users, families, and NGOs now. It's free during the pilot — we want feedback, not money. Tell us who you are and we'll reach out personally.</p>
+  <form id="wl">
+    <input name="name" placeholder="Your name" required maxlength="80" />
+    <input name="email" type="email" placeholder="Email" required maxlength="120" />
+    <select name="role" required>
+      <option value="" disabled selected>I am…</option>
+      <option>Deaf / hard-of-hearing</option>
+      <option>Family member or friend</option>
+      <option>NGO / deaf association</option>
+      <option>Interpreter / educator</option>
+      <option>Developer / curious</option>
+    </select>
+    <input name="org" placeholder="Organisation (optional)" maxlength="120" />
+    <textarea name="message" rows="3" placeholder="Anything you'd like to tell us (optional)" maxlength="1000"></textarea>
+    <button class="btn" type="submit">Request access</button>
+    <div class="err-msg" id="err">Something went wrong — please try again.</div>
+  </form>
+  <div class="ok-msg" id="ok">🙏 Thank you! You're on the list — we'll write to you personally, usually within a day.</div>
+</div></section>
+
+<footer><div class="wrap">
+  <span>SunoSathi · सुनोसाथी — giving people back the phone call.</span>
+  <span class="right">Born at the GrowthX buildathon · Powered by Sarvam AI</span>
+</div></footer>
+
+<script>
+document.getElementById('wl').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const f = e.target
+  const data = Object.fromEntries(new FormData(f).entries())
+  try {
+    const r = await fetch('/api/waitlist', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error()
+    f.style.display = 'none'
+    document.getElementById('ok').style.display = 'block'
+  } catch {
+    document.getElementById('err').style.display = 'block'
+  }
+})
+</script>
+</body>
+</html>

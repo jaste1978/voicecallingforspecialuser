@@ -11,7 +11,7 @@ import logging
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -62,6 +62,34 @@ async def api_settings_update(payload: dict):
     if not ok:
         return Response(status_code=422)
     return providers.describe()
+
+
+@app.post("/api/waitlist")
+async def api_waitlist_add(payload: dict, request: Request):
+    import waitlist
+
+    name = (payload.get("name") or "").strip()
+    email = (payload.get("email") or "").strip()
+    if not name or "@" not in email:
+        return Response(status_code=422)
+    waitlist.add(
+        name, email,
+        (payload.get("role") or "").strip(),
+        (payload.get("org") or "").strip(),
+        (payload.get("message") or "").strip(),
+    )
+    logger.info("waitlist signup: %s <%s> (%s)", name, email, payload.get("role"))
+    return {"ok": True}
+
+
+@app.get("/api/waitlist")
+async def api_waitlist_list(request: Request):
+    import waitlist
+
+    admin_key = os.environ.get("ADMIN_KEY")
+    if not admin_key or request.headers.get("x-admin-key") != admin_key:
+        return Response(status_code=403)
+    return {"signups": waitlist.list_all()}
 
 
 @app.get("/api/monitor")
@@ -189,6 +217,8 @@ if _dist.is_dir():
 
     @app.get("/{path:path}")
     async def spa(path: str):
+        if path in ("welcome", "site", "about"):
+            return FileResponse(_dist / "welcome.html")
         candidate = _dist / path
         if path and ".." not in path and candidate.is_file():
             return FileResponse(candidate)
