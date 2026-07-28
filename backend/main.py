@@ -216,7 +216,13 @@ if _dist.is_dir():
     app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
 
     @app.get("/{path:path}")
-    async def spa(path: str):
+    async def spa(path: str, request: Request):
+        host = (request.headers.get("x-forwarded-host")
+                or request.headers.get("host", "")).split(":")[0]
+        # marketing site at the root of the main domain; the app lives on
+        # app.sunosathi.com (and the railway URL) unchanged
+        if path == "" and host in ("sunosathi.com", "www.sunosathi.com"):
+            return FileResponse(_dist / "welcome.html")
         if path in ("welcome", "site", "about"):
             return FileResponse(_dist / "welcome.html")
         candidate = _dist / path
