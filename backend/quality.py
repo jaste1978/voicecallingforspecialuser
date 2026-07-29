@@ -11,6 +11,8 @@ import io
 import logging
 import re
 import wave
+from difflib import SequenceMatcher
+from functools import lru_cache
 
 import history
 import recorder
@@ -46,11 +48,60 @@ async def _transcribe_batch(wav_path) -> str:
 
 
 def _norm_words(text: str) -> list[str]:
-    text = re.sub(r"[।,.!?\"'—:;()\-]", " ", text.lower())
+    text = text.lower().replace("'", "").replace("’", "")  # can't == cant == कांट
+    text = re.sub(r"[।,.!?\"—:;()\-]", " ", text)
     # Devanagari cosmetic variants: drop nukta (ज़==ज), unify chandrabindu
     # with anusvara (हूँ==हूं) — spelling style, not transcription errors
     text = text.replace("़", "").replace("ँ", "ं")
     return [w for w in text.split() if w]
+
+
+# One model may write mixed-language speech in Latin ("can you hear me")
+# while the other writes the same words phonetically in Devanagari
+# ("कैन यू हियर मी"). Both are correct transcriptions, so scoring must be
+# script-blind: romanize everything and compare words fuzzily.
+
+_DEV_ROMAN = {
+    "अ": "a", "आ": "a", "इ": "i", "ई": "i", "उ": "u", "ऊ": "u", "ऋ": "ri",
+    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "ऍ": "e", "ऑ": "o",
+    "क": "k", "ख": "kh", "ग": "g", "घ": "gh", "ङ": "n",
+    "च": "ch", "छ": "chh", "ज": "j", "झ": "jh", "ञ": "n",
+    "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
+    "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
+    "प": "p", "फ": "f", "ब": "b", "भ": "bh", "म": "m",
+    "य": "y", "र": "r", "ल": "l", "ळ": "l", "व": "v",
+    "श": "sh", "ष": "sh", "स": "s", "ह": "h",
+    "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "ri",
+    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ॅ": "e", "ॉ": "o",
+    "ं": "n", "ः": "", "्": "", "ऽ": "",
+    "०": "0", "१": "1", "२": "2", "३": "3", "४": "4",
+    "५": "5", "६": "6", "७": "7", "८": "8", "९": "9",
+}
+
+
+def _romanize(word: str) -> str:
+    out = []
+    for ch in word:
+        code = ord(ch)
+        # Gujarati block mirrors Devanagari layout, offset 0x180
+        if 0x0A80 <= code <= 0x0AFF:
+            ch = chr(code - 0x180)
+        out.append(_DEV_ROMAN.get(ch, ch))
+    return "".join(out)
+
+
+@lru_cache(maxsize=4096)
+def _words_match(a: str, b: str) -> bool:
+    if a == b:
+        return True
+    ra, rb = _romanize(a), _romanize(b)
+    if ra == rb:
+        return True
+    # transliteration is approximate ("kain" vs "can"), so accept close
+    # romanized spellings as the same spoken word; very short words get a
+    # looser bar since one differing letter dominates the ratio ("ij"/"is")
+    ratio = SequenceMatcher(None, ra, rb).ratio()
+    return ratio >= (0.5 if max(len(ra), len(rb)) <= 3 else 0.55)
 
 
 def _wer(ref: list[str], hyp: list[str]) -> float:
@@ -61,7 +112,7 @@ def _wer(ref: list[str], hyp: list[str]) -> float:
         d[0][j] = j
     for i in range(1, len(ref) + 1):
         for j in range(1, len(hyp) + 1):
-            cost = 0 if ref[i - 1] == hyp[j - 1] else 1
+            cost = 0 if _words_match(ref[i - 1], hyp[j - 1]) else 1
             d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
     return d[len(ref)][len(hyp)] / max(len(ref), 1)
 
@@ -89,6 +140,22 @@ async def run_for(call_uuid: str) -> None:
                     call_uuid, round(score), len(ref_words))
     except Exception:
         logger.exception("quality scoring failed for %s", call_uuid)
+
+
+def rescore_stored(call_uuid: str) -> int | None:
+    """Re-score against the already-stored batch reference (no STT cost).
+    Used after scoring-algorithm improvements. Returns the new score."""
+    call = history.get_by_uuid(call_uuid)
+    if not call or not call.get("batch_transcript"):
+        return None
+    ref_words = _norm_words(call["batch_transcript"])
+    if not ref_words:
+        return None
+    live_words = _norm_words(" ".join(call.get("transcript") or []))
+    dist = _wer(ref_words, live_words) * max(len(ref_words), 1)
+    score = max(0.0, 1.0 - dist / max(len(ref_words), len(live_words), 1)) * 100
+    history.update_quality(call_uuid, round(score), call["batch_transcript"])
+    return round(score)
 
 
 def schedule(call_uuid: str) -> None:

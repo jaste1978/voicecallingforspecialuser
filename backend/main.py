@@ -239,6 +239,16 @@ async def api_contacts_delete(contact_id: int, request: Request):
     return {"ok": True}
 
 
+@app.post("/api/calls/{call_uuid}/rescore")
+async def api_call_rescore(call_uuid: str, request: Request):
+    _require_admin(request)
+    import quality
+    score = quality.rescore_stored(call_uuid)
+    if score is None:
+        return Response(status_code=404)
+    return {"quality_score": score}
+
+
 @app.get("/api/calls/{call_uuid}/audio/{track}")
 async def api_call_audio(call_uuid: str, track: str, request: Request):
     _require_user(request)
