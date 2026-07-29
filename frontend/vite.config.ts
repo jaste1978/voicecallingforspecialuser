@@ -28,8 +28,8 @@ export default defineConfig({
         name: 'SunoSathi — Hearing Helper',
         short_name: 'SunoSathi',
         description: 'Live captions and captioned phone calls for deaf and hard-of-hearing users',
-        theme_color: '#0b141a',
-        background_color: '#0b141a',
+        theme_color: '#FFF8F1',
+        background_color: '#FFF8F1',
         display: 'standalone',
         icons: [
           { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },

@@ -84,11 +84,11 @@ function initialOf(name: string): string {
   return /[0-9+]/.test(ch) ? '📞' : ch.toUpperCase()
 }
 
-const AVATAR_HUES = [18, 96, 156, 205, 262, 320, 40]
+const AVATAR_HUES = [16, 30, 45, 95, 165, 200, 345]
 export function avatarColor(name: string): string {
   let h = 0
   for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 997
-  return `hsl(${AVATAR_HUES[h % AVATAR_HUES.length]} 45% 38%)`
+  return `hsl(${AVATAR_HUES[h % AVATAR_HUES.length]} 48% 42%)`
 }
 
 export default function CallPage() {
