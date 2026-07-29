@@ -37,6 +37,14 @@ def _require_user(request: Request) -> dict:
     return user
 
 
+def _require_admin(request: Request) -> dict:
+    user = _require_user(request)
+    if user.get("role") != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="admin only")
+    return user
+
+
 def _is_admin_req(request: Request) -> bool:
     admin_key = os.environ.get("ADMIN_KEY")
     if admin_key and request.headers.get("x-admin-key") == admin_key:
@@ -115,13 +123,13 @@ async def api_calls(request: Request):
 
 @app.get("/api/settings")
 async def api_settings(request: Request):
-    _require_user(request)
+    _require_admin(request)
     return providers.describe()
 
 
 @app.put("/api/settings")
 async def api_settings_update(payload: dict, request: Request):
-    _require_user(request)
+    _require_admin(request)
     ok = True
     for kind in ("stt", "tts"):
         name = payload.get(f"{kind}_provider")
@@ -161,7 +169,7 @@ async def api_waitlist_list(request: Request):
 
 @app.get("/api/monitor")
 async def api_monitor(request: Request):
-    _require_user(request)
+    _require_admin(request)
     import history
     import observability
     from call_session import manager
@@ -179,7 +187,7 @@ async def api_monitor(request: Request):
 
 @app.post("/api/providers")
 async def api_provider_add(payload: dict, request: Request):
-    _require_user(request)
+    _require_admin(request)
     ok = providers.add_config(
         payload.get("kind", ""), payload.get("adapter", ""),
         payload.get("label", ""), payload.get("api_key", ""),
@@ -192,7 +200,7 @@ async def api_provider_add(payload: dict, request: Request):
 
 @app.delete("/api/providers/{config_id}")
 async def api_provider_delete(config_id: int, request: Request):
-    _require_user(request)
+    _require_admin(request)
     providers.delete_config(config_id)
     return providers.describe()
 
