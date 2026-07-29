@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { authFetch } from '../lib/auth'
 
 interface Contact {
   id: number
@@ -16,7 +17,7 @@ export default function ContactsPage() {
   const [adding, setAdding] = useState(false)
 
   function load() {
-    fetch('/api/contacts')
+    authFetch('/api/contacts')
       .then((r) => r.json())
       .then((d) => setContacts(d.contacts ?? []))
       .catch(() => {})
@@ -26,7 +27,7 @@ export default function ContactsPage() {
 
   async function addContact() {
     if (!name.trim() || !number.trim()) return
-    await fetch('/api/contacts', {
+    await authFetch('/api/contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: name.trim(), number: number.trim() }),
@@ -38,7 +39,7 @@ export default function ContactsPage() {
   }
 
   async function removeContact(id: number) {
-    await fetch(`/api/contacts/${id}`, { method: 'DELETE' })
+    await authFetch(`/api/contacts/${id}`, { method: 'DELETE' })
     load()
   }
 

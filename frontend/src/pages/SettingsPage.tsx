@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { authFetch } from '../lib/auth'
 
 interface ProviderInfo {
   name: string
@@ -43,7 +44,7 @@ export default function SettingsPage() {
   const [model, setModel] = useState('')
 
   useEffect(() => {
-    fetch('/api/settings')
+    authFetch('/api/settings')
       .then((r) => r.json())
       .then(setSettings)
       .catch(() => {})
@@ -55,7 +56,7 @@ export default function SettingsPage() {
   }
 
   async function setActive(kind: 'stt' | 'tts', name: string) {
-    const resp = await fetch('/api/settings', {
+    const resp = await authFetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [`${kind}_provider`]: name }),
@@ -68,7 +69,7 @@ export default function SettingsPage() {
 
   async function addModel() {
     if (!addingKind || !adapter || !label.trim() || !apiKey.trim()) return
-    const resp = await fetch('/api/providers', {
+    const resp = await authFetch('/api/providers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,7 +94,7 @@ export default function SettingsPage() {
   }
 
   async function removeModel(id: number) {
-    const resp = await fetch(`/api/providers/${id}`, { method: 'DELETE' })
+    const resp = await authFetch(`/api/providers/${id}`, { method: 'DELETE' })
     if (resp.ok) {
       setSettings(await resp.json())
       flash('Model removed')

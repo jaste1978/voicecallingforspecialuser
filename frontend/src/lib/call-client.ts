@@ -1,3 +1,4 @@
+import { wsAuth } from './auth'
 // Resilient WebSocket client for the backend call bridge (/ws/call).
 // Heartbeats every 15s, auto-reconnects on death, and reconnects immediately
 // when the app returns to the foreground — so incoming rings are never lost
@@ -50,7 +51,7 @@ export function connectCall(
   onStatus: (connected: boolean) => void,
 ): CallClient {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  const url = `${proto}://${location.host}/ws/call`
+  const url = wsAuth(`${proto}://${location.host}/ws/call`)
 
   let ws: WebSocket | null = null
   let closedByUs = false

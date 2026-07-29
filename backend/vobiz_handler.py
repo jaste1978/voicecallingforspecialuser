@@ -140,6 +140,10 @@ async def ws_vobiz(ws: WebSocket):
 @router.websocket("/ws/call")
 async def ws_call(ws: WebSocket):
     """The user's browser: receives ring/captions/caller-audio, sends accept/end + mic PCM."""
+    import auth
+    if auth.user_for_token(ws.query_params.get("token")) is None:
+        await ws.close(code=4401)
+        return
     await ws.accept()
     await manager.browser_connected(ws)
     try:

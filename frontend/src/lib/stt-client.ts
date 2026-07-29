@@ -1,3 +1,4 @@
+import { wsAuth } from './auth'
 // WebSocket client for the backend STT relay (/ws/stt)
 
 export type LanguageKey = 'hi' | 'gu' | 'en' | 'hinglish' | 'auto'
@@ -23,7 +24,7 @@ export function connectStt(
   onClose: () => void,
 ): SttClient {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-  const ws = new WebSocket(`${proto}://${location.host}/ws/stt`)
+  const ws = new WebSocket(wsAuth(`${proto}://${location.host}/ws/stt`))
   ws.binaryType = 'arraybuffer'
 
   const pending: ArrayBuffer[] = []

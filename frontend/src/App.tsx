@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { getToken } from './lib/auth'
+import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
@@ -29,6 +32,26 @@ const ADMIN_CHILDREN = new Set(['/captions', '/history', '/settings', '/ringtone
 export default function App() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+
+  // the whole app requires login
+  useEffect(() => {
+    if (!getToken() && pathname !== '/login') {
+      navigate('/login', { replace: true })
+    }
+  }, [pathname, navigate])
+
+  if (pathname === '/login') {
+    return (
+      <div className="app">
+        <header className="topbar">
+          <h1>SunoSathi</h1>
+        </header>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </div>
+    )
+  }
 
   return (
     <div className="app">

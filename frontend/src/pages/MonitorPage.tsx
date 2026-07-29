@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { authFetch } from '../lib/auth'
 
 interface Stage {
   stage: string
@@ -66,7 +67,7 @@ export default function MonitorPage() {
   useEffect(() => {
     let alive = true
     const load = () =>
-      fetch('/api/monitor')
+      authFetch('/api/monitor')
         .then((r) => r.json())
         .then((d) => alive && setData(d))
         .catch(() => {})

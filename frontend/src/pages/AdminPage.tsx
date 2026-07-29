@@ -1,7 +1,18 @@
 import { useNavigate } from 'react-router-dom'
+import { authFetch, authName, clearAuth } from '../lib/auth'
 
 export default function AdminPage() {
   const navigate = useNavigate()
+
+  async function logout() {
+    try {
+      await authFetch('/api/logout', { method: 'POST' })
+    } finally {
+      clearAuth()
+      navigate('/login', { replace: true })
+    }
+  }
+
   return (
     <main className="home">
       <button className="home-btn" onClick={() => navigate('/settings')}>
@@ -45,6 +56,9 @@ export default function AdminPage() {
           Caption Tester
           <small>Test live captions with this device's mic</small>
         </span>
+      </button>
+      <button className="historylink" onClick={() => void logout()}>
+        Log out{authName() ? ` (${authName()})` : ''}
       </button>
     </main>
   )

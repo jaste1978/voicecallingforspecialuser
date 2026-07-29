@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { audioUrl, authFetch } from '../lib/auth'
 
 interface TimelineEvent {
   t_ms: number
@@ -48,7 +49,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/calls')
+    authFetch('/api/calls')
       .then((r) => r.json())
       .then((d) => setCalls(d.calls ?? []))
       .catch(() => {})
@@ -115,11 +116,11 @@ export default function HistoryPage() {
                   <div className="audio-row">
                     <div className="audio-track">
                       <small>📞 Caller audio</small>
-                      <audio controls preload="none" src={`/api/calls/${c.call_uuid}/audio/caller`} />
+                      <audio controls preload="none" src={audioUrl(`/api/calls/${c.call_uuid}/audio/caller`)} />
                     </div>
                     <div className="audio-track">
                       <small>🎤 Your audio</small>
-                      <audio controls preload="none" src={`/api/calls/${c.call_uuid}/audio/user`} />
+                      <audio controls preload="none" src={audioUrl(`/api/calls/${c.call_uuid}/audio/user`)} />
                     </div>
                   </div>
                 )}
