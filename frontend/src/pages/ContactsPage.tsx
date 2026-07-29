@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch } from '../lib/auth'
+import { fmtNumber } from '../lib/format'
+import { avatarColor } from '../components/Avatar'
+import { PhoneIcon, TrashIcon, XIcon } from '../components/icons'
 
 interface Contact {
   id: number
@@ -63,7 +66,7 @@ export default function ContactsPage() {
           disabled={!dialNumber.trim()}
           onClick={() => call(dialNumber.trim(), dialNumber.trim())}
         >
-          📞 Call
+          <PhoneIcon size={20} /> Call
         </button>
       </div>
 
@@ -74,21 +77,30 @@ export default function ContactsPage() {
         {contacts.map((c) => (
           <div key={c.id} className="contact-row">
             <button className="contact-main" onClick={() => call(c.number, c.name)}>
-              <span className="contact-avatar">{c.name.trim().charAt(0).toUpperCase()}</span>
+              <span
+                className="contact-avatar named"
+                style={{ background: avatarColor(c.name) }}
+              >
+                {c.name.trim().charAt(0).toUpperCase()}
+              </span>
               <span>
                 <span className="contact-name">{c.name}</span>
-                <span className="contact-number">{c.number}</span>
+                <span className="contact-number">{fmtNumber(c.number)}</span>
               </span>
             </button>
-            <button className="contact-callbtn" onClick={() => call(c.number, c.name)}>
-              📞
+            <button
+              className="contact-callbtn"
+              aria-label={`Call ${c.name}`}
+              onClick={() => call(c.number, c.name)}
+            >
+              <PhoneIcon size={22} />
             </button>
             <button
               className="contact-delete"
               aria-label={`Delete ${c.name}`}
               onClick={() => removeContact(c.id)}
             >
-              🗑
+              <TrashIcon size={20} />
             </button>
           </div>
         ))}
@@ -111,8 +123,8 @@ export default function ContactsPage() {
             onChange={(e) => setNumber(e.target.value)}
           />
           <div className="contact-add-actions">
-            <button className="iconbtn" onClick={() => setAdding(false)}>
-              ✕
+            <button className="iconbtn" aria-label="Cancel" onClick={() => setAdding(false)}>
+              <XIcon size={22} />
             </button>
             <button
               className="bigbtn start"

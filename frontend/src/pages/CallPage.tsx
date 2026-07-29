@@ -8,6 +8,9 @@ import { captionHapticEnabled, speechHapticEnabled } from '../lib/haptics-settin
 import { Ringtone } from '../lib/ringtone'
 import { authFetch } from '../lib/auth'
 import type { LanguageKey } from '../lib/stt-client'
+import { fmtNumber, fmtRelative, fmtDuration, fmtTime, resolveDisplay } from '../lib/format'
+import Avatar from '../components/Avatar'
+import { PhoneIcon, MicIcon, MicOffIcon, XIcon, NewCallIcon } from '../components/icons'
 
 interface Segment {
   id: number
@@ -48,49 +51,6 @@ const PROMPT_TEXTS: Record<string, string> = {
   wait: '✋ कृपया एक क्षण रुकिए।',
 }
 
-function fmtTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function fmtDuration(s: number): string {
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
-export function fmtNumber(num: string): string {
-  const d = num.replace(/\D/g, '')
-  if (d.length === 12 && d.startsWith('91')) return `+91 ${d.slice(2, 7)} ${d.slice(7)}`
-  if (d.length === 10) return `${d.slice(0, 5)} ${d.slice(5)}`
-  return num
-}
-
-export function fmtRelative(ts: number): string {
-  const d = new Date(ts * 1000)
-  const now = new Date()
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString()
-  if (sameDay(d, now)) return time
-  const yest = new Date(now)
-  yest.setDate(now.getDate() - 1)
-  if (sameDay(d, yest)) return `Yesterday ${time}`
-  return `${d.toLocaleDateString([], { day: '2-digit', month: 'short' })}, ${time}`
-}
-
-function last10(num: string): string {
-  return num.replace(/\D/g, '').slice(-10)
-}
-
-function initialOf(name: string): string {
-  const ch = (name || '?').trim().charAt(0)
-  return /[0-9+]/.test(ch) ? '📞' : ch.toUpperCase()
-}
-
-const AVATAR_HUES = [16, 30, 45, 95, 165, 200, 345]
-export function avatarColor(name: string): string {
-  let h = 0
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 997
-  return `hsl(${AVATAR_HUES[h % AVATAR_HUES.length]} 48% 42%)`
-}
-
 export default function CallPage() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -108,6 +68,7 @@ export default function CallPage() {
   const [callSeconds, setCallSeconds] = useState(0)
   const [ownNumber, setOwnNumber] = useState('')
   const [recents, setRecents] = useState<RecentCall[]>([])
+  const [recentsLoading, setRecentsLoading] = useState(true)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [shared, setShared] = useState(false)
   const language: LanguageKey = 'auto'
@@ -127,10 +88,7 @@ export default function CallPage() {
   }, [contacts])
 
   function resolveName(number: string): string {
-    const key = last10(number)
-    if (!key) return number
-    const hit = contactsRef.current.find((c) => last10(c.number) === key)
-    return hit ? hit.name : fmtNumber(number)
+    return resolveDisplay(number, contactsRef.current)
   }
 
   function changeFont(delta: number) {
@@ -175,6 +133,7 @@ export default function CallPage() {
       .then((r) => r.json())
       .then((d) => setRecents((d.calls ?? []).slice(0, 8)))
       .catch(() => {})
+      .finally(() => setRecentsLoading(false))
     authFetch('/api/contacts')
       .then((r) => r.json())
       .then((d) => setContacts(d.contacts ?? []))
@@ -315,15 +274,13 @@ export default function CallPage() {
     const display = resolveName(caller)
     return (
       <main className="call-overlay call-ring">
-        <div className="avatar" style={{ background: avatarColor(display) }}>
-          {initialOf(display)}
-        </div>
+        <Avatar name={display} />
         <h2>{ringingStatus}</h2>
         <p className="caller-number">{display}</p>
         {error && <p className="status-line error">{error}</p>}
         <div className="ring-actions">
           <span>
-            <button className="roundbtn decline" onClick={endCall} aria-label="Cancel">✕</button>
+            <button className="roundbtn decline" onClick={endCall} aria-label="Cancel"><XIcon size={30} /></button>
             <span className="roundbtn-label">Cancel</span>
           </span>
         </div>
@@ -335,19 +292,17 @@ export default function CallPage() {
     const display = resolveName(caller)
     return (
       <main className="call-overlay call-ring incoming">
-        <div className="avatar" style={{ background: avatarColor(display) }}>
-          {initialOf(display)}
-        </div>
+        <Avatar name={display} />
         <h2>Incoming call</h2>
         <p className="caller-number">{display}</p>
         {error && <p className="status-line error">{error}</p>}
         <div className="ring-actions">
           <span>
-            <button className="roundbtn decline" onClick={decline} aria-label="Decline">✕</button>
+            <button className="roundbtn decline" onClick={decline} aria-label="Decline"><XIcon size={30} /></button>
             <span className="roundbtn-label">Decline</span>
           </span>
           <span>
-            <button className="roundbtn accept" onClick={() => void accept()} aria-label="Accept">📞</button>
+            <button className="roundbtn accept" onClick={() => void accept()} aria-label="Accept"><PhoneIcon size={32} /></button>
             <span className="roundbtn-label">Accept</span>
           </span>
         </div>
@@ -360,9 +315,7 @@ export default function CallPage() {
     return (
       <main className="call-overlay captions-page">
         <div className="call-header">
-          <div className="avatar small" style={{ background: avatarColor(display) }}>
-            {initialOf(display)}
-          </div>
+          <Avatar name={display} variant="small" />
           <div className="call-header-info">
             <b>{display}</b>
             <span className="call-timer">{fmtDuration(callSeconds)}</span>
@@ -398,7 +351,7 @@ export default function CallPage() {
             onClick={() => setMuted((m) => !m)}
             aria-label={muted ? 'Unmute' : 'Mute'}
           >
-            {muted ? '🔇' : '🎤'}
+            {muted ? <MicOffIcon size={22} /> : <MicIcon size={22} />}
           </button>
           <button className="bigbtn stop" onClick={endCall}>End call</button>
         </div>
@@ -409,16 +362,14 @@ export default function CallPage() {
   if (pendingDial) {
     return (
       <main className="call-overlay call-ring">
-        <div className="avatar" style={{ background: avatarColor(pendingDial.name) }}>
-          {initialOf(pendingDial.name)}
-        </div>
+        <Avatar name={pendingDial.name} />
         <h2>Call</h2>
         <p className="caller-number">{pendingDial.name}</p>
         <p className="idle-hint">{fmtNumber(pendingDial.number)}</p>
         {error && <p className="status-line error">{error}</p>}
         <div className="ring-actions">
           <span>
-            <button className="roundbtn decline" onClick={() => navigate('/contacts')} aria-label="Back">✕</button>
+            <button className="roundbtn decline" onClick={() => navigate('/contacts')} aria-label="Back"><XIcon size={30} /></button>
             <span className="roundbtn-label">Back</span>
           </span>
           <span>
@@ -429,7 +380,7 @@ export default function CallPage() {
                 void startDial(pendingDial.number, pendingDial.name)
               }}
               aria-label="Call now"
-            >📞</button>
+            ><PhoneIcon size={32} /></button>
             <span className="roundbtn-label">Call now</span>
           </span>
         </div>
@@ -473,8 +424,28 @@ export default function CallPage() {
         <h3>Recent</h3>
         <button className="historylink" onClick={() => navigate('/history')}>See all</button>
       </div>
-      {recents.length === 0 && (
-        <p className="idle-hint">No calls yet — share your number above to get your first call.</p>
+      {recentsLoading && (
+        <div className="recents">
+          {[0, 1, 2].map((i) => (
+            <div className="recent-row" key={i}>
+              <div className="avatar tiny skeleton" />
+              <div className="recent-main">
+                <div className="skeleton skeleton-line w60" />
+                <div className="skeleton skeleton-line w40" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!recentsLoading && recents.length === 0 && (
+        <div className="howto-card">
+          <p className="howto-title">How SunoSathi works</p>
+          <ol className="howto-steps">
+            <li><b>Share your number</b> — family and friends call it like any phone number.</li>
+            <li><b>Phone rings here</b> — accept and read their words live on screen.</li>
+            <li><b>Speak normally</b> — they hear your own voice, no typing needed.</li>
+          </ol>
+        </div>
       )}
       <div className="recents">
         {recents.map((c) => {
@@ -483,9 +454,7 @@ export default function CallPage() {
           const out = c.direction === 'out'
           return (
             <div className="recent-row" key={c.id}>
-              <div className="avatar tiny" style={{ background: avatarColor(display) }}>
-                {initialOf(display)}
-              </div>
+              <Avatar name={display} variant="tiny" />
               <div className="recent-main">
                 <b className={missed ? 'missed-text' : ''}>{display}</b>
                 <small>
@@ -503,10 +472,7 @@ export default function CallPage() {
       </div>
 
       <button className="fab" aria-label="New call" onClick={() => navigate('/contacts')}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
-          <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
-          <path d="M15 5h6M18 2v6" />
-        </svg>
+        <NewCallIcon size={26} strokeWidth={2.2} />
       </button>
     </main>
   )

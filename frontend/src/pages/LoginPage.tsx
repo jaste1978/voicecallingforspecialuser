@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setAuth } from '../lib/auth'
+import { PhoneIcon } from '../components/icons'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -34,9 +35,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="settings-page" style={{ justifyContent: 'center' }}>
-      <section className="setting-block" style={{ marginTop: '8vh' }}>
-        <h3>Welcome to SunoSathi 🙏</h3>
+    <main className="settings-page login-page">
+      <div className="login-brand">
+        <span className="login-mark"><PhoneIcon size={26} /></span>
+        <h2>SunoSathi <span className="login-devanagari">सुनोसाथी</span></h2>
+        <p className="idle-hint">Your phone number. Their voice, your eyes.</p>
+      </div>
+      <section className="setting-block">
+        <h3>Welcome back 🙏</h3>
         <p className="idle-hint">Sign in to take your calls.</p>
         <form onSubmit={(e) => void submit(e)} style={{ display: 'grid', gap: 10, marginTop: 12 }}>
           <input

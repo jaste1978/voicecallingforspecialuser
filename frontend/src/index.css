@@ -34,6 +34,10 @@ body,
   line-height: 1.4;
 }
 
+a {
+  color: var(--accent-ink);
+}
+
 .app {
   display: flex;
   flex-direction: column;
@@ -1133,6 +1137,113 @@ select.lang.wide {
 .settings-list {
   justify-content: flex-start;
   padding-top: 16px;
+}
+
+/* ---------- skeletons ---------- */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--chip) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.skeleton-line {
+  height: 13px;
+  border-radius: 7px;
+  margin: 4px 0;
+}
+
+.skeleton-line.w60 { width: 60%; }
+.skeleton-line.w40 { width: 40%; }
+
+/* ---------- first-run how-it-works ---------- */
+.howto-card {
+  background: var(--panel);
+  border: 1px solid var(--divider);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.howto-title {
+  margin: 0 0 8px;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+.howto-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.howto-steps b {
+  color: var(--text);
+}
+
+/* ---------- login ---------- */
+.login-page {
+  justify-content: center;
+  gap: 18px;
+}
+
+.login-brand {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-brand h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.login-devanagari {
+  color: var(--dim);
+  font-weight: 400;
+}
+
+.login-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+/* ---------- shared icon chrome ---------- */
+.emoji.icon {
+  color: var(--accent-ink);
+}
+
+.contact-avatar.named {
+  color: #fff;
+}
+
+.bigbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.roundbtn svg,
+.iconbtn svg {
+  display: block;
 }
 
 /* ---------- contacts / dialer ---------- */

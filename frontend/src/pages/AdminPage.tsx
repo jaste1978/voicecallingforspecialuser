@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
+import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon } from '../components/icons'
 
 export default function SettingsTab() {
   const navigate = useNavigate()
@@ -18,14 +19,14 @@ export default function SettingsTab() {
   return (
     <main className="home settings-list">
       <button className="home-btn" onClick={() => navigate('/ringtone')}>
-        <span className="emoji">🔔</span>
+        <span className="emoji icon"><BellIcon size={28} /></span>
         <span>
           Ring & Vibration
           <small>Ringtone &amp; vibration alerts</small>
         </span>
       </button>
       <button className="home-btn" onClick={() => navigate('/captions')}>
-        <span className="emoji">💬</span>
+        <span className="emoji icon"><CaptionsIcon size={28} /></span>
         <span>
           Caption Tester
           <small>Test live captions with this device's mic</small>
@@ -35,21 +36,21 @@ export default function SettingsTab() {
         <>
           <p className="settings-group">Admin</p>
           <button className="home-btn" onClick={() => navigate('/models')}>
-            <span className="emoji">🤖</span>
+            <span className="emoji icon"><BotIcon size={28} /></span>
             <span>
               AI Models
               <small>Choose which model powers captions &amp; voice</small>
             </span>
           </button>
           <button className="home-btn" onClick={() => navigate('/monitor')}>
-            <span className="emoji">📊</span>
+            <span className="emoji icon"><ChartIcon size={28} /></span>
             <span>
               Call Monitor
               <small>Live status &amp; per-call health checks</small>
             </span>
           </button>
           <button className="home-btn" onClick={() => navigate('/waitlist')}>
-            <span className="emoji">📥</span>
+            <span className="emoji icon"><InboxIcon size={28} /></span>
             <span>
               Pilot Waitlist
               <small>Signups from sunosathi.com</small>
