@@ -108,10 +108,18 @@ async def api_users_create(payload: dict, request: Request):
     return {"ok": True, "id": uid}
 
 
+def _own_number() -> str:
+    raw = os.environ.get("VOBIZ_DID", "917971442451")
+    digits = "".join(c for c in raw if c.isdigit())
+    if len(digits) == 12 and digits.startswith("91"):
+        return f"+91 {digits[2:7]} {digits[7:]}"
+    return f"+{digits}"
+
+
 @app.get("/api/me")
 async def api_me(request: Request):
     user = _require_user(request)
-    return user
+    return {**user, "number": _own_number()}
 
 
 @app.get("/api/calls")

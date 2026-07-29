@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
 
-export default function AdminPage() {
+export default function SettingsTab() {
   const navigate = useNavigate()
 
   async function logout() {
@@ -16,39 +16,7 @@ export default function AdminPage() {
   const admin = isAdmin()
 
   return (
-    <main className="home">
-      {admin && (
-        <>
-          <button className="home-btn" onClick={() => navigate('/settings')}>
-            <span className="emoji">🤖</span>
-            <span>
-              AI Models
-              <small>Choose which model powers captions &amp; voice</small>
-            </span>
-          </button>
-          <button className="home-btn" onClick={() => navigate('/waitlist')}>
-            <span className="emoji">📥</span>
-            <span>
-              Pilot Waitlist
-              <small>Signups from sunosathi.com</small>
-            </span>
-          </button>
-          <button className="home-btn" onClick={() => navigate('/monitor')}>
-            <span className="emoji">📊</span>
-            <span>
-              Call Monitor
-              <small>Live status &amp; per-call health checks</small>
-            </span>
-          </button>
-        </>
-      )}
-      <button className="home-btn" onClick={() => navigate('/history')}>
-        <span className="emoji">🕓</span>
-        <span>
-          Call History
-          <small>Transcripts, recordings &amp; diagnostics</small>
-        </span>
-      </button>
+    <main className="home settings-list">
       <button className="home-btn" onClick={() => navigate('/ringtone')}>
         <span className="emoji">🔔</span>
         <span>
@@ -63,9 +31,44 @@ export default function AdminPage() {
           <small>Test live captions with this device's mic</small>
         </span>
       </button>
+      {admin && (
+        <>
+          <p className="settings-group">Admin</p>
+          <button className="home-btn" onClick={() => navigate('/models')}>
+            <span className="emoji">🤖</span>
+            <span>
+              AI Models
+              <small>Choose which model powers captions &amp; voice</small>
+            </span>
+          </button>
+          <button className="home-btn" onClick={() => navigate('/monitor')}>
+            <span className="emoji">📊</span>
+            <span>
+              Call Monitor
+              <small>Live status &amp; per-call health checks</small>
+            </span>
+          </button>
+          <button className="home-btn" onClick={() => navigate('/waitlist')}>
+            <span className="emoji">📥</span>
+            <span>
+              Pilot Waitlist
+              <small>Signups from sunosathi.com</small>
+            </span>
+          </button>
+        </>
+      )}
       <button className="historylink" onClick={() => void logout()}>
         Log out{authName() ? ` (${authName()})` : ''}
       </button>
+      <p className="version-line">
+        v{__APP_VERSION__} · deployed{' '}
+        {new Date(__BUILD_TIME__).toLocaleString([], {
+          day: '2-digit',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
+      </p>
     </main>
   )
 }

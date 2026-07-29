@@ -2,38 +2,41 @@ import { useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { getToken } from './lib/auth'
 import LoginPage from './pages/LoginPage'
-import HomePage from './pages/HomePage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
 import HistoryPage from './pages/HistoryPage'
 import ContactsPage from './pages/ContactsPage'
-import SettingsPage from './pages/SettingsPage'
-import AdminPage from './pages/AdminPage'
+import ModelsPage from './pages/SettingsPage'
+import SettingsTab from './pages/AdminPage'
 import RingtonePage from './pages/RingtonePage'
 import MonitorPage from './pages/MonitorPage'
 import WaitlistPage from './pages/WaitlistPage'
+import TabBar from './components/TabBar'
 
 const TITLES: Record<string, string> = {
-  '/': 'SunoSathi',
-  '/captions': 'Caption Tester',
+  '/': 'Calls',
   '/call': 'Calls',
-  '/contacts': 'New Call',
+  '/contacts': 'Contacts',
+  '/settings': 'Settings',
+  '/captions': 'Caption Tester',
   '/history': 'Call History',
-  '/settings': 'AI Models',
-  '/admin': 'Admin',
+  '/models': 'AI Models',
   '/ringtone': 'Ring & Vibration',
   '/monitor': 'Call Monitor',
   '/waitlist': 'Pilot Waitlist',
 }
 
-// pages that belong to the admin area go back to /admin, others to home
-const ADMIN_CHILDREN = new Set(['/captions', '/history', '/settings', '/ringtone', '/monitor', '/waitlist'])
+// main tab roots — no back button, tab bar visible
+const TAB_ROOTS = new Set(['/', '/call', '/contacts', '/settings'])
+// sub-pages that belong to the Settings tab
+const SETTINGS_CHILDREN = new Set([
+  '/captions', '/history', '/models', '/ringtone', '/monitor', '/waitlist',
+])
 
 export default function App() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
-  // the whole app requires login
   useEffect(() => {
     if (!getToken() && pathname !== '/login') {
       navigate('/login', { replace: true })
@@ -53,41 +56,37 @@ export default function App() {
     )
   }
 
+  const isTabRoot = TAB_ROOTS.has(pathname)
+
   return (
     <div className="app">
       <header className="topbar">
-        {pathname !== '/' && (
+        {!isTabRoot && (
           <button
             className="iconbtn"
             aria-label="Back"
-            onClick={() => navigate(ADMIN_CHILDREN.has(pathname) ? '/admin' : '/')}
+            onClick={() => navigate(SETTINGS_CHILDREN.has(pathname) ? '/settings' : '/')}
           >
             ←
           </button>
         )}
         <h1>{TITLES[pathname] ?? 'SunoSathi'}</h1>
-        {pathname === '/' && (
-          <button
-            className="iconbtn"
-            aria-label="Admin"
-            onClick={() => navigate('/admin')}
-          >
-            ⚙️
-          </button>
-        )}
       </header>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/captions" element={<CaptionsPage />} />
-        <Route path="/call" element={<CallPage />} />
-        <Route path="/contacts" element={<ContactsPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/ringtone" element={<RingtonePage />} />
-        <Route path="/monitor" element={<MonitorPage />} />
-        <Route path="/waitlist" element={<WaitlistPage />} />
-      </Routes>
+      <div className="content">
+        <Routes>
+          <Route path="/" element={<CallPage />} />
+          <Route path="/call" element={<CallPage />} />
+          <Route path="/contacts" element={<ContactsPage />} />
+          <Route path="/settings" element={<SettingsTab />} />
+          <Route path="/captions" element={<CaptionsPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/models" element={<ModelsPage />} />
+          <Route path="/ringtone" element={<RingtonePage />} />
+          <Route path="/monitor" element={<MonitorPage />} />
+          <Route path="/waitlist" element={<WaitlistPage />} />
+        </Routes>
+      </div>
+      <TabBar />
     </div>
   )
 }
