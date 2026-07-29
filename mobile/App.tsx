@@ -9,7 +9,8 @@ const RING_PATTERN = [0, 600, 300, 600, 300, 600, 300, 600]
 function handleNativeMessage(msg: string) {
   switch (msg) {
     case 'ring':
-      Vibration.vibrate(RING_PATTERN)
+      // repeat until cancelled — keeps vibrating as long as it rings
+      Vibration.vibrate(RING_PATTERN, true)
       break
     case 'ring_stop':
       Vibration.cancel()
