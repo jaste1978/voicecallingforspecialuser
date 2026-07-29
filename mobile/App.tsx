@@ -1,9 +1,34 @@
+import * as Haptics from 'expo-haptics'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, Vibration, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { APP_URL } from './config'
 
 const RING_PATTERN = [0, 600, 300, 600, 300, 600, 300, 600]
+
+function handleNativeMessage(msg: string) {
+  switch (msg) {
+    case 'ring':
+      Vibration.vibrate(RING_PATTERN)
+      break
+    case 'ring_stop':
+      Vibration.cancel()
+      break
+    case 'haptic:connect':
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      break
+    case 'haptic:speech':
+      // caller started speaking — a firm tap says "look at the screen"
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+      break
+    case 'haptic:caption':
+      void Haptics.selectionAsync()
+      break
+    case 'haptic:end':
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      break
+  }
+}
 
 export default function App() {
   return (
@@ -20,11 +45,7 @@ export default function App() {
         mediaPlaybackRequiresUserAction={false}
         mediaCapturePermissionGrantType="grant"
         // native bridge: the web app posts events, the shell reacts natively
-        onMessage={(e) => {
-          const msg = e.nativeEvent.data
-          if (msg === 'ring') Vibration.vibrate(RING_PATTERN)
-          else if (msg === 'ring_stop') Vibration.cancel()
-        }}
+        onMessage={(e) => handleNativeMessage(e.nativeEvent.data)}
         originWhitelist={['https://*', 'http://*']}
         setSupportMultipleWindows={false}
         allowsBackForwardNavigationGestures

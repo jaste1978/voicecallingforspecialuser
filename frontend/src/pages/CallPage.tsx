@@ -4,6 +4,7 @@ import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { connectCall, type CallClient } from '../lib/call-client'
 import { PcmPlayer } from '../lib/audio-playback'
 import { notifyNative } from '../lib/native-bridge'
+import { captionHapticEnabled, speechHapticEnabled } from '../lib/haptics-settings'
 import { Ringtone } from '../lib/ringtone'
 import type { LanguageKey } from '../lib/stt-client'
 
@@ -106,10 +107,12 @@ export default function CallPage() {
         } else if (e.type === 'call_started') {
           notifyNative('ring_stop')
           ringtoneRef.current?.stop()
+          notifyNative('haptic:connect')
           addSegment('sys', '✓ Call connected')
           setState('active')
         } else if (e.type === 'transcript' && e.text) {
           setSpeaking(false)
+          if (captionHapticEnabled()) notifyNative('haptic:caption')
           setSegments((prev) => {
             const last = prev[prev.length - 1]
             if (last && last.who === 'caller' && e.text!.startsWith(last.text)) {
@@ -124,9 +127,12 @@ export default function CallPage() {
             ]
           })
         } else if (e.type === 'vad') {
-          setSpeaking(e.signal === 'START_SPEECH')
+          const started = e.signal === 'START_SPEECH'
+          if (started && speechHapticEnabled()) notifyNative('haptic:speech')
+          setSpeaking(started)
         } else if (e.type === 'call_ended') {
           notifyNative('ring_stop')
+          notifyNative('haptic:end')
           setEndReason(e.reason || 'Call ended')
           stopCallMedia()
           setState('idle')

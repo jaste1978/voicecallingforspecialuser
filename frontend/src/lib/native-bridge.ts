@@ -6,6 +6,27 @@ declare global {
   }
 }
 
-export function notifyNative(msg: 'ring' | 'ring_stop') {
-  window.ReactNativeWebView?.postMessage(msg)
+export type NativeMsg =
+  | 'ring'
+  | 'ring_stop'
+  | 'haptic:connect'
+  | 'haptic:speech'
+  | 'haptic:caption'
+  | 'haptic:end'
+
+// short web-vibration fallbacks (Android browsers; iOS web ignores)
+const WEB_VIBRATE: Partial<Record<NativeMsg, number | number[]>> = {
+  'haptic:connect': [40, 60, 40],
+  'haptic:speech': 60,
+  'haptic:caption': 15,
+  'haptic:end': [80, 80, 80],
+}
+
+export function notifyNative(msg: NativeMsg) {
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(msg)
+    return
+  }
+  const pattern = WEB_VIBRATE[msg]
+  if (pattern) navigator.vibrate?.(pattern)
 }

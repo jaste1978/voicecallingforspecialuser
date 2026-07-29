@@ -18,7 +18,7 @@ const TITLES: Record<string, string> = {
   '/history': 'Call History',
   '/settings': 'AI Models',
   '/admin': 'Admin',
-  '/ringtone': 'Ringtone',
+  '/ringtone': 'Ring & Vibration',
   '/monitor': 'Call Monitor',
   '/waitlist': 'Pilot Waitlist',
 }

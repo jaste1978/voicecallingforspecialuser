@@ -6,10 +6,19 @@ import {
   setRingtoneEnabled,
   setRingtoneVolume,
 } from '../lib/ringtone-settings'
+import {
+  captionHapticEnabled,
+  setCaptionHaptic,
+  setSpeechHaptic,
+  speechHapticEnabled,
+} from '../lib/haptics-settings'
+import { notifyNative } from '../lib/native-bridge'
 
 export default function RingtonePage() {
   const [enabled, setEnabled] = useState(ringtoneEnabled())
   const [volume, setVolume] = useState(ringtoneVolume())
+  const [speechHaptic, setSpeechHapticState] = useState(speechHapticEnabled())
+  const [captionHaptic, setCaptionHapticState] = useState(captionHapticEnabled())
   const [testing, setTesting] = useState(false)
   const testRef = useRef<Ringtone | null>(null)
 
@@ -65,6 +74,40 @@ export default function RingtonePage() {
               onChange={(e) => changeVolume(Number(e.target.value))}
             />
             <p className="idle-hint">{Math.round(volume * 100)}%</p>
+          </section>
+
+          <section className="setting-block">
+            <h3>Vibration during calls</h3>
+            <p className="idle-hint">
+              Your phone taps you so you never have to stare at the screen.
+            </p>
+            <button
+              className={`bigbtn ${speechHaptic ? 'stop' : 'start'}`}
+              onClick={() => {
+                const next = !speechHaptic
+                setSpeechHapticState(next)
+                setSpeechHaptic(next)
+                if (next) notifyNative('haptic:speech')
+              }}
+            >
+              {speechHaptic
+                ? '📳 Caller-speaking tap: ON'
+                : '📴 Caller-speaking tap: OFF'}
+            </button>
+            <div style={{ height: 10 }} />
+            <button
+              className={`bigbtn ${captionHaptic ? 'stop' : 'start'}`}
+              onClick={() => {
+                const next = !captionHaptic
+                setCaptionHapticState(next)
+                setCaptionHaptic(next)
+                if (next) notifyNative('haptic:caption')
+              }}
+            >
+              {captionHaptic
+                ? '📳 Tick on every caption: ON'
+                : '📴 Tick on every caption: OFF'}
+            </button>
           </section>
 
           <section className="setting-block">

@@ -35,8 +35,8 @@ export default function AdminPage() {
       <button className="home-btn" onClick={() => navigate('/ringtone')}>
         <span className="emoji">🔔</span>
         <span>
-          Ringtone
-          <small>Sound on incoming calls</small>
+          Ring & Vibration
+          <small>Ringtone &amp; vibration alerts</small>
         </span>
       </button>
       <button className="home-btn" onClick={() => navigate('/captions')}>
