@@ -223,6 +223,9 @@ if _dist.is_dir():
         # app.sunosathi.com (and the railway URL) unchanged
         if path == "" and host in ("sunosathi.com", "www.sunosathi.com"):
             return FileResponse(_dist / "welcome.html")
+        if path == "robots.txt" and host not in ("sunosathi.com", "www.sunosathi.com"):
+            # the app host (and railway URL) should not be crawled at all
+            return Response("User-agent: *\nDisallow: /\n", media_type="text/plain")
         if path in ("welcome", "site", "about"):
             return FileResponse(_dist / "welcome.html")
         candidate = _dist / path

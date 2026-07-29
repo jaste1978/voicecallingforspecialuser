@@ -1,0 +1,26 @@
+# SunoSathi (सुनोसाथी)
+
+> SunoSathi gives deaf and hard-of-hearing people in India a real phone
+> number with live captions. When someone calls it, the user reads the
+> caller's words as live subtitles — in Hindi, Gujarati, English or
+> Hinglish, auto-detected — and replies with their own voice. The caller
+> needs no app: they dial a normal number and talk normally.
+
+## Key facts
+- Audience: 63 million deaf and hard-of-hearing Indians
+- Languages: Hindi, Gujarati, English, Hinglish (auto-detected per utterance);
+  unidentifiable speech is captioned phonetically in Latin letters
+- Captions arrive in under a second at natural speech pauses
+- Outbound calls to any number are supported; the callee hears the user's real voice
+- Every call is saved as transcript + audio for the user; caption accuracy is
+  automatically measured after each call
+- Speech-to-text: Sarvam AI (saaras v3); pluggable providers (Deepgram, Google)
+- Status: free public pilot (2026); join at https://sunosathi.com/#pilot
+- Built at the GrowthX buildathon; born from a LinkedIn build-in-public post
+
+## Pages
+- https://sunosathi.com/ : product story, how it works, pilot signup
+- https://app.sunosathi.com/ : the app itself (for pilot users)
+
+## Contact
+Pilot signups via the form at https://sunosathi.com/#pilot
