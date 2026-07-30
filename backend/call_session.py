@@ -89,26 +89,18 @@ class Call:
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
-class CallManager:
-    """Single-user MVP: one browser session, one active call at a time."""
+class UserLine:
+    """One user's phone line: their app screens + at most one active call.
+    Rings broadcast only to this user's sockets; other users' lines are
+    independent, so different users can be on calls at the same time."""
 
-    ENDED_TTL_S = 600
-
-    def __init__(self) -> None:
-        # every open app screen (phone, desktop tab...) — rings broadcast to all
+    def __init__(self, user_id: int, registry: "CallManager") -> None:
+        self.user_id = user_id
+        self.registry = registry
+        # every open app screen of THIS user (phone, desktop tab...)
         self.browser_sockets: set[WebSocket] = set()
         self.call: Optional[Call] = None
         self._lock = asyncio.Lock()
-        # call UUIDs we already tore down; Vobiz re-hits the Answer URL for a
-        # live call whose stream we closed, and that must NOT ring again
-        self._ended_uuids: dict[str, float] = {}
-
-    def was_recently_ended(self, call_uuid: str) -> bool:
-        now = time.time()
-        self._ended_uuids = {
-            u: t for u, t in self._ended_uuids.items() if now - t < self.ENDED_TTL_S
-        }
-        return call_uuid in self._ended_uuids
 
     # ---------- browser side ----------
 
@@ -282,6 +274,7 @@ class CallManager:
             call.recorder.call_uuid = call_uuid
             call.state = "pending"  # media stream comes next
             call.trace.event("outbound_answered")
+            self.registry.bind_uuid(call_uuid, self)
             return True
         return False
 
@@ -309,6 +302,7 @@ class CallManager:
                 logger.warning("second call %s while busy — ignoring", call_uuid)
                 return
             self.call = Call(call_uuid, from_number, to_number)
+        self.registry.bind_uuid(call_uuid, self)
         # Do NOT ring yet: wait for the Vobiz media stream so the user can
         # never accept a call with a dead audio path.
         asyncio.get_running_loop().call_later(
@@ -345,6 +339,7 @@ class CallManager:
         if call is None:
             # Stream arrived with no webhook context (e.g. backend restarted)
             self.call = call = Call(call_id or "unknown", "Unknown caller", "")
+            self.registry.bind_uuid(call.call_uuid, self)
         call.vobiz_ws = ws
         call.stream_id = stream_id
         fmt = start.get("mediaFormat", {})
@@ -474,7 +469,7 @@ class CallManager:
         if call is None or call.state == "ended":
             return
         call.state = "ended"
-        self._ended_uuids[call.call_uuid] = time.time()
+        self.registry.mark_ended(call.call_uuid)
         logger.info("call %s ended: %s", call.call_uuid, reason)
         if call.sarvam:
             await call.sarvam.close()
@@ -494,7 +489,7 @@ class CallManager:
                 call.call_uuid, call.from_number, call.to_number,
                 call.created_at, call.answered_at, reason,
                 call.language, call.transcript, call.trace.finish(),
-                call.direction,
+                call.direction, user_id=self.user_id,
             )
         except Exception:
             logger.exception("failed saving call history")
@@ -502,6 +497,111 @@ class CallManager:
             quality.schedule(call.call_uuid)
         await self._to_browser({"type": "call_ended", "reason": reason})
         self.call = None
+
+
+class CallManager:
+    """Registry of per-user lines. Routes Vobiz webhooks and media streams
+    to the owning user's line via the numbers mapping (ForwardedFrom / To);
+    unmatched calls fall back to the first admin so the original
+    single-tenant behaviour is preserved."""
+
+    ENDED_TTL_S = 600
+
+    def __init__(self) -> None:
+        self.lines: dict[int, UserLine] = {}
+        self.uuid_to_line: dict[str, UserLine] = {}
+        # call UUIDs we already tore down; Vobiz re-hits the Answer URL for a
+        # live call whose stream we closed, and that must NOT ring again
+        self._ended_uuids: dict[str, float] = {}
+
+    def line(self, user_id: int) -> UserLine:
+        if user_id not in self.lines:
+            self.lines[user_id] = UserLine(user_id, self)
+        return self.lines[user_id]
+
+    def default_line(self) -> Optional[UserLine]:
+        import auth
+        uid = auth.first_admin_id()
+        return self.line(uid) if uid is not None else None
+
+    def bind_uuid(self, call_uuid: str, line: UserLine) -> None:
+        self.uuid_to_line[call_uuid] = line
+
+    def mark_ended(self, call_uuid: str) -> None:
+        self._ended_uuids[call_uuid] = time.time()
+        self.uuid_to_line.pop(call_uuid, None)
+
+    def was_recently_ended(self, call_uuid: str) -> bool:
+        now = time.time()
+        self._ended_uuids = {
+            u: t for u, t in self._ended_uuids.items() if now - t < self.ENDED_TTL_S
+        }
+        return call_uuid in self._ended_uuids
+
+    async def route_incoming(
+        self, call_uuid: str, from_number: str, to_number: str,
+        forwarded_from: str = "",
+    ) -> None:
+        if call_uuid in self.uuid_to_line:
+            logger.info("duplicate answer webhook for %s — already routed", call_uuid)
+            return
+        import number_map
+        user_id = number_map.resolve(forwarded_from, to_number)
+        if user_id is not None:
+            line = self.line(user_id)
+            logger.info("call %s routed to user %s (fwd=%s)",
+                        call_uuid, user_id, forwarded_from or "-")
+        else:
+            line = self.default_line()
+            if line is None:
+                logger.warning("call %s: no user to route to — dropping", call_uuid)
+                return
+            logger.info("call %s unmatched (fwd=%s to=%s) — default line user %s",
+                        call_uuid, forwarded_from or "-", to_number, line.user_id)
+        await line.register_pending(call_uuid, from_number, to_number)
+
+    async def outbound_answered(self, call_uuid: str, to_number: str = "") -> bool:
+        """Find the line whose outbound dial this answer webhook belongs to."""
+        dialing = [
+            l for l in self.lines.values()
+            if l.call and l.call.direction == "out" and l.call.state == "dialing"
+        ]
+        if len(dialing) > 1 and to_number:
+            import number_map
+            tail = number_map._last10(to_number)
+            matched = [l for l in dialing if number_map._last10(l.call.to_number) == tail]
+            if matched:
+                dialing = matched
+        if dialing:
+            return await dialing[0].outbound_answered(call_uuid)
+        return False
+
+    async def stream_started(self, ws: WebSocket, start: dict) -> Optional[UserLine]:
+        call_id = start.get("callId") or ""
+        line = self.uuid_to_line.get(call_id)
+        if line is None:
+            # Stream with no webhook context (e.g. backend restarted mid-call)
+            line = self.default_line()
+            if line is None:
+                logger.warning("stream for unknown call %s and no default line", call_id)
+                return None
+        await line.vobiz_stream_started(ws, start)
+        return line
+
+    async def hangup_event(self, call_uuid: str, reason: str) -> None:
+        line = self.uuid_to_line.get(call_uuid)
+        if line is not None:
+            await line.vobiz_hangup_event(reason)
+            return
+        # no UUID in callback (or unknown): tell every line with a live call
+        for line in list(self.lines.values()):
+            if line.call and line.call.state != "ended":
+                await line.vobiz_hangup_event(reason)
+
+    async def outbound_ringing(self) -> None:
+        for line in list(self.lines.values()):
+            if line.call and line.call.direction == "out" and line.call.state == "dialing":
+                await line.outbound_ringing()
 
 
 manager = CallManager()

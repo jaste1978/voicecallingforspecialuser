@@ -40,6 +40,7 @@ def init() -> None:
             "ALTER TABLE calls ADD COLUMN direction TEXT DEFAULT 'in'",
             "ALTER TABLE calls ADD COLUMN quality_score INTEGER",
             "ALTER TABLE calls ADD COLUMN batch_transcript TEXT",
+            "ALTER TABLE calls ADD COLUMN user_id INTEGER",
         ):
             try:
                 conn.execute(ddl)
@@ -58,18 +59,20 @@ def save_call(
     transcript: list[str],
     timeline: list[dict] | None = None,
     direction: str = "in",
+    user_id: int | None = None,
 ) -> None:
     with _conn() as conn:
         conn.execute(
             "INSERT INTO calls (call_uuid, from_number, to_number, started_at,"
-            " answered_at, ended_at, reason, language, transcript, timeline, direction)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " answered_at, ended_at, reason, language, transcript, timeline,"
+            " direction, user_id)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 call_uuid, from_number, to_number, started_at,
                 answered_at, time.time(), reason, language,
                 json.dumps(transcript, ensure_ascii=False),
                 json.dumps(timeline or [], ensure_ascii=False),
-                direction,
+                direction, user_id,
             ),
         )
 
@@ -87,6 +90,13 @@ def get_by_uuid(call_uuid: str) -> dict | None:
     return d
 
 
+def assign_orphans(user_id: int) -> None:
+    """One-time migration: pre-multi-tenant rows belong to the first admin."""
+    with _conn() as conn:
+        conn.execute("UPDATE calls SET user_id = ? WHERE user_id IS NULL", (user_id,))
+        conn.execute("UPDATE contacts SET user_id = ? WHERE user_id IS NULL", (user_id,))
+
+
 def update_quality(call_uuid: str, score: int, batch_transcript: str) -> None:
     with _conn() as conn:
         conn.execute(
@@ -96,11 +106,18 @@ def update_quality(call_uuid: str, score: int, batch_transcript: str) -> None:
         )
 
 
-def list_calls(limit: int = 50) -> list[dict]:
+def list_calls(limit: int = 50, user_id: int | None = None) -> list[dict]:
     with _conn() as conn:
-        rows = conn.execute(
-            "SELECT * FROM calls ORDER BY started_at DESC LIMIT ?", (limit,)
-        ).fetchall()
+        if user_id is None:
+            rows = conn.execute(
+                "SELECT * FROM calls ORDER BY started_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM calls WHERE user_id = ?"
+                " ORDER BY started_at DESC LIMIT ?",
+                (user_id, limit),
+            ).fetchall()
     out = []
     for r in rows:
         d = dict(r)

@@ -55,6 +55,16 @@ def _is_admin_req(request: Request) -> bool:
 app = FastAPI(title="SunoSathi backend")
 app.include_router(vobiz_router)
 
+# Multi-tenant migration: ensure tables exist, then hand pre-tenant rows
+# (calls/contacts with no user_id) to the first admin.
+import contacts as _contacts  # noqa: E402,F401  (creates table on import)
+import number_map as _number_map  # noqa: E402,F401  (creates table on import)
+import history as _history  # noqa: E402
+
+_admin_id = auth.first_admin_id()
+if _admin_id is not None:
+    _history.assign_orphans(_admin_id)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # dev-friendly; tighten when deployed
@@ -108,25 +118,42 @@ async def api_users_create(payload: dict, request: Request):
     return {"ok": True, "id": uid}
 
 
-def _own_number() -> str:
-    raw = os.environ.get("VOBIZ_DID", "917971442451")
+def _fmt_number(raw: str) -> str:
     digits = "".join(c for c in raw if c.isdigit())
     if len(digits) == 12 and digits.startswith("91"):
         return f"+91 {digits[2:7]} {digits[7:]}"
-    return f"+{digits}"
+    if len(digits) == 10:
+        return f"+91 {digits[:5]} {digits[5:]}"
+    return f"+{digits}" if digits else raw
+
+
+def _did_digits() -> str:
+    raw = os.environ.get("VOBIZ_DID", "917971442451")
+    return "".join(c for c in raw if c.isdigit())
 
 
 @app.get("/api/me")
 async def api_me(request: Request):
     user = _require_user(request)
-    return {**user, "number": _own_number()}
+    import number_map
+    own = number_map.number_for_user(user["id"])
+    did = _did_digits()
+    return {
+        **user,
+        # the number callers dial: the user's own forwarded number, or the
+        # shared DID until one is registered
+        "number": _fmt_number(own) if own else _fmt_number(did),
+        "did": _fmt_number(did),
+        "forward_code": f"**21*0{did[2:] if did.startswith('91') else did}#",
+        "has_own_number": own is not None,
+    }
 
 
 @app.get("/api/calls")
 async def api_calls(request: Request):
-    _require_user(request)
+    user = _require_user(request)
     import history
-    return {"calls": history.list_calls()}
+    return {"calls": history.list_calls(user_id=user["id"])}
 
 
 @app.get("/api/settings")
@@ -182,12 +209,23 @@ async def api_monitor(request: Request):
     import observability
     from call_session import manager
 
-    call = manager.call
+    lines = []
+    screens_total = 0
+    for line in manager.lines.values():
+        screens_total += len(line.browser_sockets)
+        lines.append({
+            "user_id": line.user_id,
+            "screens": len(line.browser_sockets),
+            "call_state": line.call.state if line.call else "none",
+            "call_from": line.call.from_number if line.call else None,
+        })
+    active = next((l for l in lines if l["call_state"] not in ("none", "ended")), None)
     return {
         "live": {
-            "screens_connected": len(manager.browser_sockets),
-            "call_state": call.state if call else "none",
-            "call_from": call.from_number if call else None,
+            "screens_connected": screens_total,
+            "call_state": active["call_state"] if active else "none",
+            "call_from": active["call_from"] if active else None,
+            "lines": lines,
         },
         "calls": [observability.analyze(c) for c in history.list_calls(30)],
     }
@@ -215,27 +253,59 @@ async def api_provider_delete(config_id: int, request: Request):
 
 @app.get("/api/contacts")
 async def api_contacts_list(request: Request):
-    _require_user(request)
+    user = _require_user(request)
     import contacts
-    return {"contacts": contacts.list_contacts()}
+    return {"contacts": contacts.list_contacts(user_id=user["id"])}
 
 
 @app.post("/api/contacts")
 async def api_contacts_add(payload: dict, request: Request):
-    _require_user(request)
+    user = _require_user(request)
     import contacts
     name = (payload.get("name") or "").strip()
     number = (payload.get("number") or "").strip()
     if not name or not number:
         return Response(status_code=422)
-    return contacts.add_contact(name, number)
+    return contacts.add_contact(name, number, user_id=user["id"])
 
 
 @app.delete("/api/contacts/{contact_id}")
 async def api_contacts_delete(contact_id: int, request: Request):
-    _require_user(request)
+    user = _require_user(request)
     import contacts
-    contacts.delete_contact(contact_id)
+    contacts.delete_contact(contact_id, user_id=user["id"])
+    return {"ok": True}
+
+
+# ---------- number -> user routing (admin) ----------
+
+@app.get("/api/numbers")
+async def api_numbers_list(request: Request):
+    _require_admin(request)
+    import number_map
+    return {"numbers": number_map.list_numbers()}
+
+
+@app.post("/api/numbers")
+async def api_numbers_add(payload: dict, request: Request):
+    _require_admin(request)
+    import number_map
+    try:
+        return number_map.add_number(
+            int(payload.get("user_id", 0)),
+            str(payload.get("number") or ""),
+            str(payload.get("kind") or "forwarded"),
+        )
+    except Exception as exc:
+        logger.warning("add_number rejected: %s", exc)
+        return Response(status_code=422)
+
+
+@app.delete("/api/numbers/{number_id}")
+async def api_numbers_delete(number_id: int, request: Request):
+    _require_admin(request)
+    import number_map
+    number_map.delete_number(number_id)
     return {"ok": True}
 
 
@@ -251,10 +321,15 @@ async def api_call_rescore(call_uuid: str, request: Request):
 
 @app.get("/api/calls/{call_uuid}/audio/{track}")
 async def api_call_audio(call_uuid: str, track: str, request: Request):
-    _require_user(request)
+    user = _require_user(request)
+    import history
     import recorder
     from fastapi.responses import FileResponse
 
+    call = history.get_by_uuid(call_uuid)
+    owner = call.get("user_id") if call else None
+    if user.get("role") != "admin" and owner is not None and owner != user["id"]:
+        return Response(status_code=403)
     path = recorder.path_for(call_uuid, track)
     if path is None:
         return Response(status_code=404)

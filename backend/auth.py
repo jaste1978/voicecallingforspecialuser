@@ -96,3 +96,14 @@ def delete_session(token: str) -> None:
 
 
 init()
+
+
+def first_admin_id() -> int | None:
+    """Fallback owner for calls that match no registered number."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1"
+        ).fetchone()
+        if row is None:
+            row = conn.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    return row["id"] if row else None
