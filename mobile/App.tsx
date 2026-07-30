@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics'
 import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Vibration, View } from 'react-native'
+import { useEffect } from 'react'
+import { PermissionsAndroid, Platform, StyleSheet, Vibration, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { APP_URL } from './config'
 
@@ -32,9 +33,16 @@ function handleNativeMessage(msg: string) {
 }
 
 export default function App() {
+  useEffect(() => {
+    // the page's getUserMedia needs the app-level mic permission on Android
+    if (Platform.OS === 'android') {
+      void PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+    }
+  }, [])
+
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <WebView
         source={{
           uri: APP_URL,
@@ -56,6 +64,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-  web: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: '#FFF8F1' },
+  web: { flex: 1, backgroundColor: '#FFF8F1' },
 })
