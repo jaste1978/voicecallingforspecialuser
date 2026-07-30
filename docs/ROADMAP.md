@@ -29,11 +29,16 @@ _Last updated: 29 Jul 2026_
 
 ## Product roadmap
 
-- [ ] **Multi-tenant** — per-user numbers, per-user call history/contacts.
-      Blocker for onboarding independent pilot users (today everyone shares
-      one line and would see the same history). Biggest remaining build.
+- [x] **Multi-tenant** — SHIPPED v0.15.0 (2026-07-30). Model A confirmed
+      live: Vobiz sends ForwardedFrom on forwarded calls. Per-user lines
+      (concurrent calls, isolated rings), number_map routing with admin
+      /api/numbers CRUD, user-scoped history/contacts, per-user /api/me.
+      Onboarding a pilot user = create user + register number + send the
+      forward code. Remaining niceties: admin UI for users/numbers
+      (API-only today), per-user provider prefs if ever needed. CHECK
+      Vobiz channel limit on the shared DID before scaling users.
 
-      **Plan (2026-07-30).** Users keep their existing mobile number and
+      **Original plan (2026-07-30).** Users keep their existing mobile number and
       call-forward it to a SunoSathi number (`**21*<did>#` = forward-all on
       GSM). Two routing models:
       - **Model A — shared DID:** many users forward to one DID; we route by
