@@ -39,6 +39,14 @@ async def vobiz_answer(request: Request):
     from_number = params.get("From") or "Unknown caller"
     to_number = params.get("To") or ""
     logger.info("incoming call %s from %s to %s", call_uuid, from_number, to_number)
+    # Multi-tenant research: log EVERY field Vobiz sends so we can see
+    # whether forwarded calls carry the forwarded-from (diversion) number.
+    logger.info("webhook payload %s: %s", call_uuid,
+                json.dumps(params, ensure_ascii=False, default=str))
+    fwd_headers = {k: v for k, v in request.headers.items()
+                   if any(s in k.lower() for s in ("divers", "forward", "history", "referred"))}
+    if fwd_headers:
+        logger.info("webhook fwd headers %s: %s", call_uuid, fwd_headers)
 
     if request.query_params.get("direction") == "out":
         # Callee answered our outbound call: reuse the same media bridge
