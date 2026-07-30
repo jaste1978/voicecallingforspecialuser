@@ -1189,6 +1189,42 @@ select.lang.wide {
   color: var(--text);
 }
 
+/* ---------- one-time forwarding setup ---------- */
+.setup-card {
+  background: var(--panel);
+  border: 1.5px solid var(--accent);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.setup-text {
+  margin: 6px 0;
+  color: var(--dim);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.forward-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.forward-code {
+  flex: 1;
+  background: var(--chip);
+  border: 1px dashed var(--accent-ink);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  text-align: center;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
 /* ---------- login ---------- */
 .login-page {
   justify-content: center;

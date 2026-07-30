@@ -67,6 +67,9 @@ export default function CallPage() {
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 22)
   const [callSeconds, setCallSeconds] = useState(0)
   const [ownNumber, setOwnNumber] = useState('')
+  const [hasOwnNumber, setHasOwnNumber] = useState(true)
+  const [forwardCode, setForwardCode] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
   const [recents, setRecents] = useState<RecentCall[]>([])
   const [recentsLoading, setRecentsLoading] = useState(true)
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -127,7 +130,11 @@ export default function CallPage() {
     if (state !== 'idle') return
     authFetch('/api/me')
       .then((r) => r.json())
-      .then((d) => setOwnNumber(d.number || ''))
+      .then((d) => {
+        setOwnNumber(d.number || '')
+        setHasOwnNumber(Boolean(d.has_own_number))
+        setForwardCode(d.forward_code || '')
+      })
       .catch(() => {})
     authFetch('/api/calls')
       .then((r) => r.json())
@@ -395,16 +402,16 @@ export default function CallPage() {
         {connected ? '🟢 Ready for calls' : '📡 Reconnecting…'}
       </div>
 
-      {ownNumber && (
+      {hasOwnNumber && ownNumber && (
         <div className="number-card">
           <div>
-            <small>Your SunoSathi number</small>
+            <small>Your number</small>
             <b>{ownNumber}</b>
           </div>
           <button
             className="sharebtn"
             onClick={() => {
-              const text = `Call me on my SunoSathi number: ${ownNumber}`
+              const text = `Call me on ${ownNumber} — I read your words live with SunoSathi.`
               if (navigator.share) void navigator.share({ text })
               else {
                 void navigator.clipboard?.writeText(text)
@@ -415,6 +422,31 @@ export default function CallPage() {
           >
             {shared ? '✓ Copied' : 'Share'}
           </button>
+        </div>
+      )}
+
+      {!recentsLoading && recents.length === 0 && forwardCode && (
+        <div className="setup-card">
+          <p className="howto-title">One-time setup</p>
+          <p className="setup-text">
+            Dial this code from your phone to forward your calls to SunoSathi:
+          </p>
+          <div className="forward-code-row">
+            <code className="forward-code">{forwardCode}</code>
+            <button
+              className="promptbtn"
+              onClick={() => {
+                void navigator.clipboard?.writeText(forwardCode)
+                setCodeCopied(true)
+                setTimeout(() => setCodeCopied(false), 2000)
+              }}
+            >
+              {codeCopied ? '✓' : 'Copy'}
+            </button>
+          </div>
+          <p className="setup-text">
+            That's it — once done, your calls ring here and you're good to go.
+          </p>
         </div>
       )}
 
@@ -439,10 +471,9 @@ export default function CallPage() {
       )}
       {!recentsLoading && recents.length === 0 && (
         <div className="howto-card">
-          <p className="howto-title">How SunoSathi works</p>
+          <p className="howto-title">How it works</p>
           <ol className="howto-steps">
-            <li><b>Share your number</b> — family and friends call it like any phone number.</li>
-            <li><b>Phone rings here</b> — accept and read their words live on screen.</li>
+            <li><b>Calls ring here</b> — accept and read the caller's words live on screen.</li>
             <li><b>Speak normally</b> — they hear your own voice, no typing needed.</li>
           </ol>
         </div>
