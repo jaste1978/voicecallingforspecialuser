@@ -17,7 +17,7 @@ import logging
 import os
 import struct
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Optional
 
 from fastapi import WebSocket
@@ -38,6 +38,98 @@ AUDIO_STATS_EVERY = 250  # frames (~5s of 20ms telephony frames)
 # the language is likely unidentifiable — switch to as-it-sounds Roman output
 RESCUE_AFTER_MS = int(os.environ.get("RESCUE_AFTER_MS", "8000"))
 LOUDNESS_RMS = 400  # int16 RMS above which a frame counts as speech-ish
+
+# Noise gate: ambient noise reaching the STT makes it hallucinate captions
+# in random languages. Only speech-like audio is forwarded; quieter frames
+# become silence (the model can't hallucinate from zeros). The user still
+# hears, and we still record, the caller's raw audio.
+NOISE_GATE = os.environ.get("NOISE_GATE", "1") != "0"
+GATE_MIN_LEVEL = int(os.environ.get("GATE_MIN_LEVEL", "350"))   # abs floor
+GATE_OPEN_FACTOR = float(os.environ.get("GATE_OPEN_FACTOR", "3.0"))
+GATE_ATTACK_FRAMES = 2      # consecutive loud frames before opening
+GATE_HANG_MS = 700          # stay open through natural word gaps
+GATE_PREROLL_MS = 240       # replay this much audio on open (word onsets)
+GATE_MAX_LOUD_MS = 10000    # loud with NO word gap this long = steady noise
+
+
+def _mean_abs(pcm: bytes) -> int:
+    n = len(pcm) // 2
+    if n == 0:
+        return 0
+    samples = struct.unpack(f"<{n}h", pcm[: n * 2])
+    return sum(abs(s) for s in samples) // n
+
+
+class NoiseGate:
+    """Adaptive energy squelch for the STT feed."""
+
+    def __init__(self) -> None:
+        self.floor = 200.0          # running ambient-noise estimate
+        self.is_open = False
+        self._attack = 0
+        self._hang_ms = 0.0
+        self._loud_run_ms = 0.0     # time above threshold with no gap at all
+        self._preroll: deque[bytes] = deque()
+        self._preroll_ms = 0.0
+        self.opens = 0
+        self.reclassified = 0       # steady-noise detections
+
+    def process(self, pcm: bytes) -> tuple[bytes, bool]:
+        """Returns (audio for the STT, is_speech). Non-speech comes back as
+        an equally sized silence frame so stream cadence and VAD end-of-
+        speech finalization keep working."""
+        level = _mean_abs(pcm)
+        frame_ms = (len(pcm) // 2) * 1000 / 16000
+        threshold = max(GATE_MIN_LEVEL, self.floor * GATE_OPEN_FACTOR)
+
+        if self.is_open:
+            if level >= threshold:
+                self._hang_ms = GATE_HANG_MS
+                self._loud_run_ms += frame_ms
+                if self._loud_run_ms >= GATE_MAX_LOUD_MS:
+                    # speech always has word gaps; an unbroken loud run this
+                    # long is machinery/TV — learn it as the new floor
+                    self.floor = min(2000.0, max(self.floor, level * 0.6))
+                    self.is_open = False
+                    self._attack = 0
+                    self._loud_run_ms = 0.0
+                    self.reclassified += 1
+                    return b"\x00" * len(pcm), False
+            else:
+                self._loud_run_ms = 0.0
+                self._hang_ms -= frame_ms
+                if self._hang_ms <= 0:
+                    self.is_open = False
+                    self._attack = 0
+            return pcm, True  # hangover frames still pass
+
+        # gate closed: keep learning the ambient level from quiet frames
+        if level < threshold:
+            self.floor = min(2000.0, max(60.0, self.floor * 0.97 + level * 0.03))
+            self._attack = 0
+            self._push_preroll(pcm, frame_ms)
+            return b"\x00" * len(pcm), False
+
+        self._attack += 1
+        if self._attack < GATE_ATTACK_FRAMES:
+            self._push_preroll(pcm, frame_ms)
+            return b"\x00" * len(pcm), False
+
+        # speech confirmed: open and replay the pre-roll so onsets survive
+        self.is_open = True
+        self.opens += 1
+        self._hang_ms = GATE_HANG_MS
+        out = b"".join(self._preroll) + pcm
+        self._preroll.clear()
+        self._preroll_ms = 0.0
+        return out, True
+
+    def _push_preroll(self, pcm: bytes, frame_ms: float) -> None:
+        self._preroll.append(pcm)
+        self._preroll_ms += frame_ms
+        while self._preroll_ms > GATE_PREROLL_MS and len(self._preroll) > 1:
+            dropped = self._preroll.popleft()
+            self._preroll_ms -= (len(dropped) // 2) * 1000 / 16000
 
 
 class Tracer:
@@ -86,6 +178,7 @@ class Call:
         self.stt_label = ""
         self.loud_ms = 0        # loud caller audio since the last caption
         self.rescued = False    # already switched to romanized output
+        self.gate = NoiseGate() if NOISE_GATE else None
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -358,7 +451,13 @@ class UserLine:
             return  # ignore audio while ringing
         pcm = base64.b64decode(payload_b64)
         call.recorder.write("caller", pcm)
-        await self._rescue_check(call, pcm)
+        if call.gate is not None:
+            stt_pcm, speechy = call.gate.process(pcm)
+            call.trace.count("gate_speech_ms" if speechy else "gate_noise_ms",
+                             (len(pcm) // 2) * 1000 // 16000)
+        else:
+            stt_pcm, speechy = pcm, True
+        await self._rescue_check(call, pcm, speechy)
         n = call.trace.count("caller_audio_frames")
         call.trace.count("caller_audio_bytes", len(pcm))
         if n == 1:
@@ -367,25 +466,25 @@ class UserLine:
             call.trace.event(
                 "caller_audio_stats", frames=n,
                 kb=call.trace.counters["caller_audio_bytes"] // 1024,
+                gate_opens=call.gate.opens if call.gate else None,
             )
         if call.sarvam:
             try:
-                await call.sarvam.send_pcm(pcm)
+                await call.sarvam.send_pcm(stt_pcm)
             except Exception:
                 logger.exception("sarvam send failed")
         await self._to_browser_audio(pcm)
 
-    async def _rescue_check(self, call: Call, pcm: bytes) -> None:
+    async def _rescue_check(self, call: Call, pcm: bytes, speechy: bool = True) -> None:
         """If plenty of loud speech produced zero captions, the language is
         likely one the model can't identify — switch to romanized output that
-        writes the sounds in English letters."""
+        writes the sounds in English letters. Only gate-approved speech counts,
+        so ambient noise can no longer trigger the rescue."""
         if call.rescued or call.language == "romanized" or len(pcm) < 4:
             return
         n_samples = len(pcm) // 2
-        samples = struct.unpack(f"<{n_samples}h", pcm[: n_samples * 2])
-        mean_abs = sum(abs(s) for s in samples) // n_samples
         frame_ms = (n_samples * 1000) // 16000
-        if mean_abs >= LOUDNESS_RMS:
+        if speechy and _mean_abs(pcm) >= LOUDNESS_RMS:
             call.loud_ms += frame_ms
         if call.loud_ms >= RESCUE_AFTER_MS:
             call.rescued = True
