@@ -12,6 +12,7 @@ import RingtonePage from './pages/RingtonePage'
 import MonitorPage from './pages/MonitorPage'
 import WaitlistPage from './pages/WaitlistPage'
 import UsersPage from './pages/UsersPage'
+import StartPage from './pages/StartPage'
 import TabBar from './components/TabBar'
 
 const TITLES: Record<string, string> = {
@@ -40,10 +41,23 @@ export default function App() {
   const { pathname } = useLocation()
 
   useEffect(() => {
-    if (!getToken() && pathname !== '/login') {
-      navigate('/login', { replace: true })
+    const authed = Boolean(getToken())
+    if (!authed && pathname !== '/login' && pathname !== '/start') {
+      navigate('/start', { replace: true })
+    } else if (authed && pathname === '/start') {
+      navigate('/', { replace: true })
     }
   }, [pathname, navigate])
+
+  if (pathname === '/start') {
+    return (
+      <div className="app">
+        <Routes>
+          <Route path="/start" element={<StartPage />} />
+        </Routes>
+      </div>
+    )
+  }
 
   if (pathname === '/login') {
     return (

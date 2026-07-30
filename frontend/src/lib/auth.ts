@@ -41,7 +41,7 @@ export async function authFetch(input: string, init: RequestInit = {}): Promise<
   const resp = await fetch(input, { ...init, headers })
   if (resp.status === 401) {
     clearAuth()
-    window.location.href = '/login'
+    window.location.href = '/start'
   }
   return resp
 }
