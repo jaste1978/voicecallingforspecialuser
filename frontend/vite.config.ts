@@ -22,7 +22,7 @@ export default defineConfig({
       workbox: {
         // marketing site + backend endpoints must never be hijacked by the
         // app shell's navigation fallback
-        navigateFallbackDenylist: [/^\/welcome/, /^\/site/, /^\/about/, /^\/api/, /^\/vobiz/, /^\/ws/],
+        navigateFallbackDenylist: [/^\/welcome/, /^\/site/, /^\/about/, /^\/api/, /^\/vobiz/, /^\/ws/, /^\/ios/],
       },
       manifest: {
         name: 'SunoSathi — Hearing Helper',

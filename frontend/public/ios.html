@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>SunoSathi — iPhone testing</title>
+<style>
+:root{--bg:#FFF8F1;--panel:#fff;--surface:#FFEFE0;--text:#241B12;--dim:#8A7767;--accent:#E4590A;--accent-ink:#C2410C;--chip:#FFF3E7;--divider:#F0E0D0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari',sans-serif;line-height:1.55}
+.wrap{max-width:560px;margin:0 auto;padding:36px 20px 60px;text-align:center}
+.mark{width:52px;height:52px;border-radius:50%;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:24px}
+h1{font-size:26px;margin:12px 0 4px}
+h1 span{color:var(--dim);font-weight:400}
+.sub{color:var(--dim);margin:0 0 26px}
+.step{background:var(--panel);border:1px solid var(--divider);border-radius:18px;padding:20px;margin:14px 0;text-align:left;display:flex;gap:14px;align-items:flex-start}
+.n{flex:0 0 34px;height:34px;border-radius:50%;background:var(--chip);color:var(--accent-ink);font-weight:800;display:flex;align-items:center;justify-content:center}
+.step b{display:block;font-size:17px;margin-bottom:2px}
+.step p{margin:0;color:var(--dim);font-size:14.5px}
+.step a{color:var(--accent-ink);font-weight:700}
+.qrbox{background:#fff;border:1.5px solid var(--accent);border-radius:18px;padding:18px;display:inline-block;margin:6px 0 2px}
+.qrbox img{width:250px;height:250px;display:block;image-rendering:pixelated}
+.qrnote{color:var(--dim);font-size:13px;margin-top:16px}
+.live{display:inline-block;background:var(--chip);color:var(--accent-ink);border:1px solid var(--divider);border-radius:12px;font-size:13px;font-weight:700;padding:5px 12px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="mark">📞</span>
+  <h1>SunoSathi <span>सुनोसाथी</span> on iPhone</h1>
+  <p class="sub">Test the app in 2 minutes — no App Store release needed.</p>
+
+  <div class="step"><span class="n">1</span><div>
+    <b>Install "Expo Go"</b>
+    <p>Free app from the <a href="https://apps.apple.com/app/expo-go/id982107779">App Store</a>. It safely runs test versions of apps.</p>
+  </div></div>
+
+  <div class="step"><span class="n">2</span><div>
+    <b>Scan this QR with your iPhone Camera</b>
+    <p>Point the normal Camera app at the code below and tap the banner that appears — it opens in Expo Go.</p>
+  </div></div>
+
+  <div class="qrbox"><img src="data:image/png;base64,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" alt="QR code to open SunoSathi in Expo Go"></div>
+
+  <div class="step"><span class="n">3</span><div>
+    <b>Sign in and test</b>
+    <p>Use the login you received on WhatsApp. Allow the microphone when asked — that's your voice reaching the caller.</p>
+  </div></div>
+
+  <p class="qrnote"><span class="live">🟠 Testing window</span><br>
+  This QR works while the SunoSathi test bridge is on. If it doesn't load,
+  message us and we'll switch it on — or use the app in Safari at
+  <a href="https://app.sunosathi.com">app.sunosathi.com</a> (Share → Add to Home Screen).</p>
+</div>
+</body>
+</html>

@@ -417,6 +417,8 @@ if _dist.is_dir():
             return Response("User-agent: *\nDisallow: /\n", media_type="text/plain")
         if path in ("welcome", "site", "about"):
             return FileResponse(_dist / "welcome.html")
+        if path == "ios":
+            return FileResponse(_dist / "ios.html")
         candidate = _dist / path
         if path and ".." not in path and candidate.is_file():
             return FileResponse(candidate)
