@@ -277,6 +277,17 @@ async def api_contacts_delete(contact_id: int, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/users")
+async def api_users_list(request: Request):
+    _require_admin(request)
+    import number_map
+    users = auth.list_users()
+    nums = number_map.list_numbers()
+    for u in users:
+        u["numbers"] = [n for n in nums if n["user_id"] == u["id"]]
+    return {"users": users}
+
+
 # ---------- number -> user routing (admin) ----------
 
 @app.get("/api/numbers")

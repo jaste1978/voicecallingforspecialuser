@@ -107,3 +107,11 @@ def first_admin_id() -> int | None:
         if row is None:
             row = conn.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
     return row["id"] if row else None
+
+
+def list_users() -> list[dict]:
+    with _conn() as conn:
+        rows = conn.execute(
+            "SELECT id, email, name, role, created_at FROM users ORDER BY id"
+        ).fetchall()
+    return [dict(r) for r in rows]

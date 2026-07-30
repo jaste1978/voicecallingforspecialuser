@@ -11,6 +11,7 @@ import SettingsTab from './pages/AdminPage'
 import RingtonePage from './pages/RingtonePage'
 import MonitorPage from './pages/MonitorPage'
 import WaitlistPage from './pages/WaitlistPage'
+import UsersPage from './pages/UsersPage'
 import TabBar from './components/TabBar'
 
 const TITLES: Record<string, string> = {
@@ -24,13 +25,14 @@ const TITLES: Record<string, string> = {
   '/ringtone': 'Ring & Vibration',
   '/monitor': 'Call Monitor',
   '/waitlist': 'Pilot Waitlist',
+  '/users': 'Users & Numbers',
 }
 
 // main tab roots — no back button, tab bar visible
 const TAB_ROOTS = new Set(['/', '/call', '/contacts', '/settings'])
 // sub-pages that belong to the Settings tab
 const SETTINGS_CHILDREN = new Set([
-  '/captions', '/history', '/models', '/ringtone', '/monitor', '/waitlist',
+  '/captions', '/history', '/models', '/ringtone', '/monitor', '/waitlist', '/users',
 ])
 
 export default function App() {
@@ -84,6 +86,7 @@ export default function App() {
           <Route path="/ringtone" element={<RingtonePage />} />
           <Route path="/monitor" element={<MonitorPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
+          <Route path="/users" element={<UsersPage />} />
         </Routes>
       </div>
       <TabBar />

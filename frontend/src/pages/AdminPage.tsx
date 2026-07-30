@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
-import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon } from '../components/icons'
+import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon } from '../components/icons'
 
 export default function SettingsTab() {
   const navigate = useNavigate()
@@ -35,6 +35,13 @@ export default function SettingsTab() {
       {admin && (
         <>
           <p className="settings-group">Admin</p>
+          <button className="home-btn" onClick={() => navigate('/users')}>
+            <span className="emoji icon"><PhoneIncomingIcon size={28} /></span>
+            <span>
+              Users &amp; Numbers
+              <small>Onboard pilot users &amp; link their numbers</small>
+            </span>
+          </button>
           <button className="home-btn" onClick={() => navigate('/models')}>
             <span className="emoji icon"><BotIcon size={28} /></span>
             <span>
