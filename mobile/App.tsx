@@ -4,10 +4,17 @@ import { useEffect } from 'react'
 import { PermissionsAndroid, Platform, StyleSheet, Vibration, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { APP_URL } from './config'
+import { resumeRingServiceIfLoggedIn, setRingToken } from './ring-service'
 
 const RING_PATTERN = [0, 600, 300, 600, 300, 600, 300, 600]
 
 function handleNativeMessage(msg: string) {
+  if (msg.startsWith('auth:')) {
+    // web app hands over (or clears) the session token so the background
+    // ring service can watch for calls with the app closed
+    void setRingToken(msg.slice(5))
+    return
+  }
   switch (msg) {
     case 'ring':
       // repeat until cancelled — keeps vibrating as long as it rings
@@ -37,6 +44,8 @@ export default function App() {
     // the page's getUserMedia needs the app-level mic permission on Android
     if (Platform.OS === 'android') {
       void PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+      // phone restarted / app relaunched: bring the call watch back up
+      void resumeRingServiceIfLoggedIn()
     }
   }, [])
 

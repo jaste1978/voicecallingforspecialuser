@@ -30,3 +30,10 @@ export function notifyNative(msg: NativeMsg) {
   const pattern = WEB_VIBRATE[msg]
   if (pattern) navigator.vibrate?.(pattern)
 }
+
+// Hand the session token to the native shell so its background ring
+// service can hold its own /ws/ring connection (rings with the app
+// closed or the phone locked). Empty token = logged out, service stops.
+export function syncNativeAuth(token: string | null) {
+  window.ReactNativeWebView?.postMessage(`auth:${token ?? ''}`)
+}

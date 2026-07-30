@@ -151,6 +151,35 @@ async def ws_vobiz(ws: WebSocket):
         logger.info("vobiz stream websocket closed")
 
 
+@router.websocket("/ws/ring")
+async def ws_ring(ws: WebSocket):
+    """Event-only channel for the native shell's background ring service.
+    Receives every call event (ring/ring_stop/call_ended...) but no audio,
+    so it stays cheap enough to hold open around the clock."""
+    import auth
+    user = auth.user_for_token(ws.query_params.get("token"))
+    if user is None:
+        await ws.close(code=4401)
+        return
+    line = manager.line(user["id"])
+    await ws.accept()
+    await line.ring_connected(ws)
+    try:
+        while True:
+            raw = await ws.receive_text()
+            try:
+                if json.loads(raw).get("type") == "ping":
+                    await ws.send_text('{"type": "pong"}')
+            except json.JSONDecodeError:
+                continue
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.exception("ring websocket error")
+    finally:
+        line.ring_disconnected(ws)
+
+
 @router.websocket("/ws/call")
 async def ws_call(ws: WebSocket):
     """The user's browser: receives ring/captions/caller-audio, sends accept/end + mic PCM."""

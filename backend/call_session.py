@@ -192,6 +192,9 @@ class UserLine:
         self.registry = registry
         # every open app screen of THIS user (phone, desktop tab...)
         self.browser_sockets: set[WebSocket] = set()
+        # lightweight event-only listeners (native shell's background ring
+        # service): they get every JSON event but never audio bytes
+        self.ring_sockets: set[WebSocket] = set()
         self.call: Optional[Call] = None
         self._lock = asyncio.Lock()
 
@@ -215,6 +218,21 @@ class UserLine:
     def browser_disconnected(self, ws: WebSocket) -> None:
         self.browser_sockets.discard(ws)
 
+    async def ring_connected(self, ws: WebSocket) -> None:
+        self.ring_sockets.add(ws)
+        if self.call and self.call.state == "ringing":
+            try:
+                await ws.send_text(json.dumps({
+                    "type": "ring",
+                    "from": self.call.from_number,
+                    "callId": self.call.call_uuid,
+                }, ensure_ascii=False))
+            except Exception:
+                pass
+
+    def ring_disconnected(self, ws: WebSocket) -> None:
+        self.ring_sockets.discard(ws)
+
     async def _to_browser(self, event: dict) -> None:
         payload = json.dumps(event, ensure_ascii=False)
         for ws in list(self.browser_sockets):
@@ -222,6 +240,11 @@ class UserLine:
                 await ws.send_text(payload)
             except Exception:
                 self.browser_sockets.discard(ws)
+        for ws in list(self.ring_sockets):
+            try:
+                await ws.send_text(payload)
+            except Exception:
+                self.ring_sockets.discard(ws)
 
     async def _to_browser_audio(self, pcm: bytes) -> None:
         for ws in list(self.browser_sockets):

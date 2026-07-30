@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { getToken } from './lib/auth'
+import { syncNativeAuth } from './lib/native-bridge'
 import LoginPage from './pages/LoginPage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
@@ -42,6 +43,8 @@ export default function App() {
 
   useEffect(() => {
     const authed = Boolean(getToken())
+    // keep the native shell's background ring service in sync with login
+    syncNativeAuth(getToken())
     if (!authed && pathname !== '/login' && pathname !== '/start') {
       navigate('/start', { replace: true })
     } else if (authed && pathname === '/start') {
