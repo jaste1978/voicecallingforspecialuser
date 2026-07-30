@@ -32,6 +32,26 @@ _Last updated: 29 Jul 2026_
 - [ ] **Multi-tenant** — per-user numbers, per-user call history/contacts.
       Blocker for onboarding independent pilot users (today everyone shares
       one line and would see the same history). Biggest remaining build.
+
+      **Plan (2026-07-30).** Users keep their existing mobile number and
+      call-forward it to a SunoSathi number (`**21*<did>#` = forward-all on
+      GSM). Two routing models:
+      - **Model A — shared DID:** many users forward to one DID; we route by
+        the forwarded-from (diversion) number if Vobiz passes it in the
+        answer webhook. Zero per-user DID rent. UNVERIFIED: v0.14.2 logs the
+        full webhook payload + diversion-ish headers; test = forward
+        9819095969 → 79714 42451, call it, read Railway logs.
+      - **Model B — DID per user (reliable backbone):** each user gets a
+        Vobiz DID, route by `To`. Works regardless of carrier behaviour;
+        costs DID rent per user. Users may still forward their own number
+        on top for the keep-your-number UX.
+      Build order regardless of model: (1) `numbers` table mapping
+      incoming number → user_id; (2) CallManager singleton → per-user line
+      registry (concurrent calls, per-user browser sockets so only the
+      owner's devices ring); (3) `user_id` on calls/contacts + migrate
+      existing rows to Tejas + per-user APIs; (4) outbound uses the user's
+      own DID as caller ID; (5) onboarding flow: create user → assign
+      number → forwarding instructions.
 - [ ] Reply to pilot signups (Jayesh — deaf user; Divyesh — BAPS developer).
 - [ ] "Create user" UI in Admin (accounts currently created via API).
 - [ ] Change-password UI.
