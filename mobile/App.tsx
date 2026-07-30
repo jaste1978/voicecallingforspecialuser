@@ -1,18 +1,29 @@
+import Constants from 'expo-constants'
 import * as Haptics from 'expo-haptics'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { PermissionsAndroid, Platform, StyleSheet, Vibration, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { APP_URL } from './config'
-import { resumeRingServiceIfLoggedIn, setRingToken } from './ring-service'
 
 const RING_PATTERN = [0, 600, 300, 600, 300, 600, 300, 600]
+
+// The background ring service uses native modules that only exist in our
+// standalone Android build — Expo Go (the iOS testing path) must never
+// even import them, so the module is required lazily behind this guard.
+const CAN_BACKGROUND_RING =
+  Platform.OS === 'android' && Constants.executionEnvironment !== 'storeClient'
+
+function ringService(): typeof import('./ring-service') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('./ring-service')
+}
 
 function handleNativeMessage(msg: string) {
   if (msg.startsWith('auth:')) {
     // web app hands over (or clears) the session token so the background
     // ring service can watch for calls with the app closed
-    void setRingToken(msg.slice(5))
+    if (CAN_BACKGROUND_RING) void ringService().setRingToken(msg.slice(5))
     return
   }
   switch (msg) {
@@ -44,8 +55,10 @@ export default function App() {
     // the page's getUserMedia needs the app-level mic permission on Android
     if (Platform.OS === 'android') {
       void PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
-      // phone restarted / app relaunched: bring the call watch back up
-      void resumeRingServiceIfLoggedIn()
+    }
+    // phone restarted / app relaunched: bring the call watch back up
+    if (CAN_BACKGROUND_RING) {
+      void ringService().resumeRingServiceIfLoggedIn()
     }
   }, [])
 
