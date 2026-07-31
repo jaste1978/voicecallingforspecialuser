@@ -153,7 +153,12 @@ async def api_me(request: Request):
 async def api_calls(request: Request):
     user = _require_user(request)
     import history
-    return {"calls": history.list_calls(user_id=user["id"])}
+    from call_session import normalize_caption_script
+    calls = history.list_calls(user_id=user["id"])
+    for c in calls:
+        # older calls were stored before script normalization existed
+        c["transcript"] = [normalize_caption_script(t) for t in c["transcript"]]
+    return {"calls": calls}
 
 
 @app.get("/api/settings")
