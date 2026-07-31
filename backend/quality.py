@@ -83,9 +83,14 @@ def _romanize(word: str) -> str:
     out = []
     for ch in word:
         code = ord(ch)
-        # Gujarati block mirrors Devanagari layout, offset 0x180
-        if 0x0A80 <= code <= 0x0AFF:
-            ch = chr(code - 0x180)
+        # All nine major Indic blocks (Devanagari, Bengali, Gurmukhi,
+        # Gujarati, Oriya, Tamil, Telugu, Kannada, Malayalam) share the
+        # same ISCII-derived layout in parallel 0x80-wide blocks, so any
+        # of them maps onto Devanagari positionally. The auto language
+        # detect writes short utterances in random scripts ("હા" as "ਹਾਂ"
+        # or "ಹಾ") — phonetically identical, so score them as identical.
+        if 0x0900 <= code <= 0x0D7F:
+            ch = chr(0x0900 + ((code - 0x0900) % 0x80))
         out.append(_DEV_ROMAN.get(ch, ch))
     return "".join(out)
 

@@ -52,6 +52,21 @@ GATE_PREROLL_MS = 240       # replay this much audio on open (word onsets)
 GATE_MAX_LOUD_MS = 10000    # loud with NO word gap this long = steady noise
 
 
+def normalize_caption_script(text: str) -> str:
+    """Auto language detect sometimes writes short utterances in scripts our
+    users can't read (Bengali/Odia/Kannada... for a Gujarati "હા"). The major
+    Indic blocks are positionally parallel, so map any script other than
+    Devanagari, Gujarati and Latin onto Devanagari — same sounds, readable."""
+    out = []
+    for ch in text:
+        code = ord(ch)
+        if 0x0980 <= code <= 0x0D7F and not (0x0A80 <= code <= 0x0AFF):
+            out.append(chr(0x0900 + ((code - 0x0900) % 0x80)))
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def _mean_abs(pcm: bytes) -> int:
     n = len(pcm) // 2
     if n == 0:
@@ -535,6 +550,7 @@ class UserLine:
         async def on_stt_event(event: dict) -> None:
             now_ms = round((time.time() - call.trace.t0) * 1000)
             if event["type"] == "transcript":
+                event["text"] = normalize_caption_script(event["text"])
                 # How long after the caller stopped speaking the caption landed;
                 # captions produced mid-speech (flush) have no end reference.
                 latency = (
