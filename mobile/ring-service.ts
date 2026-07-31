@@ -38,17 +38,31 @@ export async function ensureNotificationSetup(): Promise<void> {
 }
 
 async function showRingNotification(from: string): Promise<void> {
-  const res = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: '📞 Incoming call',
-      body: `${from} is calling — tap to answer and read live`,
-      sticky: true,
-      priority: Notifications.AndroidNotificationPriority.MAX,
-      sound: 'default',
-    },
-    trigger: { channelId: 'incoming-calls' },
-  })
-  ringNotificationId = res
+  const content = {
+    title: '📞 Incoming call',
+    body: `${from} is calling — tap to answer and read live`,
+    sticky: true,
+    priority: Notifications.AndroidNotificationPriority.MAX,
+    sound: 'default',
+  }
+  try {
+    ringNotificationId = await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: { channelId: 'incoming-calls' },
+    })
+    console.log('ring-service: notification shown (channel)')
+  } catch (e) {
+    console.log('ring-service: channel trigger failed, fallback', String(e))
+    try {
+      ringNotificationId = await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: null,
+      })
+      console.log('ring-service: notification shown (immediate)')
+    } catch (e2) {
+      console.log('ring-service: notification failed entirely', String(e2))
+    }
+  }
 }
 
 async function clearRingNotification(): Promise<void> {
@@ -85,6 +99,7 @@ async function watchLoop(): Promise<void> {
         resolve()
       }
       ws.onopen = () => {
+        console.log('ring-service: connected')
         ping = setInterval(() => {
           try { ws.send('{"type":"ping"}') } catch { /* closing */ }
         }, PING_MS)
@@ -93,12 +108,13 @@ async function watchLoop(): Promise<void> {
         let msg: { type?: string; from?: string }
         try { msg = JSON.parse(String(e.data)) } catch { return }
         if (msg.type === 'ring') {
-          // foreground app already rings via the WebView bridge
-          if (AppState.currentState !== 'active') {
-            Vibration.vibrate(RING_PATTERN, true)
-            void showRingNotification(msg.from || 'Someone')
-          }
+          console.log('ring-service: RING, appstate=', AppState.currentState)
+          Vibration.vibrate(RING_PATTERN, true)
+          // notification always: in foreground the in-app ring screen sits on
+          // top anyway, and reliability beats de-duplication here
+          void showRingNotification(msg.from || 'Someone')
         } else if (msg.type === 'call_started' || msg.type === 'call_ended') {
+          console.log('ring-service: stop (%s)', msg.type)
           void clearRingNotification()
         }
       }
@@ -112,7 +128,12 @@ async function watchLoop(): Promise<void> {
 
 export async function setRingToken(token: string): Promise<void> {
   if (token) {
+    const previous = await AsyncStorage.getItem(TOKEN_KEY)
     await AsyncStorage.setItem(TOKEN_KEY, token)
+    if (previous && previous !== token) {
+      // account switched: drop the old user's socket, reconnect as the new one
+      await stopRingService()
+    }
     await startRingService()
   } else {
     await AsyncStorage.removeItem(TOKEN_KEY)
@@ -130,7 +151,10 @@ export async function startRingService(): Promise<void> {
     taskIcon: { name: 'ic_launcher', type: 'mipmap' },
     color: '#E4590A',
     linkingURI: 'sunosathi://',
-  })
+    // Android 14+ hard-requires the type at startForeground() time;
+    // without it the OS kills the app (InvalidForegroundServiceTypeException)
+    foregroundServiceType: ['dataSync'],
+  } as Parameters<typeof BackgroundService.start>[1])
 }
 
 export async function stopRingService(): Promise<void> {
