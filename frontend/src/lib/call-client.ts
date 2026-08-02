@@ -17,6 +17,7 @@ export interface CallEvent {
     | 'call_ended'
     | 'error'
     | 'language_set'
+    | 'spoken'
   from?: string
   to?: string
   callId?: string
@@ -37,6 +38,7 @@ export interface CallClient {
   dial: (number: string, name: string, language: LanguageKey) => void
   setLanguage: (language: LanguageKey) => void
   sendPrompt: (name: 'slow_down' | 'repeat' | 'wait') => void
+  say: (text: string) => void
   sendAudio: (pcm: ArrayBuffer) => void
   close: () => void
 }
@@ -146,6 +148,7 @@ export function connectCall(
     dial: (number, name, language) => sendJson({ type: 'dial', number, name, language }),
     setLanguage: (language) => sendJson({ type: 'set_language', language }),
     sendPrompt: (name) => sendJson({ type: 'prompt', name }),
+    say: (text) => sendJson({ type: 'say', text }),
     sendAudio: (pcm) => {
       if (ws?.readyState === WebSocket.OPEN) ws.send(pcm)
     },

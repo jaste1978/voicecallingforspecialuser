@@ -274,7 +274,9 @@ class ElevenLabsTTS:
         self._api_key = api_key
         self._voice = voice_id or self.DEFAULT_VOICE
 
-    async def synthesize(self, text: str, language: str = "hi-IN") -> bytes | None:
+    async def synthesize(
+        self, text: str, language: str = "hi-IN", speaker: str | None = None
+    ) -> bytes | None:
         url = (
             f"https://api.elevenlabs.io/v1/text-to-speech/{self._voice}"
             "?output_format=pcm_16000"

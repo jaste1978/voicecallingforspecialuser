@@ -1451,6 +1451,142 @@ select.lang.wide {
   display: block;
 }
 
+/* ---------- type-to-speak: chips, speak bar, picture board ---------- */
+.chips-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  flex-shrink: 0;
+  background: var(--panel);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chips-row::-webkit-scrollbar { display: none; }
+
+.chipbtn {
+  flex: 0 0 auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--divider);
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 40px;
+  padding: 0 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chipbtn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.chipbtn.board-open {
+  background: var(--chip);
+  border-color: var(--accent);
+  font-size: 18px;
+}
+
+.speak-bar {
+  display: flex;
+  gap: 8px;
+  padding: 4px 14px 8px;
+  background: var(--panel);
+  flex-shrink: 0;
+}
+
+.speak-input {
+  flex: 1;
+  min-height: 46px;
+  font-size: 16px;
+}
+
+.speakbtn {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 20px;
+}
+
+.board-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+}
+
+.board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--divider);
+  font-size: 18px;
+}
+
+.board-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.board-cat {
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 14px 0 8px;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.board-tile {
+  background: var(--panel);
+  border: 1px solid var(--divider);
+  border-radius: 16px;
+  padding: 14px 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.board-tile:active {
+  background: var(--chip);
+  border-color: var(--accent);
+}
+
+.board-emoji {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.board-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.voice-row {
+  cursor: default;
+}
+
+.voice-row select.lang {
+  max-width: 46%;
+}
+
 /* ---------- contacts / dialer ---------- */
 .contacts-page {
   flex: 1;

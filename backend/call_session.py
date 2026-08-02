@@ -291,6 +291,8 @@ class UserLine:
                 await self.end_call("ended by user")
         elif mtype == "prompt" and call and call.state == "active":
             await self._play_prompt(call, msg.get("name", ""))
+        elif mtype == "say" and call and call.state == "active":
+            await self._speak_text(call, str(msg.get("text") or ""))
         elif mtype == "set_language" and call and call.state == "active":
             language = msg.get("language", "auto")
             call.language = language
@@ -304,13 +306,9 @@ class UserLine:
                 "provider": call.stt_label,
             })
 
-    async def _play_prompt(self, call: Call, name: str) -> None:
-        """Speak a canned TTS phrase (e.g. 'please speak slower') into the call."""
-        pcm = await tts_prompts.get_prompt_pcm(name)
-        if pcm is None or not (call.vobiz_ws and call.stream_id):
-            return
-        call.recorder.write("user", pcm)
-        call.trace.event("tts_prompt_played", prompt=name, kb=len(pcm) // 1024)
+    async def _send_pcm_to_caller(self, call: Call, pcm: bytes) -> bool:
+        if not (call.vobiz_ws and call.stream_id):
+            return False
         chunk = 3200
         for i in range(0, len(pcm), chunk):
             payload = base64.b64encode(pcm[i:i + chunk]).decode("ascii")
@@ -325,8 +323,39 @@ class UserLine:
                     },
                 }))
             except Exception:
-                logger.exception("failed sending prompt audio")
-                break
+                logger.exception("failed sending tts audio")
+                return False
+        return True
+
+    async def _play_prompt(self, call: Call, name: str) -> None:
+        """Speak a canned TTS phrase (e.g. 'please speak slower') into the call."""
+        pcm = await tts_prompts.get_prompt_pcm(name)
+        if pcm is None:
+            return
+        call.recorder.write("user", pcm)
+        call.trace.event("tts_prompt_played", prompt=name, kb=len(pcm) // 1024)
+        await self._send_pcm_to_caller(call, pcm)
+
+    async def _speak_text(self, call: Call, text: str) -> None:
+        """Type-to-speak: synthesize the user's typed text into the call."""
+        import speech
+        import user_prefs
+        text = " ".join(text.split())[:speech.MAX_TEXT_LEN]
+        if not text:
+            return
+        speaker = user_prefs.get(self.user_id, "voice")
+        pcm = await speech.speak_pcm(text, speaker=speaker)
+        if pcm is None:
+            await self._to_browser({
+                "type": "error", "message": "Could not speak that — try again",
+            })
+            return
+        call.recorder.write("user", pcm)
+        call.trace.event("user_spoke_text", chars=len(text), kb=len(pcm) // 1024)
+        # marked so quality scoring can exclude it (it isn't caller speech)
+        call.transcript.append(f"🔊 {text}")
+        await self._send_pcm_to_caller(call, pcm)
+        await self._to_browser({"type": "spoken", "text": text})
 
     async def on_browser_audio(self, pcm: bytes) -> None:
         """User's mic -> into the phone call."""

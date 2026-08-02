@@ -10,6 +10,7 @@ import { authFetch } from '../lib/auth'
 import type { LanguageKey } from '../lib/stt-client'
 import { fmtNumber, fmtRelative, fmtDuration, fmtTime, resolveDisplay } from '../lib/format'
 import Avatar from '../components/Avatar'
+import SpeakBoard from '../components/SpeakBoard'
 import { PhoneIcon, MicIcon, MicOffIcon, XIcon, NewCallIcon } from '../components/icons'
 
 interface Segment {
@@ -51,6 +52,16 @@ const PROMPT_TEXTS: Record<string, string> = {
   wait: '✋ कृपया एक क्षण रुकिए।',
 }
 
+// one-tap spoken replies shown above the speak bar
+const QUICK_CHIPS = [
+  { label: '👍 हाँ', say: 'हाँ।' },
+  { label: '👎 ना', say: 'नहीं।' },
+  { label: '👌 ठीक है', say: 'ठीक है।' },
+  { label: '✋ रुकिए', say: 'कृपया एक क्षण रुकिए।' },
+  { label: '🔁 दोबारा', say: 'कृपया अपनी बात दोबारा कहिए।' },
+  { label: '📞 बाद में', say: 'मैं आपको बाद में call करती हूँ।' },
+]
+
 export default function CallPage() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -66,6 +77,9 @@ export default function CallPage() {
   const [error, setError] = useState('')
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('fontSize')) || 22)
   const [callSeconds, setCallSeconds] = useState(0)
+  const [sayText, setSayText] = useState('')
+  const [boardOpen, setBoardOpen] = useState(false)
+  const typingNoticeSent = useRef(false)
   const [ownNumber, setOwnNumber] = useState('')
   const [hasOwnNumber, setHasOwnNumber] = useState(true)
   const [forwardCode, setForwardCode] = useState('')
@@ -171,8 +185,11 @@ export default function CallPage() {
           ringtoneRef.current?.stop()
           notifyNative('haptic:connect')
           addSegment('sys', '✓ Call connected')
+          typingNoticeSent.current = false
           startTimer()
           setState('active')
+        } else if (e.type === 'spoken' && e.text) {
+          addSegment('me', `🔊 ${e.text}`)
         } else if (e.type === 'transcript' && e.text) {
           setSpeaking(false)
           if (captionHapticEnabled()) notifyNative('haptic:caption')
@@ -224,37 +241,42 @@ export default function CallPage() {
     setMuted(false)
   }
 
-  async function startMedia() {
+  async function startMedia(): Promise<boolean> {
+    // Caller-audio playback always; the mic is optional — a user who talks
+    // by typing (or denied the permission) must still be able to take calls.
     playerRef.current = new PcmPlayer()
     await playerRef.current.resume()
-    captureRef.current = await startAudioCapture((pcm) => {
-      if (!mutedRef.current) clientRef.current?.sendAudio(pcm)
-    })
+    try {
+      captureRef.current = await startAudioCapture((pcm) => {
+        if (!mutedRef.current) clientRef.current?.sendAudio(pcm)
+      })
+      return true
+    } catch {
+      return false
+    }
   }
 
   async function startDial(number: string, contactName: string) {
     setError('')
-    try {
-      await startMedia()
-      setCaller(contactName)
-      setRingingStatus('Calling…')
-      setState('dialing')
-      clientRef.current?.dial(number, contactName, language)
-    } catch {
-      setError('Microphone permission is needed to call')
-      stopCallMedia()
+    const mic = await startMedia()
+    setCaller(contactName)
+    setRingingStatus('Calling…')
+    setState('dialing')
+    clientRef.current?.dial(number, contactName, language)
+    if (!mic) {
+      setMuted(true)
+      addSegment('sys', '🎤 No mic — reply by typing, the caller will hear your text')
     }
   }
 
   async function accept() {
     setError('')
     ringtoneRef.current?.stop()
-    try {
-      await startMedia()
-      clientRef.current?.accept(language)
-    } catch {
-      setError('Microphone permission is needed to answer')
-      stopCallMedia()
+    const mic = await startMedia()
+    clientRef.current?.accept(language)
+    if (!mic) {
+      setMuted(true)
+      addSegment('sys', '🎤 No mic — reply by typing, the caller will hear your text')
     }
   }
 
@@ -275,6 +297,22 @@ export default function CallPage() {
   function sendPrompt(name: 'repeat' | 'wait') {
     clientRef.current?.sendPrompt(name)
     addSegment('me', PROMPT_TEXTS[name])
+  }
+
+  function speak(text: string) {
+    const t = text.trim()
+    if (!t) return
+    clientRef.current?.say(t)
+    setBoardOpen(false)
+  }
+
+  function onSayTyping(value: string) {
+    setSayText(value)
+    // callers hear silence while the user types and hang up — tell them once
+    if (value && !typingNoticeSent.current) {
+      typingNoticeSent.current = true
+      sendPrompt('wait')
+    }
   }
 
   if (state === 'dialing') {
@@ -330,9 +368,13 @@ export default function CallPage() {
           <button className="iconbtn" onClick={() => changeFont(-2)} aria-label="Smaller text">A−</button>
           <button className="iconbtn" onClick={() => changeFont(2)} aria-label="Larger text">A+</button>
         </div>
-        <div className="prompt-row">
-          <button className="promptbtn" onClick={() => sendPrompt('repeat')}>🔁 दोबारा</button>
-          <button className="promptbtn" onClick={() => sendPrompt('wait')}>✋ रुकिए</button>
+        <div className="chips-row">
+          <button className="chipbtn board-open" onClick={() => setBoardOpen(true)}>🖼️</button>
+          {QUICK_CHIPS.map((c) => (
+            <button key={c.label} className="chipbtn" onClick={() => speak(c.say)}>
+              {c.label}
+            </button>
+          ))}
         </div>
         <div ref={scrollRef} className="chat-scroll" style={{ fontSize }}>
           {segments.map((s) =>
@@ -352,6 +394,24 @@ export default function CallPage() {
         <div className="speaking-indicator">
           {speaking && (<><span className="dot" /> Caller is speaking…</>)}
         </div>
+        <form
+          className="speak-bar"
+          onSubmit={(e) => {
+            e.preventDefault()
+            speak(sayText)
+            setSayText('')
+          }}
+        >
+          <input
+            className="dialinput speak-input"
+            placeholder="Type here, caller hears it… बोलने के लिए टाइप करें"
+            value={sayText}
+            onChange={(e) => onSayTyping(e.target.value)}
+          />
+          <button className="bigbtn start speakbtn" type="submit" disabled={!sayText.trim()}>
+            🔊
+          </button>
+        </form>
         <div className="controls">
           <button
             className={`iconbtn framed${muted ? ' active' : ''}`}
@@ -362,6 +422,7 @@ export default function CallPage() {
           </button>
           <button className="bigbtn stop" onClick={endCall}>End call</button>
         </div>
+        {boardOpen && <SpeakBoard onSay={speak} onClose={() => setBoardOpen(false)} />}
       </main>
     )
   }

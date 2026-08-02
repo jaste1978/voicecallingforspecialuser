@@ -135,7 +135,9 @@ async def run_for(call_uuid: str) -> None:
         ref_words = _norm_words(reference)
         if not ref_words:
             return  # no speech worth scoring
-        live_words = _norm_words(" ".join(call.get("transcript") or []))
+        # 🔊-marked lines are the user's typed speech, not caller captions
+        captions = [t for t in (call.get("transcript") or []) if not t.startswith("🔊")]
+        live_words = _norm_words(" ".join(captions))
         # symmetric similarity: edit distance normalized by the longer text,
         # so length mismatch in either direction degrades but never explodes
         dist = _wer(ref_words, live_words) * max(len(ref_words), 1)
@@ -156,7 +158,8 @@ def rescore_stored(call_uuid: str) -> int | None:
     ref_words = _norm_words(call["batch_transcript"])
     if not ref_words:
         return None
-    live_words = _norm_words(" ".join(call.get("transcript") or []))
+    captions = [t for t in (call.get("transcript") or []) if not t.startswith("🔊")]
+    live_words = _norm_words(" ".join(captions))
     dist = _wer(ref_words, live_words) * max(len(ref_words), 1)
     score = max(0.0, 1.0 - dist / max(len(ref_words), len(live_words), 1)) * 100
     history.update_quality(call_uuid, round(score), call["batch_transcript"])

@@ -51,7 +51,9 @@ class TTSProvider(Protocol):
     name: str
     label: str
 
-    async def synthesize(self, text: str, language: str = "hi-IN") -> bytes | None:
+    async def synthesize(
+        self, text: str, language: str = "hi-IN", speaker: str | None = None
+    ) -> bytes | None:
         """Return raw 16kHz mono pcm_s16le audio for the text."""
         ...
 
@@ -70,13 +72,15 @@ class SarvamTTS:
     name = "sarvam"
     label = "Sarvam Bulbul"
 
-    async def synthesize(self, text, language="hi-IN"):
+    async def synthesize(self, text, language="hi-IN", speaker=None):
         try:
             client = get_client()
+            kwargs = {"speaker": speaker} if speaker else {}
             resp = await client.text_to_speech.convert(
                 text=text,
                 target_language_code=language,
                 speech_sample_rate=16000,
+                **kwargs,
             )
             wav_bytes = base64.b64decode(resp.audios[0])
             with wave.open(io.BytesIO(wav_bytes), "rb") as w:

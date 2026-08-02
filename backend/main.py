@@ -149,6 +149,24 @@ async def api_me(request: Request):
     }
 
 
+@app.get("/api/prefs")
+async def api_prefs_get(request: Request):
+    user = _require_user(request)
+    import user_prefs
+    return user_prefs.get_all(user["id"])
+
+
+@app.put("/api/prefs")
+async def api_prefs_put(payload: dict, request: Request):
+    user = _require_user(request)
+    import user_prefs
+    ALLOWED = {"voice", "type_to_talk"}
+    for k, v in payload.items():
+        if k in ALLOWED and isinstance(v, str) and len(v) <= 60:
+            user_prefs.set(user["id"], k, v)
+    return user_prefs.get_all(user["id"])
+
+
 @app.get("/api/calls")
 async def api_calls(request: Request):
     user = _require_user(request)

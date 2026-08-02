@@ -1,9 +1,39 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
-import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon } from '../components/icons'
+import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon, MicIcon } from '../components/icons'
+
+// Bulbul speakers: the voice callers hear when you type-to-speak
+const VOICES = [
+  { id: '', label: 'Default (Anushka)' },
+  { id: 'anushka', label: 'Anushka · female' },
+  { id: 'manisha', label: 'Manisha · female' },
+  { id: 'vidya', label: 'Vidya · female' },
+  { id: 'arya', label: 'Arya · female' },
+  { id: 'abhilash', label: 'Abhilash · male' },
+  { id: 'karun', label: 'Karun · male' },
+  { id: 'hitesh', label: 'Hitesh · male' },
+]
 
 export default function SettingsTab() {
   const navigate = useNavigate()
+  const [voice, setVoice] = useState('')
+
+  useEffect(() => {
+    authFetch('/api/prefs')
+      .then((r) => r.json())
+      .then((d) => setVoice(d.voice || ''))
+      .catch(() => {})
+  }, [])
+
+  function saveVoice(v: string) {
+    setVoice(v)
+    void authFetch('/api/prefs', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voice: v }),
+    })
+  }
 
   async function logout() {
     try {
@@ -32,6 +62,23 @@ export default function SettingsTab() {
           <small>Test live captions with this device's mic</small>
         </span>
       </button>
+      <div className="home-btn voice-row">
+        <span className="emoji icon"><MicIcon size={28} /></span>
+        <span style={{ flex: 1 }}>
+          My voice
+          <small>What callers hear when you type-to-speak</small>
+        </span>
+        <select
+          className="lang"
+          value={voice}
+          onChange={(e) => saveVoice(e.target.value)}
+          aria-label="Choose your voice"
+        >
+          {VOICES.map((v) => (
+            <option key={v.id} value={v.id}>{v.label}</option>
+          ))}
+        </select>
+      </div>
       {admin && (
         <>
           <p className="settings-group">Admin</p>
