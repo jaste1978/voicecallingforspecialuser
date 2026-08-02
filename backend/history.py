@@ -41,6 +41,9 @@ def init() -> None:
             "ALTER TABLE calls ADD COLUMN quality_score INTEGER",
             "ALTER TABLE calls ADD COLUMN batch_transcript TEXT",
             "ALTER TABLE calls ADD COLUMN user_id INTEGER",
+            "ALTER TABLE calls ADD COLUMN tts_chars INTEGER DEFAULT 0",
+            "ALTER TABLE calls ADD COLUMN vobiz_cost REAL",
+            "ALTER TABLE calls ADD COLUMN bill_duration INTEGER",
         ):
             try:
                 conn.execute(ddl)
@@ -60,20 +63,31 @@ def save_call(
     timeline: list[dict] | None = None,
     direction: str = "in",
     user_id: int | None = None,
+    tts_chars: int = 0,
 ) -> None:
     with _conn() as conn:
         conn.execute(
             "INSERT INTO calls (call_uuid, from_number, to_number, started_at,"
             " answered_at, ended_at, reason, language, transcript, timeline,"
-            " direction, user_id)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " direction, user_id, tts_chars)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 call_uuid, from_number, to_number, started_at,
                 answered_at, time.time(), reason, language,
                 json.dumps(transcript, ensure_ascii=False),
                 json.dumps(timeline or [], ensure_ascii=False),
-                direction, user_id,
+                direction, user_id, tts_chars,
             ),
+        )
+
+
+def update_billing(call_uuid: str, total_cost: float | None, bill_duration: int | None) -> None:
+    """Record what Vobiz says it billed (from its Hangup webhook)."""
+    with _conn() as conn:
+        conn.execute(
+            "UPDATE calls SET vobiz_cost = COALESCE(?, vobiz_cost),"
+            " bill_duration = COALESCE(?, bill_duration) WHERE call_uuid = ?",
+            (total_cost, bill_duration, call_uuid),
         )
 
 

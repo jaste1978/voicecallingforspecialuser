@@ -194,6 +194,7 @@ class Call:
         self.loud_ms = 0        # loud caller audio since the last caption
         self.rescued = False    # already switched to romanized output
         self.gate = NoiseGate() if NOISE_GATE else None
+        self.tts_chars = 0  # characters synthesized into this call (cost basis)
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -332,6 +333,7 @@ class UserLine:
         pcm = await tts_prompts.get_prompt_pcm(name)
         if pcm is None:
             return
+        call.tts_chars += len(tts_prompts.PROMPTS.get(name, ""))
         call.recorder.write("user", pcm)
         call.trace.event("tts_prompt_played", prompt=name, kb=len(pcm) // 1024)
         await self._send_pcm_to_caller(call, pcm)
@@ -350,6 +352,7 @@ class UserLine:
                 "type": "error", "message": "Could not speak that — try again",
             })
             return
+        call.tts_chars += len(text)
         call.recorder.write("user", pcm)
         call.trace.event("user_spoke_text", chars=len(text), kb=len(pcm) // 1024)
         # marked so quality scoring can exclude it (it isn't caller speech)
@@ -656,7 +659,7 @@ class UserLine:
                 call.call_uuid, call.from_number, call.to_number,
                 call.created_at, call.answered_at, reason,
                 call.language, call.transcript, call.trace.finish(),
-                call.direction, user_id=self.user_id,
+                call.direction, user_id=self.user_id, tts_chars=call.tts_chars,
             )
         except Exception:
             logger.exception("failed saving call history")

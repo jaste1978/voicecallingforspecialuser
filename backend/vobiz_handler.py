@@ -117,6 +117,16 @@ async def vobiz_hangup(request: Request):
     cause = params.get("HangupCause") or params.get("HangupReason") or "call ended"
     call_uuid = params.get("CallUUID") or params.get("CallSid") or ""
     logger.info("vobiz hangup callback for %s: %s", call_uuid or "?", cause)
+    # capture what Vobiz says it billed for this call (cost accounting)
+    if call_uuid:
+        import history
+        try:
+            cost = float(params.get("TotalCost")) if params.get("TotalCost") else None
+            bill = int(params.get("BillDuration")) if params.get("BillDuration") else None
+            if cost is not None or bill is not None:
+                history.update_billing(call_uuid, cost, bill)
+        except (TypeError, ValueError):
+            pass
     await manager.hangup_event(call_uuid, str(cause))
     return Response(content="OK")
 

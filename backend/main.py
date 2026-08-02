@@ -300,6 +300,51 @@ async def api_contacts_delete(contact_id: int, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/costs")
+async def api_costs(request: Request):
+    _require_admin(request)
+    import costs
+    import history
+    import time as _time
+
+    rates = costs.get_rates()
+    calls = history.list_calls(200)
+    now = _time.time()
+    windows = {"today": 86400, "week": 7 * 86400, "month": 30 * 86400}
+    totals = {w: {"calls": 0, "minutes": 0.0, "stt": 0.0, "batch": 0.0,
+                  "tts": 0.0, "vobiz": 0.0, "total": 0.0} for w in windows}
+    rows = []
+    for c in calls:
+        cc = costs.call_cost(c, rates)
+        age = now - (c.get("started_at") or now)
+        for w, span in windows.items():
+            if age <= span:
+                t = totals[w]
+                t["calls"] += 1
+                t["minutes"] += (c.get("duration_s") or 0) / 60
+                for k in ("stt", "batch", "tts", "vobiz", "total"):
+                    t[k] += cc[k]
+        if len(rows) < 50:
+            rows.append({
+                "id": c["id"], "from_number": c["from_number"],
+                "direction": c.get("direction", "in"),
+                "started_at": c["started_at"], "duration_s": c["duration_s"],
+                "answered": c["answered"], "tts_chars": c.get("tts_chars") or 0,
+                **cc,
+            })
+    for t in totals.values():
+        for k in ("minutes", "stt", "batch", "tts", "vobiz", "total"):
+            t[k] = round(t[k], 2)
+    return {"rates": rates, "totals": totals, "calls": rows}
+
+
+@app.put("/api/costs")
+async def api_costs_update(payload: dict, request: Request):
+    _require_admin(request)
+    import costs
+    return {"rates": costs.set_rates(payload if isinstance(payload, dict) else {})}
+
+
 @app.get("/api/users")
 async def api_users_list(request: Request):
     _require_admin(request)

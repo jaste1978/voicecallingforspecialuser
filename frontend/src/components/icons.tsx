@@ -156,6 +156,14 @@ export function SpeakerOffIcon({ size = 24, strokeWidth = 2 }: IconProps) {
   )
 }
 
+export function RupeeIcon({ size = 24, strokeWidth = 2 }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth)}>
+      <path d="M6 3h12M6 8h12M6 3c7 0 8 3.5 8 5 0 2.5-2.5 5-8 5l8 8" />
+    </svg>
+  )
+}
+
 export function NewCallIcon({ size = 24, strokeWidth = 2 }: IconProps) {
   return (
     <svg {...base(size, strokeWidth)}>

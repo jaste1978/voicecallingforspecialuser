@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
-import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon, MicIcon } from '../components/icons'
+import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon, MicIcon, RupeeIcon } from '../components/icons'
 
 // Bulbul speakers: the voice callers hear when you type-to-speak
 const VOICES = [
@@ -101,6 +101,13 @@ export default function SettingsTab() {
             <span>
               Call Monitor
               <small>Live status &amp; per-call health checks</small>
+            </span>
+          </button>
+          <button className="home-btn" onClick={() => navigate('/costs')}>
+            <span className="emoji icon"><RupeeIcon size={28} /></span>
+            <span>
+              Costs
+              <small>Per-call Sarvam &amp; Vobiz spend, editable rates</small>
             </span>
           </button>
           <button className="home-btn" onClick={() => navigate('/waitlist')}>
