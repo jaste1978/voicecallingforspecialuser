@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { getToken } from './lib/auth'
 import { syncNativeAuth } from './lib/native-bridge'
+import { startVersionWatch } from './lib/version-watch'
 import LoginPage from './pages/LoginPage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
@@ -42,6 +43,10 @@ const SETTINGS_CHILDREN = new Set([
 export default function App() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+
+  useEffect(() => {
+    startVersionWatch()
+  }, [])
 
   useEffect(() => {
     const authed = Boolean(getToken())

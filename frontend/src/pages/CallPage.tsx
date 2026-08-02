@@ -139,6 +139,12 @@ export default function CallPage() {
   }, [muted])
 
   useEffect(() => {
+    // the version watchdog must never reload the page mid-call
+    window.__callActive = state !== 'idle'
+    return () => { window.__callActive = false }
+  }, [state])
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [segments, speaking])
 
