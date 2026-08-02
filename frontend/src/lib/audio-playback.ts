@@ -2,10 +2,20 @@
 
 export class PcmPlayer {
   private ctx = new AudioContext()
+  private gain = this.ctx.createGain()
   private nextTime = 0
+
+  constructor() {
+    this.gain.connect(this.ctx.destination)
+  }
 
   async resume() {
     if (this.ctx.state === 'suspended') await this.ctx.resume()
+  }
+
+  /** Speaker on/off: whether the caller's voice is audible on this device. */
+  setSpeaker(on: boolean) {
+    this.gain.gain.value = on ? 1 : 0
   }
 
   play(buf: ArrayBuffer) {
@@ -17,7 +27,7 @@ export class PcmPlayer {
     audioBuf.copyToChannel(f32, 0)
     const src = this.ctx.createBufferSource()
     src.buffer = audioBuf
-    src.connect(this.ctx.destination)
+    src.connect(this.gain)
     const t = Math.max(this.ctx.currentTime + 0.06, this.nextTime)
     src.start(t)
     this.nextTime = t + audioBuf.duration

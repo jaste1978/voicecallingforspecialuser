@@ -11,7 +11,7 @@ import type { LanguageKey } from '../lib/stt-client'
 import { fmtNumber, fmtRelative, fmtDuration, fmtTime, resolveDisplay } from '../lib/format'
 import Avatar from '../components/Avatar'
 import SpeakBoard from '../components/SpeakBoard'
-import { PhoneIcon, MicIcon, MicOffIcon, XIcon, NewCallIcon } from '../components/icons'
+import { PhoneIcon, MicIcon, MicOffIcon, SpeakerIcon, SpeakerOffIcon, XIcon, NewCallIcon } from '../components/icons'
 
 interface Segment {
   id: number
@@ -80,6 +80,9 @@ export default function CallPage() {
   const [sayText, setSayText] = useState('')
   const [boardOpen, setBoardOpen] = useState(false)
   const typingNoticeSent = useRef(false)
+  // whether the caller's voice is audible on this device (a hard-of-hearing
+  // user may want sound + captions; a deaf user may keep it off)
+  const [speakerOn, setSpeakerOn] = useState(() => localStorage.getItem('speakerOn') !== '0')
   const [ownNumber, setOwnNumber] = useState('')
   const [hasOwnNumber, setHasOwnNumber] = useState(true)
   const [forwardCode, setForwardCode] = useState('')
@@ -245,6 +248,7 @@ export default function CallPage() {
     // Caller-audio playback always; the mic is optional — a user who talks
     // by typing (or denied the permission) must still be able to take calls.
     playerRef.current = new PcmPlayer()
+    playerRef.current.setSpeaker(speakerOn)
     await playerRef.current.resume()
     try {
       captureRef.current = await startAudioCapture((pcm) => {
@@ -297,6 +301,15 @@ export default function CallPage() {
   function sendPrompt(name: 'repeat' | 'wait') {
     clientRef.current?.sendPrompt(name)
     addSegment('me', PROMPT_TEXTS[name])
+  }
+
+  function toggleSpeaker() {
+    setSpeakerOn((on) => {
+      const next = !on
+      localStorage.setItem('speakerOn', next ? '1' : '0')
+      playerRef.current?.setSpeaker(next)
+      return next
+    })
   }
 
   function speak(text: string) {
@@ -419,6 +432,13 @@ export default function CallPage() {
             aria-label={muted ? 'Unmute' : 'Mute'}
           >
             {muted ? <MicOffIcon size={22} /> : <MicIcon size={22} />}
+          </button>
+          <button
+            className={`iconbtn framed${speakerOn ? '' : ' active'}`}
+            onClick={toggleSpeaker}
+            aria-label={speakerOn ? 'Speaker off' : 'Speaker on'}
+          >
+            {speakerOn ? <SpeakerIcon size={22} /> : <SpeakerOffIcon size={22} />}
           </button>
           <button className="bigbtn stop" onClick={endCall}>End call</button>
         </div>

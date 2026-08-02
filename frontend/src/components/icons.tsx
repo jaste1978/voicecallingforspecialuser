@@ -138,6 +138,24 @@ export function InboxIcon({ size = 24, strokeWidth = 2 }: IconProps) {
   )
 }
 
+export function SpeakerIcon({ size = 24, strokeWidth = 2 }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth)}>
+      <path d="M11 5 6.5 8.5H3v7h3.5L11 19V5Z" />
+      <path d="M15 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" />
+    </svg>
+  )
+}
+
+export function SpeakerOffIcon({ size = 24, strokeWidth = 2 }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth)}>
+      <path d="M11 5 6.5 8.5H3v7h3.5L11 19V5Z" />
+      <path d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+    </svg>
+  )
+}
+
 export function NewCallIcon({ size = 24, strokeWidth = 2 }: IconProps) {
   return (
     <svg {...base(size, strokeWidth)}>
