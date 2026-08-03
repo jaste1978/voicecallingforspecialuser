@@ -156,6 +156,20 @@ export function SpeakerOffIcon({ size = 24, strokeWidth = 2 }: IconProps) {
   )
 }
 
+// The SunoSathi brand mark: the listening curl catching three caption
+// lines (chosen logo "06 — सुनो, the listening hand").
+export function LogoMark({ size = 24 }: IconProps) {
+  return (
+    <svg viewBox="0 0 144 118" width={size} height={size * 0.82} fill="none">
+      <path d="M100 12 C120 19 131 37 131 57 C131 86 111 106 84 106 C64 106 51 95 46 79" stroke="currentColor" strokeWidth="9" strokeLinecap="round" />
+      <path d="M46 79 C44 66 51 57 62 57 C73 57 80 66 78 77" stroke="currentColor" strokeWidth="9" strokeLinecap="round" />
+      <rect x="8" y="24" width="36" height="8" rx="4" fill="currentColor" />
+      <rect x="16" y="42" width="28" height="8" rx="4" fill="currentColor" opacity=".85" />
+      <rect x="24" y="60" width="20" height="8" rx="4" fill="currentColor" opacity=".65" />
+    </svg>
+  )
+}
+
 export function RupeeIcon({ size = 24, strokeWidth = 2 }: IconProps) {
   return (
     <svg {...base(size, strokeWidth)}>

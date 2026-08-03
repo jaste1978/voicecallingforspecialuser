@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setAuth } from '../lib/auth'
-import { PhoneIcon } from '../components/icons'
+import { LogoMark } from '../components/icons'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -37,7 +37,7 @@ export default function LoginPage() {
   return (
     <main className="settings-page login-page">
       <div className="login-brand">
-        <span className="login-mark"><PhoneIcon size={26} /></span>
+        <span className="login-mark"><LogoMark size={30} /></span>
         <h2>SunoSathi <span className="login-devanagari">सुनोसाथी</span></h2>
         <p className="idle-hint">Your phone number. Their voice, your eyes.</p>
       </div>

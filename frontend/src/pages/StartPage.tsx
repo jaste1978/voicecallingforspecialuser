@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PhoneIcon, CaptionsIcon, MicIcon } from '../components/icons'
+import { PhoneIcon, CaptionsIcon, MicIcon, LogoMark } from '../components/icons'
 
 // A captioned call, demonstrating itself — no sound needed.
 const DEMOS = [
@@ -107,7 +107,7 @@ export default function StartPage() {
   return (
     <main className="start-page">
       <div className="start-brand">
-        <span className="login-mark"><PhoneIcon size={24} /></span>
+        <span className="login-mark"><LogoMark size={28} /></span>
         <h1>SunoSathi <span className="login-devanagari">सुनोसाथी</span></h1>
       </div>
 
