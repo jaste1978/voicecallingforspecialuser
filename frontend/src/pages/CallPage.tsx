@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
-import { connectCall, type CallClient } from '../lib/call-client'
+import { type CallClient } from '../lib/call-client'
+import { callStore } from '../lib/call-store'
 import { PcmPlayer } from '../lib/audio-playback'
 import { notifyNative } from '../lib/native-bridge'
 import { captionHapticEnabled, speechHapticEnabled } from '../lib/haptics-settings'
@@ -171,8 +172,8 @@ export default function CallPage() {
   }, [state])
 
   useEffect(() => {
-    const client = connectCall(
-      (e) => {
+    const detach = callStore.attach({
+      onEvent: (e) => {
         if (e.type === 'ring') {
           setCaller(e.from || 'Unknown caller')
           setSegments([])
@@ -229,14 +230,16 @@ export default function CallPage() {
           setError(e.message || 'Something went wrong')
         }
       },
-      (pcm) => playerRef.current?.play(pcm),
-      (up) => setConnected(up),
-    )
-    clientRef.current = client
+      onAudio: (pcm) => playerRef.current?.play(pcm),
+      onStatus: (up) => setConnected(up),
+    })
+    clientRef.current = callStore.client()
     return () => {
+      // detach the UI only — the socket lives app-wide so rings still
+      // arrive while the user browses Contacts/Settings
+      detach()
       stopTimer()
       stopCallMedia()
-      client.close()
     }
   }, [])
 

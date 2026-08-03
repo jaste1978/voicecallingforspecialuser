@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { getToken } from './lib/auth'
 import { syncNativeAuth } from './lib/native-bridge'
 import { startVersionWatch } from './lib/version-watch'
+import { callStore } from './lib/call-store'
 import LoginPage from './pages/LoginPage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
@@ -47,6 +48,14 @@ export default function App() {
   useEffect(() => {
     startVersionWatch()
   }, [])
+
+  useEffect(() => {
+    // a ring can land while the user is on Contacts/Settings — bring them
+    // to the call screen so the ring UI is always seen
+    return callStore.onRing(() => {
+      if (getToken()) navigate('/', { replace: false })
+    })
+  }, [navigate])
 
   useEffect(() => {
     const authed = Boolean(getToken())
