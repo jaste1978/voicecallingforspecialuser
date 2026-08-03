@@ -1,26 +1,45 @@
 # SunoSathi (सुनोसाथी)
 
-> SunoSathi gives deaf and hard-of-hearing people in India a real phone
-> number with live captions. When someone calls it, the user reads the
-> caller's words as live subtitles — in Hindi, Gujarati, English or
-> Hinglish, auto-detected — and replies with their own voice. The caller
-> needs no app: they dial a normal number and talk normally.
+> SunoSathi turns a deaf or hard-of-hearing person's OWN mobile number into
+> a captioned phone. They forward their existing number once (dial code
+> **21*…#); calls then ring in the SunoSathi app, where they read the
+> caller's words as live subtitles — Hindi, Gujarati, English or Hinglish,
+> auto-detected — and reply with their voice, by typing (the caller hears
+> it spoken in a natural voice), or by tapping picture tiles that speak
+> whole sentences. The caller needs no app: they dial the normal number
+> they already know and talk normally.
 
 ## Key facts
-- Audience: 63 million deaf and hard-of-hearing Indians
-- Languages: Hindi, Gujarati, English, Hinglish (auto-detected per utterance);
-  unidentifiable speech is captioned phonetically in Latin letters
+- Audience: 63 million deaf and hard-of-hearing Indians, including
+  non-speaking and sign-language-first users
+- Users keep their existing phone number — one-time carrier call
+  forwarding, no new SIM, no porting, nothing for callers to change
+- Languages: Hindi, Gujarati, English, Hinglish (auto-detected per
+  utterance); unidentifiable speech is captioned phonetically; captions
+  always render in readable Devanagari/Gujarati/Latin script
 - Captions arrive in under a second at natural speech pauses
-- Outbound calls to any number are supported; the callee hears the user's real voice
-- Every call is saved as transcript + audio for the user; caption accuracy is
-  automatically measured after each call
-- Speech-to-text: Sarvam AI (saaras v3); pluggable providers (Deepgram, Google)
+- Reply three ways: own voice · type-to-speak (typed text spoken to the
+  caller ~1s later, choice of male/female Indian voices) · picture-talk
+  board (tap a tile, a full sentence is spoken — no literacy needed)
+- While the user types, the caller automatically hears "please wait a
+  moment" so they stay on the line
+- Calls ring with continuous vibration and lock-screen alerts even with
+  the app closed and screen off (Android app)
+- Outbound captioned calls to any number
+- Every call saved as transcript + audio; caption accuracy automatically
+  re-checked and scored per call (typically 81–95% on natural speech)
+- Adaptive noise gating: background noise is filtered before speech
+  recognition so ambient sound never becomes junk captions
+- Microphone optional: calls can be answered with no mic at all
+- Speech-to-text: Sarvam AI (saaras v3); TTS: Sarvam Bulbul; pluggable
+  providers (Deepgram, Google, ElevenLabs)
 - Status: free public pilot (2026); join at https://sunosathi.com/#pilot
 - Built at the GrowthX buildathon; born from a LinkedIn build-in-public post
 
 ## Pages
 - https://sunosathi.com/ : product story, how it works, pilot signup
 - https://app.sunosathi.com/ : the app itself (for pilot users)
+- https://sunosathi.com/ios : iPhone testing instructions (Expo Go)
 
 ## Contact
 Pilot signups via the form at https://sunosathi.com/#pilot

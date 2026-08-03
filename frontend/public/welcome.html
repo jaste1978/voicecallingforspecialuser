@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SunoSathi — सुनोसाथी | Phone calls for the deaf, in every Indian language</title>
-<meta name="description" content="63 million deaf and hard-of-hearing Indians can't take a phone call. SunoSathi gives them a real phone number with live captions in Hindi, Gujarati, English & Hinglish — they read the caller, and reply with their own voice." />
-<meta property="og:title" content="SunoSathi — giving deaf people back the phone call" />
-<meta property="og:description" content="A real phone number with live captions in Indian languages. Built in one day, now in pilot. Join the waitlist." />
+<title>SunoSathi — सुनोसाथी | Captioned phone calls on your own number, in every Indian language</title>
+<meta name="description" content="63 million deaf and hard-of-hearing Indians can't take a phone call. SunoSathi turns their own mobile number into a captioned phone: read the caller live in Hindi, Gujarati, English & Hinglish — reply with your voice, by typing, or by tapping pictures. Calls ring even with the screen off." />
+<link rel="canonical" href="https://sunosathi.com/" />
+<meta property="og:title" content="SunoSathi — giving deaf people back the phone call, on their own number" />
+<meta property="og:description" content="Live captions on your existing mobile number. Reply with your voice, by typing (the caller hears it spoken), or with picture tiles. Free pilot open now." />
 <meta property="og:type" content="website" />
 <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 <link rel="canonical" href="https://sunosathi.com/" />
@@ -18,7 +19,7 @@
 <meta property="og:image:alt" content="A young man smiling while reading live call captions on his phone in a Mumbai market" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="SunoSathi — giving deaf people back the phone call" />
-<meta name="twitter:description" content="A real phone number with live captions in Hindi, Gujarati, English & Hinglish. Free pilot open now." />
+<meta name="twitter:description" content="Live captions on your own number in Hindi, Gujarati, English & Hinglish — reply by voice, typing, or picture tiles. Free pilot open now." />
 <meta name="twitter:image" content="https://sunosathi.com/img/reader.jpg" />
 <script type="application/ld+json">
 {
@@ -30,7 +31,7 @@
       "name": "SunoSathi",
       "alternateName": "\u0938\u0941\u0928\u094b\u0938\u093e\u0925\u0940",
       "url": "https://sunosathi.com/",
-      "description": "SunoSathi gives deaf and hard-of-hearing Indians a real phone number with live captions in Hindi, Gujarati, English and Hinglish.",
+      "description": "SunoSathi turns a deaf or hard-of-hearing person's own mobile number into a captioned phone: live captions in Hindi, Gujarati, English and Hinglish, with replies by voice, typed text spoken aloud to the caller, or picture tiles.",
       "foundingDate": "2026",
       "areaServed": "IN"
     },
@@ -41,10 +42,21 @@
       "applicationCategory": "CommunicationApplication",
       "operatingSystem": "Any (web, iOS, Android)",
       "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR", "description": "Free during pilot"},
-      "accessibilityFeature": ["captions", "realTimeCaptions", "visualAlerts", "vibrationAlerts"],
+      "accessibilityFeature": ["captions", "realTimeCaptions", "visualAlerts", "vibrationAlerts", "textToSpeech", "pictographicCommunication"],
       "accessibilityHazard": "none",
-      "audience": {"@type": "PeopleAudience", "audienceType": "Deaf and hard-of-hearing people in India"},
-      "inLanguage": ["hi", "gu", "en"]
+      "audience": {"@type": "PeopleAudience", "audienceType": "Deaf, hard-of-hearing and non-speaking people in India"},
+      "inLanguage": ["hi", "gu", "en"],
+      "featureList": [
+        "Keep your own mobile number — one-time call forwarding, no new SIM",
+        "Live captions in Hindi, Gujarati, English and Hinglish, auto-detected",
+        "Type-to-speak: typed replies spoken to the caller in a natural voice",
+        "Picture-talk board: tap picture tiles to speak full sentences — no typing needed",
+        "Choice of male/female voice for spoken replies",
+        "Rings with vibration and lock-screen alerts even when the phone is locked (Android)",
+        "Outgoing captioned calls to any number",
+        "Every call saved as transcript and audio, with automatic accuracy scoring",
+        "Adaptive noise filtering so background sound never becomes junk captions"
+      ]
     },
     {
       "@type": "FAQPage",
@@ -68,6 +80,26 @@
           "@type": "Question",
           "name": "Does the caller need to install anything?",
           "acceptedAnswer": {"@type": "Answer", "text": "No. The caller dials a normal Indian phone number and talks normally. All captioning happens on the SunoSathi user's side."}
+        },
+        {
+          "@type": "Question",
+          "name": "Can I keep my existing phone number?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes — that is the whole idea. You forward your existing mobile number to SunoSathi with a one-time dial code (**21*…#). Family and services keep calling the number they already know; the calls ring in your SunoSathi app with live captions. No new SIM, no porting."}
+        },
+        {
+          "@type": "Question",
+          "name": "What if I cannot speak on calls?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Type your reply and the caller hears it about a second later in a natural Indian voice you choose (male or female). For faster replies there are one-tap phrases, and a picture-talk board where tapping a picture tile speaks a full sentence — no typing or literacy needed. The first time you start typing, the caller automatically hears 'please wait a moment' so they know to stay on the line."}
+        },
+        {
+          "@type": "Question",
+          "name": "Will calls ring if my phone is locked?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes, on the Android app: a background service keeps watch and rings with continuous vibration and a lock-screen alert even when the app is closed and the screen is off."}
+        },
+        {
+          "@type": "Question",
+          "name": "How accurate are the captions?",
+          "acceptedAnswer": {"@type": "Answer", "text": "SunoSathi measures itself: after every call, the recording is automatically re-checked by a second AI pass and an accuracy score is stored for that call. On natural conversation the live captions typically score 81-95%. Background noise is filtered by an adaptive noise gate so ambient sound doesn't turn into junk captions."}
         }
       ]
     }
@@ -247,7 +279,7 @@ footer .right{margin-left:auto}
 <header class="hero"><div class="wrap">
   <div>
     <h1>63 million Indians can't answer a phone call.<br/><span class="hi">We're changing that.</span></h1>
-    <p class="lead">SunoSathi gives deaf and hard-of-hearing people a real phone number. When someone calls, they <b>read live subtitles</b> of the caller's words — in हिन्दी, ગુજરાતી, English or Hinglish, detected automatically — and <b>reply with their own voice</b>. The caller just… calls. No app, no link, nothing special.</p>
+    <p class="lead">SunoSathi turns <b>your own mobile number</b> into a captioned phone. When someone calls, you <b>read live subtitles</b> of their words — in हिन्दी, ગુજરાતી, English or Hinglish, detected automatically — and reply <b>with your voice, by typing, or by tapping pictures</b> that speak for you. The caller just… calls. No app, no link, nothing special.</p>
     <div class="actions">
       <a class="btn" href="#pilot">Join the pilot — it's free</a>
       <a class="btn ghost" href="#how">How it works</a>
@@ -280,7 +312,7 @@ footer .right{margin-left:auto}
       <div class="chat" id="sceneChat"></div>
     </div></div>
     <div class="callout user-callout" id="userSay"></div>
-    <div class="scene-label">You — reading her words, replying with your voice</div>
+    <div class="scene-label">You — reading her words, replying with your voice or your fingertips</div>
   </div>
 </div></header>
 
@@ -300,9 +332,9 @@ footer .right{margin-left:auto}
   <h2>A normal phone call. That's the whole point.</h2>
   <p class="sub">Assistive tech usually asks the world to change. SunoSathi doesn't — the caller dials a normal number and talks normally.</p>
   <div class="steps">
-    <div class="step"><div class="step-photo"><img src="/img/step1.jpg" alt="A young man making a phone call in the evening" /></div><div class="step-body"><div class="n">1</div><h3>Someone calls your number</h3><p>A real Indian phone number rings your SunoSathi app — with sound, vibration and a flashing screen.</p></div></div>
+    <div class="step"><div class="step-photo"><img src="/img/step1.jpg" alt="A young man making a phone call in the evening" /></div><div class="step-body"><div class="n">1</div><h3>Your own number rings here</h3><p>Dial one forwarding code (<b>**21*…#</b>) once, and calls to the number your family already knows ring in SunoSathi — with vibration and lock-screen alerts, even when the phone is in your pocket.</p></div></div>
     <div class="step"><div class="step-photo"><img src="/img/step2.jpg" alt="A young woman reading her phone among flowers" /></div><div class="step-body"><div class="n">2</div><h3>You read, like a chat</h3><p>The caller's words appear as live chat bubbles in the language they speak — Hindi, Gujarati, English, or mixed. If a language can't be identified, it's written the way it sounds — "kem cho".</p></div></div>
-    <div class="step"><div class="step-photo"><img src="/img/step3.jpg" alt="An elderly man in a turban listening on his phone" /></div><div class="step-body"><div class="n">3</div><h3>You reply with your voice</h3><p>Speak — the caller hears you directly. Can't speak right now? One tap politely says "please repeat" or "one moment" in a natural voice.</p></div></div>
+    <div class="step"><div class="step-photo"><img src="/img/step3.jpg" alt="An elderly man in a turban listening on his phone" /></div><div class="step-body"><div class="n">3</div><h3>You reply — your way</h3><p>Speak, and the caller hears you directly. Or type — they hear your words in a natural voice you choose. Or tap picture tiles that say whole sentences for you. Every way is a real reply on a real call.</p></div></div>
   </div>
 </div></section>
 
@@ -341,7 +373,24 @@ footer .right{margin-left:auto}
 <path d="M16 20 Q12 29 16 38 M10 16 Q4 29 10 42" stroke="#E4590A" stroke-width="2.6" stroke-linecap="round" fill="none"/>
 <path d="M50 20 Q54 29 50 38 M56 16 Q62 29 56 42" stroke="#E4590A" stroke-width="2.6" stroke-linecap="round" fill="none"/>
 <path d="M33 52 L29 58 L33 58 L31 63" stroke="#E4590A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg></div><h3>Rings your way</h3><p>Vibration, flashing screen and an audible ring for family nearby — every call gets noticed.</p></div>
+</svg></div><h3>Rings your way</h3><p>Continuous vibration and lock-screen alerts — even with the app closed and the screen off. Every call gets noticed.</p></div>
+    <div class="feat"><div class="e"><svg viewBox="0 0 64 64" fill="none" style="transform:rotate(-2deg)" aria-hidden="true">
+<rect x="6" y="30" width="40" height="22" rx="5" stroke="#241B12" stroke-width="2.6"/>
+<path d="M12 38 h4 M20 38 h4 M28 38 h4 M36 38 h4 M14 45 h22" stroke="#241B12" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>
+<path d="M46 20 Q56 20 56 27 Q56 34 47 34 L44 34" stroke="#E4590A" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M50 12 Q64 15 60 30 M48 5 Q70 10 64 33" stroke="#E4590A" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".8"/>
+</svg></div><h3>Type, and be heard</h3><p>Can't speak? Type — the caller hears your words a second later in a natural voice you choose. One-tap phrases for the quick stuff.</p></div>
+    <div class="feat"><div class="e"><svg viewBox="0 0 64 64" fill="none" style="transform:rotate(2deg)" aria-hidden="true">
+<rect x="8" y="10" width="20" height="20" rx="5" stroke="#241B12" stroke-width="2.6"/>
+<rect x="36" y="10" width="20" height="20" rx="5" stroke="#E4590A" stroke-width="2.6"/>
+<rect x="8" y="38" width="20" height="20" rx="5" stroke="#E4590A" stroke-width="2.6"/>
+<rect x="36" y="38" width="20" height="20" rx="5" stroke="#241B12" stroke-width="2.6"/>
+<path d="M14 20 Q18 14 22 20" stroke="#241B12" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+<circle cx="46" cy="18" r="3.4" stroke="#E4590A" stroke-width="2.2"/>
+<path d="M42 26 Q46 21 50 26" stroke="#E4590A" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+<path d="M13 48 h10 M18 43 v10" stroke="#E4590A" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M41 48 Q46 42 51 48 Q46 54 41 48 Z" stroke="#241B12" stroke-width="2.2" stroke-linejoin="round"/>
+</svg></div><h3>Talk in pictures</h3><p>A picture board speaks whole sentences with one tap — हाँ, रुकिए, "मैं घर पर हूँ". Built for sign-language-first users. No typing, no reading needed.</p></div>
     <div class="feat"><div class="e"><svg viewBox="0 0 64 64" fill="none" style="transform:rotate(1deg)" aria-hidden="true">
 <path d="M10 44 A22 22 0 0 1 54 44" stroke="#241B12" stroke-width="2.6" stroke-linecap="round" fill="none"/>
 <path d="M12 44 A20 20 0 0 1 26 26" stroke="#E4590A" stroke-width="4" stroke-linecap="round" fill="none" opacity=".9"/>
