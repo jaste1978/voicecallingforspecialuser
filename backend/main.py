@@ -82,6 +82,32 @@ async def health():
     return {"ok": True, "version": APP_VERSION}
 
 
+@app.on_event("startup")
+async def _start_sentinel():
+    import sentinel
+    sentinel.start()
+
+
+@app.post("/api/sentinel/nightwatch")
+async def api_sentinel_nightwatch(request: Request):
+    """Run the synthetic end-to-end call test right now (admin)."""
+    _require_admin(request)
+    import sentinel
+    return await sentinel.run_night_watch()
+
+
+@app.post("/api/sentinel/brief")
+async def api_sentinel_brief(request: Request):
+    """Send the daily brief right now (admin)."""
+    _require_admin(request)
+    import sentinel
+    import telegram_notify
+    await sentinel.brief_job()
+    return {"sent": telegram_notify.configured(),
+            "note": "delivered to Telegram" if telegram_notify.configured()
+            else "Telegram not configured — brief was logged server-side"}
+
+
 @app.post("/api/login")
 async def api_login(payload: dict):
     user = auth.verify(payload.get("email", ""), payload.get("password", ""))
