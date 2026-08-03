@@ -17,11 +17,17 @@ import WaitlistPage from './pages/WaitlistPage'
 import UsersPage from './pages/UsersPage'
 import CostsPage from './pages/CostsPage'
 import StartPage from './pages/StartPage'
+import HomePage from './pages/HomePage'
+import HelpPage from './pages/HelpPage'
+import SupportPage from './pages/SupportPage'
 import TabBar from './components/TabBar'
 
 const TITLES: Record<string, string> = {
-  '/': 'Calls',
+  '/': 'SunoSathi',
+  '/calls': 'Calls',
   '/call': 'Calls',
+  '/help': 'Help & FAQ',
+  '/support': 'Contact us',
   '/contacts': 'Contacts',
   '/settings': 'Settings',
   '/captions': 'Caption Tester',
@@ -35,7 +41,7 @@ const TITLES: Record<string, string> = {
 }
 
 // main tab roots — no back button, tab bar visible
-const TAB_ROOTS = new Set(['/', '/call', '/contacts', '/settings'])
+const TAB_ROOTS = new Set(['/', '/calls', '/call', '/contacts', '/settings'])
 // sub-pages that belong to the Settings tab
 const SETTINGS_CHILDREN = new Set([
   '/captions', '/history', '/models', '/ringtone', '/monitor', '/waitlist', '/users', '/costs',
@@ -53,7 +59,7 @@ export default function App() {
     // a ring can land while the user is on Contacts/Settings — bring them
     // to the call screen so the ring UI is always seen
     return callStore.onRing(() => {
-      if (getToken()) navigate('/', { replace: false })
+      if (getToken()) navigate('/calls', { replace: false })
     })
   }, [navigate])
 
@@ -109,8 +115,11 @@ export default function App() {
       </header>
       <div className="content">
         <Routes>
-          <Route path="/" element={<CallPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/calls" element={<CallPage />} />
           <Route path="/call" element={<CallPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/settings" element={<SettingsTab />} />
           <Route path="/captions" element={<CaptionsPage />} />

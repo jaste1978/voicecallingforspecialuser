@@ -3,6 +3,17 @@ import { useLocation, useNavigate } from 'react-router-dom'
 const TABS = [
   {
     path: '/',
+    label: 'Home',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 11l8-7 8 7" />
+        <path d="M6 9.5V20h12V9.5" />
+        <path d="M10 20v-6h4v6" />
+      </svg>
+    ),
+  },
+  {
+    path: '/calls',
     label: 'Calls',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -41,7 +52,11 @@ export default function TabBar() {
     <nav className="tabbar" aria-label="Main">
       {TABS.map((t) => {
         const active =
-          t.path === '/' ? pathname === '/' || pathname === '/call' : pathname.startsWith(t.path)
+          t.path === '/'
+            ? pathname === '/'
+            : t.path === '/calls'
+              ? pathname === '/calls' || pathname === '/call'
+              : pathname.startsWith(t.path)
         return (
           <button
             key={t.path}

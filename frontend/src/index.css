@@ -1587,6 +1587,74 @@ select.lang.wide {
   max-width: 46%;
 }
 
+/* ---------- home tab + help ---------- */
+.home-tab {
+  justify-content: flex-start;
+}
+
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 2px;
+}
+
+.home-brand .login-mark {
+  width: 46px;
+  height: 46px;
+  margin: 0;
+}
+
+.home-brand b {
+  display: block;
+  font-size: 20px;
+}
+
+.home-brand small {
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.home-tab .home-btn {
+  font-size: 19px;
+  padding: 16px 16px;
+}
+
+.home-tab .home-btn .emoji {
+  width: 48px;
+  height: 48px;
+  font-size: 26px;
+}
+
+.faq-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 16.5px;
+  font-weight: 600;
+  text-align: left;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.faq-a {
+  margin: 0;
+  padding: 0 16px 16px;
+  color: var(--dim);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
 /* ---------- cost monitor ---------- */
 .cost-cards {
   display: grid;

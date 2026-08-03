@@ -79,6 +79,20 @@ export default function SettingsTab() {
           ))}
         </select>
       </div>
+      <button className="home-btn" onClick={() => navigate('/help')}>
+        <span className="emoji icon"><CaptionsIcon size={28} /></span>
+        <span>
+          Help &amp; FAQ
+          <small>मदद — answers to common questions</small>
+        </span>
+      </button>
+      <button className="home-btn" onClick={() => navigate('/support')}>
+        <span className="emoji icon"><PhoneIncomingIcon size={28} /></span>
+        <span>
+          Contact us
+          <small>WhatsApp, email or send a message</small>
+        </span>
+      </button>
       {admin && (
         <>
           <p className="settings-group">Admin</p>

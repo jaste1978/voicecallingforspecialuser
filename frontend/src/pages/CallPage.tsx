@@ -84,14 +84,9 @@ export default function CallPage() {
   // whether the caller's voice is audible on this device (a hard-of-hearing
   // user may want sound + captions; a deaf user may keep it off)
   const [speakerOn, setSpeakerOn] = useState(() => localStorage.getItem('speakerOn') !== '0')
-  const [ownNumber, setOwnNumber] = useState('')
-  const [hasOwnNumber, setHasOwnNumber] = useState(true)
-  const [forwardCode, setForwardCode] = useState('')
-  const [codeCopied, setCodeCopied] = useState(false)
   const [recents, setRecents] = useState<RecentCall[]>([])
   const [recentsLoading, setRecentsLoading] = useState(true)
   const [contacts, setContacts] = useState<Contact[]>([])
-  const [shared, setShared] = useState(false)
   const language: LanguageKey = 'auto'
 
   const clientRef = useRef<CallClient | null>(null)
@@ -152,14 +147,6 @@ export default function CallPage() {
   // living home data
   useEffect(() => {
     if (state !== 'idle') return
-    authFetch('/api/me')
-      .then((r) => r.json())
-      .then((d) => {
-        setOwnNumber(d.number || '')
-        setHasOwnNumber(Boolean(d.has_own_number))
-        setForwardCode(d.forward_code || '')
-      })
-      .catch(() => {})
     authFetch('/api/calls')
       .then((r) => r.json())
       .then((d) => setRecents((d.calls ?? []).slice(0, 8)))
@@ -473,7 +460,7 @@ export default function CallPage() {
             <button
               className="roundbtn accept"
               onClick={() => {
-                navigate('/', { replace: true })
+                navigate('/calls', { replace: true })
                 void startDial(pendingDial.number, pendingDial.name)
               }}
               aria-label="Call now"
@@ -491,54 +478,6 @@ export default function CallPage() {
       <div className={`ready-pill ${connected ? 'ok' : 'bad'}`}>
         {connected ? '🟢 Ready for calls' : '📡 Reconnecting…'}
       </div>
-
-      {hasOwnNumber && ownNumber && (
-        <div className="number-card">
-          <div>
-            <small>Your number</small>
-            <b>{ownNumber}</b>
-          </div>
-          <button
-            className="sharebtn"
-            onClick={() => {
-              const text = `Call me on ${ownNumber} — I read your words live with SunoSathi.`
-              if (navigator.share) void navigator.share({ text })
-              else {
-                void navigator.clipboard?.writeText(text)
-                setShared(true)
-                setTimeout(() => setShared(false), 2000)
-              }
-            }}
-          >
-            {shared ? '✓ Copied' : 'Share'}
-          </button>
-        </div>
-      )}
-
-      {!recentsLoading && recents.length === 0 && forwardCode && (
-        <div className="setup-card">
-          <p className="howto-title">One-time setup</p>
-          <p className="setup-text">
-            Dial this code from your phone to forward your calls to SunoSathi:
-          </p>
-          <div className="forward-code-row">
-            <code className="forward-code">{forwardCode}</code>
-            <button
-              className="promptbtn"
-              onClick={() => {
-                void navigator.clipboard?.writeText(forwardCode)
-                setCodeCopied(true)
-                setTimeout(() => setCodeCopied(false), 2000)
-              }}
-            >
-              {codeCopied ? '✓' : 'Copy'}
-            </button>
-          </div>
-          <p className="setup-text">
-            That's it — once done, your calls ring here and you're good to go.
-          </p>
-        </div>
-      )}
 
       {error && <p className="status-line error">{error}</p>}
 
@@ -560,13 +499,10 @@ export default function CallPage() {
         </div>
       )}
       {!recentsLoading && recents.length === 0 && (
-        <div className="howto-card">
-          <p className="howto-title">How it works</p>
-          <ol className="howto-steps">
-            <li><b>Calls ring here</b> — accept and read the caller's words live on screen.</li>
-            <li><b>Speak normally</b> — they hear your own voice, no typing needed.</li>
-          </ol>
-        </div>
+        <p className="idle-hint">
+          No calls yet — set up call forwarding from the Home tab, then your
+          calls ring right here.
+        </p>
       )}
       <div className="recents">
         {recents.map((c) => {
