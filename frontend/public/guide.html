@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SunoSathi Guide — install करें और इस्तेमाल सीखें, screen by screen</title>
+<meta name="description" content="SunoSathi को install करने और इस्तेमाल करने की पूरी guide — असली app screens के साथ, step by step. Live captions, type-to-speak, picture board." />
+<link rel="canonical" href="https://sunosathi.com/guide" />
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Kalam:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFF8F1;--panel:#fff;--ink:#241B12;--dim:#8A7767;--accent:#E4590A;--accent-ink:#C2410C;--chip:#FFF3E7;--line:#F0E0D0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari',sans-serif;line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding:0 18px}
+header{padding:40px 0 8px;text-align:center}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:clamp(26px,5vw,40px);margin:0 0 8px;letter-spacing:-.01em}
+.sub{color:var(--dim);max-width:56ch;margin:0 auto 6px;font-size:16.5px}
+.hand{font-family:'Kalam',cursive;color:var(--accent-ink)}
+.pill{display:inline-block;background:var(--chip);border:1px solid var(--line);color:var(--accent-ink);border-radius:999px;padding:5px 14px;font-size:13.5px;font-weight:700;margin:4px 3px 0}
+/* slideshow */
+.deck-outer{position:relative;margin:26px 0 8px}
+.deck{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:18px;padding:8px 4px 18px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;scroll-snap-align:center;display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:22px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px}
+@media(max-width:640px){.slide{grid-template-columns:1fr;text-align:center}}
+.shot{width:100%;max-width:300px;margin:0 auto;border-radius:22px;border:1px solid var(--line);box-shadow:0 14px 34px rgba(120,60,10,.16);display:block;aspect-ratio:1/2;object-fit:cover;background:var(--chip)}
+.no-shot{width:100%;max-width:300px;margin:0 auto;aspect-ratio:1/2;border-radius:22px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(120,60,10,.16)}
+.no-shot img{width:45%}
+.stepno{font-family:'Kalam',cursive;color:var(--accent);font-size:17px;margin:0}
+.slide h2{font-family:'Fraunces',Georgia,serif;font-size:clamp(20px,3vw,27px);margin:4px 0 10px}
+.slide p{color:var(--dim);font-size:16px;margin:0 0 8px}
+.slide b{color:var(--ink)}
+.code{display:inline-block;background:var(--chip);border:1.5px dashed var(--accent-ink);border-radius:12px;padding:8px 14px;font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--accent-ink);font-size:18px;letter-spacing:.03em;margin:4px 0}
+/* nav */
+.deck-nav{display:flex;align-items:center;justify-content:center;gap:18px;margin:2px 0 8px}
+.arrow{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--accent-ink);font-size:20px;cursor:pointer}
+.arrow:active{background:var(--chip)}
+.dots{display:flex;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line);transition:all .2s}
+.dot.on{background:var(--accent);transform:scale(1.25)}
+footer{text-align:center;color:var(--dim);font-size:13.5px;padding:26px 0 50px}
+footer a{color:var(--accent-ink)}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:13px 26px;border-radius:28px;text-decoration:none;font-size:16px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>कैसे शुरू करें <span class="hand">— step by step</span></h1>
+  <p class="sub">असली app की तस्वीरों के साथ पूरी guide। तीर के बटन से आगे बढ़िए — या swipe कीजिए।</p>
+  <span class="pill">📲 Install</span><span class="pill">🔑 Sign in</span><span class="pill">📞 Forward</span><span class="pill">💬 Calls</span>
+</header>
+
+<div class="deck-outer">
+<div class="deck" id="deck">
+
+  <section class="slide">
+    <div class="no-shot"><img src="/icon.svg" alt="SunoSathi app icon"></div>
+    <div>
+      <p class="stepno">Step 1 · Android</p>
+      <h2>App install कीजिए</h2>
+      <p><b>Android:</b> जो APK file आपको WhatsApp पर मिली है, उसे खोलिए → "Install" दबाइए। "Unknown apps" का सवाल आए तो <b>Allow</b> कर दीजिए।</p>
+      <p><b>iPhone:</b> Safari में <b>app.sunosathi.com</b> खोलिए → Share बटन → <b>Add to Home Screen</b>.</p>
+      <p>पहली बार खुलने पर <b>Microphone</b> और <b>Notifications</b> — दोनों Allow कीजिए। 🎤 = आपकी आवाज़ caller तक, 🔔 = call की ring आप तक।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/welcome.png" alt="SunoSathi welcome screen with a live captioned call demo">
+    <div>
+      <p class="stepno">Step 2</p>
+      <h2>App खोलिए</h2>
+      <p>यह पहली screen है — यहाँ app खुद दिखाता है कि call कैसी दिखेगी: माँ बोलती हैं, शब्द screen पर आते हैं।</p>
+      <p>नीचे <b>"Sign in · साइन इन"</b> दबाइए।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/login.png" alt="Sign in screen">
+    <div>
+      <p class="stepno">Step 3</p>
+      <h2>Sign in कीजिए</h2>
+      <p>आपको WhatsApp पर <b>email और password</b> मिला होगा — वही यहाँ डालिए।</p>
+      <p>नहीं मिला? <a href="/#pilot">sunosathi.com</a> पर pilot join कीजिए, हम आपको personally setup कर देंगे।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/home.png" alt="Home screen with call forwarding code">
+    <div>
+      <p class="stepno">Step 4 · सबसे ज़रूरी</p>
+      <h2>अपना नंबर जोड़िए</h2>
+      <p>Home पर यह code दिखेगा। अपने phone के dialer से इसे <b>एक बार</b> dial कीजिए:</p>
+      <p><span class="code">**21*07971442451#</span></p>
+      <p>बस! अब आपके अपने नंबर के सारे calls SunoSathi में आएँगे। (बंद करना हो तो <b>##21#</b> dial कीजिए।)</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/ring.png" alt="Incoming call screen with accept and decline buttons">
+    <div>
+      <p class="stepno">Step 5</p>
+      <h2>Call आई! 📳</h2>
+      <p>Phone लगातार vibrate करेगा और lock screen पर भी दिखेगा — app बंद हो तब भी।</p>
+      <p><b>हरा बटन</b> = उठाइए · <b>लाल बटन</b> = मना कीजिए</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/captions.png" alt="Live captions of the caller's Hindi words as chat bubbles">
+    <div>
+      <p class="stepno">Step 6</p>
+      <h2>पढ़िए, chat की तरह</h2>
+      <p>Caller के शब्द <b>live</b> आते हैं — हिन्दी, ગુજરાતી, English, Hinglish, अपने आप पहचान कर।</p>
+      <p>अक्षर छोटे लगें? ऊपर <b>A− / A+</b> दबाइए।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/speak.png" alt="Typed replies spoken to the caller shown as orange bubbles">
+    <div>
+      <p class="stepno">Step 7</p>
+      <h2>जवाब — आपके तरीक़े से</h2>
+      <p><b>बोलिए</b> — caller आपकी आवाज़ सीधे सुनेगा।</p>
+      <p><b>या type कीजिए</b> — नीचे लिखिए, caller एक second में natural आवाज़ में सुनेगा।</p>
+      <p><b>या ऊपर के बटन</b> — हाँ · ना · ठीक है · रुकिए — एक दबाने पर बोल दिया जाता है।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/board.png" alt="Picture talk board with emoji tiles that speak sentences">
+    <div>
+      <p class="stepno">Step 8</p>
+      <h2>🖼️ Picture talk</h2>
+      <p>Type करना मुश्किल हो तो 🖼️ दबाइए — तस्वीर दबाते ही <b>पूरा वाक्य बोल दिया जाता है</b>। पढ़ना-लिखना ज़रूरी नहीं।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <img class="shot" src="/img/guide/settings.png" alt="Settings with My voice selection">
+    <div>
+      <p class="stepno">Step 9</p>
+      <h2>अपनी आवाज़ चुनिए</h2>
+      <p>Settings → <b>My voice</b> — type करने पर caller को जो आवाज़ सुनाई देती है, वो आप चुनिए (महिला/पुरुष)।</p>
+      <p>⚠️ <b>ज़रूरी tip:</b> Android Settings → Apps → SunoSathi → Battery → <b>Unrestricted</b> — ताकि ring कभी miss न हो।</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="no-shot"><img src="/icon.svg" alt=""></div>
+    <div>
+      <p class="stepno">बस इतना ही 🙏</p>
+      <h2>अब हर call आपकी है</h2>
+      <p>कोई दिक्कत हो? App में <b>Home → Contact us</b> से WhatsApp कीजिए — typing से ही बात होगी।</p>
+      <a class="cta" href="https://app.sunosathi.com">App खोलिए →</a>
+    </div>
+  </section>
+
+</div>
+</div>
+
+<div class="deck-nav">
+  <button class="arrow" id="prev" aria-label="Previous step">←</button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="next" aria-label="Next step">→</button>
+</div>
+
+<footer>
+  SunoSathi · सुनोसाथी — <a href="/">sunosathi.com</a> · guide with real app screens · free during pilot
+</footer>
+
+</div>
+<script>
+const deck = document.getElementById('deck')
+const slides = [...deck.children]
+const dots = document.getElementById('dots')
+slides.forEach((_, i) => {
+  const d = document.createElement('span')
+  d.className = 'dot' + (i === 0 ? ' on' : '')
+  dots.appendChild(d)
+})
+function current() {
+  return Math.round(deck.scrollLeft / deck.clientWidth)
+}
+function go(i) {
+  const target = slides[Math.max(0, Math.min(slides.length - 1, i))]
+  // 'smooth' is unreliable with mandatory scroll-snap in some browsers
+  target.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' })
+}
+document.getElementById('prev').onclick = () => go(current() - 1)
+document.getElementById('next').onclick = () => go(current() + 1)
+deck.addEventListener('scroll', () => {
+  const c = current()
+  ;[...dots.children].forEach((d, i) => d.classList.toggle('on', i === c))
+}, { passive: true })
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') go(current() + 1)
+  if (e.key === 'ArrowLeft') go(current() - 1)
+})
+</script>
+</body>
+</html>

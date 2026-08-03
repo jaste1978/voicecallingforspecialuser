@@ -487,6 +487,8 @@ if _dist.is_dir():
             return FileResponse(_dist / "welcome.html")
         if path == "ios":
             return FileResponse(_dist / "ios.html")
+        if path == "guide":
+            return FileResponse(_dist / "guide.html")
         candidate = _dist / path
         if path and ".." not in path and candidate.is_file():
             return FileResponse(candidate)

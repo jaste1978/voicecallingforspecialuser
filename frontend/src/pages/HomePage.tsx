@@ -76,7 +76,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <button className="home-btn" onClick={() => navigate('/guide')}>
+      <button className="home-btn" onClick={() => { window.location.href = '/guide' }}>
         <span className="emoji icon"><CaptionsIcon size={28} /></span>
         <span>
           How to use · कैसे इस्तेमाल करें
