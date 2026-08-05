@@ -1,6 +1,6 @@
 # SunoSathi Roadmap
 
-_Last updated: 29 Jul 2026_
+_Last updated: 5 Aug 2026_
 
 ## Cost optimization ladder (inbound ≈ ₹1.5/min all-in today)
 
@@ -64,6 +64,27 @@ _Last updated: 29 Jul 2026_
       speak; providers layer already supports TTS.
 - [ ] Sound alerts (doorbell/alarm/horn → vibration + flash) — YAMNet
       in-browser; original phase-3 idea, never built.
+- [ ] **Android "Lite mode" — captions without Vobiz** (parked 2026-08-05).
+      Idea: avoid forwarding/Vobiz entirely by handling the call on-device.
+      Feasibility verdict:
+      - **iOS: impossible.** No third-party access to cellular call audio,
+        no permission exists. Any iOS solution must route through a server
+        (our forwarding model). This is why InnoCaption/Rogervoice/Nagish
+        all route calls through their own telephony backends too.
+      - **Android: partial.** No public API for the call audio stream
+        either (VOICE_DOWNLINK is system-privileged; accessibility-service
+        recording banned from Play Store 2022). The one real workaround:
+        app becomes **default dialer** (InCallService role) → answer in-app
+        → force **speakerphone** → phone mic captures caller's voice from
+        the loudspeaker → stream to Sarvam → captions.
+      Trade-offs vs Vobiz: call audible to everyone nearby (privacy),
+      room-noise quality (vs clean 16kHz network audio), type-to-speak
+      unreliable (echo cancellation fights TTS played over speaker),
+      Android-only, Play Store review risk on call-capture policy.
+      Saves ₹0.60–0.80/min Vobiz cost + the one-time forwarding step.
+      Position: possible free tier / cost-relief experiment at scale;
+      do NOT replace the Vobiz core with it. Default-dialer role would
+      also give native ring/answer UX as a side benefit.
 - [ ] Translation bridge (caller speaks Hindi → captions in English).
 - [ ] Proper Expo dev-build (background incoming-call push notifications;
       Expo Go can't do background).
