@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { authFetch } from '../lib/auth'
 
 interface Signup {
   id: number
@@ -11,61 +12,23 @@ interface Signup {
 }
 
 export default function WaitlistPage() {
-  const [key, setKey] = useState(() => localStorage.getItem('adminKey') || '')
-  const [input, setInput] = useState('')
   const [signups, setSignups] = useState<Signup[] | null>(null)
   const [error, setError] = useState('')
 
-  async function load(k: string) {
-    setError('')
-    const resp = await fetch('/api/waitlist', { headers: { 'X-Admin-Key': k } })
-    if (resp.status === 403) {
-      setError('Wrong admin key')
-      localStorage.removeItem('adminKey')
-      setKey('')
-      return
-    }
-    const d = await resp.json()
-    setSignups(d.signups)
-  }
-
   useEffect(() => {
-    if (key) void load(key)
-  }, [key])
+    authFetch('/api/waitlist')
+      .then(async (resp) => {
+        if (resp.status === 403) {
+          setError('This page is for the admin account only.')
+          return
+        }
+        const d = await resp.json()
+        setSignups(d.signups)
+      })
+      .catch(() => setError('Could not load signups — check your connection.'))
+  }, [])
 
-  if (!key) {
-    return (
-      <main className="settings-page">
-        <section className="setting-block">
-          <h3>Admin key required</h3>
-          <p className="idle-hint">
-            Waitlist signups contain personal emails, so this page needs the
-            admin key (stored only on this device).
-          </p>
-          <input
-            className="dialinput"
-            type="password"
-            placeholder="Admin key"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          {error && <p className="status-line error">{error}</p>}
-          <button
-            className="bigbtn start"
-            style={{ marginTop: 10 }}
-            disabled={!input.trim()}
-            onClick={() => {
-              localStorage.setItem('adminKey', input.trim())
-              setKey(input.trim())
-            }}
-          >
-            Unlock
-          </button>
-        </section>
-      </main>
-    )
-  }
-
+  if (error) return <main className="stub">{error}</main>
   if (!signups) return <main className="stub">Loading…</main>
 
   return (
