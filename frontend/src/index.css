@@ -562,6 +562,25 @@ select.lang {
   overflow: hidden;
 }
 
+.logout-btn {
+  display: block;
+  width: 100%;
+  margin: 18px 0 6px;
+  padding: 13px;
+  border: 1.5px solid var(--danger);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout-btn:active {
+  background: var(--danger);
+  color: #fff;
+}
+
 .history-head {
   display: flex;
   align-items: center;

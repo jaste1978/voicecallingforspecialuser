@@ -18,11 +18,24 @@ const VOICES = [
 export default function SettingsTab() {
   const navigate = useNavigate()
   const [voice, setVoice] = useState('')
+  const [admin, setAdmin] = useState(isAdmin())
 
   useEffect(() => {
     authFetch('/api/prefs')
       .then((r) => r.json())
       .then((d) => setVoice(d.voice || ''))
+      .catch(() => {})
+    // sessions created before roles existed have no stored role — refresh
+    // it from the server so the admin section appears without a re-login
+    authFetch('/api/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.role) {
+          localStorage.setItem('authRole', d.role)
+          if (d.name) localStorage.setItem('authName', d.name)
+          setAdmin(d.role === 'admin')
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -43,8 +56,6 @@ export default function SettingsTab() {
       navigate('/login', { replace: true })
     }
   }
-
-  const admin = isAdmin()
 
   return (
     <main className="home settings-list">
@@ -133,8 +144,8 @@ export default function SettingsTab() {
           </button>
         </>
       )}
-      <button className="historylink" onClick={() => void logout()}>
-        Log out{authName() ? ` (${authName()})` : ''}
+      <button className="logout-btn" onClick={() => void logout()}>
+        Log out{authName() ? ` · ${authName()}` : ''}
       </button>
       <p className="version-line">
         v{__APP_VERSION__} · deployed{' '}
