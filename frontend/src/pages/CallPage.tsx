@@ -24,11 +24,19 @@ interface Segment {
 interface RecentCall {
   id: number
   from_number: string
+  to_number?: string
   direction?: string
   started_at: number
   answered: boolean
   duration_s: number
   reason: string
+}
+
+// peer's dialable number: caller for incoming, dialed number for outgoing
+export function peerNumber(c: { from_number: string; to_number?: string; direction?: string }): string | null {
+  const raw = (c.direction === 'out' ? c.to_number : c.from_number) ?? ''
+  const digits = raw.replace(/\D/g, '')
+  return digits.length >= 8 ? raw : null
 }
 
 interface Contact {
@@ -509,6 +517,7 @@ export default function CallPage() {
           const display = resolveName(c.from_number)
           const missed = !c.answered
           const out = c.direction === 'out'
+          const num = peerNumber(c)
           return (
             <div className="recent-row" key={c.id}>
               <Avatar name={display} variant="tiny" />
@@ -523,6 +532,15 @@ export default function CallPage() {
                   {fmtRelative(c.started_at)}
                 </small>
               </div>
+              {num && (
+                <button
+                  className="row-call"
+                  aria-label={`Call ${display}`}
+                  onClick={() => navigate('/call', { state: { dial: { number: num, name: display } } })}
+                >
+                  <PhoneIcon size={18} strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           )
         })}

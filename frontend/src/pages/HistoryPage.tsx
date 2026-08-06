@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { audioUrl, authFetch } from '../lib/auth'
 import { fmtDuration, fmtRelative, resolveDisplay, type NamedContact } from '../lib/format'
 import Avatar from '../components/Avatar'
+import { PhoneIcon } from '../components/icons'
+import { peerNumber } from './CallPage'
 
 interface TimelineEvent {
   t_ms: number
@@ -13,6 +16,7 @@ export interface CallRecord {
   id: number
   call_uuid: string
   from_number: string
+  to_number?: string
   started_at: number
   answered: boolean
   duration_s: number
@@ -36,6 +40,7 @@ function eventDetail(e: TimelineEvent): string {
 }
 
 export default function HistoryPage() {
+  const navigate = useNavigate()
   const [calls, setCalls] = useState<CallRecord[]>([])
   const [contacts, setContacts] = useState<NamedContact[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
@@ -76,26 +81,38 @@ export default function HistoryPage() {
           const display = resolveDisplay(c.from_number, contacts)
           const missed = !c.answered
           const out = c.direction === 'out'
+          const num = peerNumber(c)
           return (
             <div key={c.id} className="history-item">
-              <button
-                className="history-row"
-                onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
-              >
-                <Avatar name={display} variant="tiny" />
-                <div className="recent-main">
-                  <b className={missed ? 'missed-text' : ''}>{display}</b>
-                  <small>
-                    <span className={`dir ${missed ? 'red' : out ? 'orange' : 'green'}`}>
-                      {out ? '↗' : missed ? '↓' : '↙'}
-                    </span>{' '}
-                    {missed ? (c.reason === 'declined' ? 'Declined' : 'Missed') : fmtDuration(c.duration_s)}
-                    {' · '}
-                    {fmtRelative(c.started_at)}
-                  </small>
-                </div>
-                <span className="history-chevron">{expandedId === c.id ? '▲' : '▼'}</span>
-              </button>
+              <div className="history-head">
+                <button
+                  className="history-row"
+                  onClick={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                >
+                  <Avatar name={display} variant="tiny" />
+                  <div className="recent-main">
+                    <b className={missed ? 'missed-text' : ''}>{display}</b>
+                    <small>
+                      <span className={`dir ${missed ? 'red' : out ? 'orange' : 'green'}`}>
+                        {out ? '↗' : missed ? '↓' : '↙'}
+                      </span>{' '}
+                      {missed ? (c.reason === 'declined' ? 'Declined' : 'Missed') : fmtDuration(c.duration_s)}
+                      {' · '}
+                      {fmtRelative(c.started_at)}
+                    </small>
+                  </div>
+                  <span className="history-chevron">{expandedId === c.id ? '▲' : '▼'}</span>
+                </button>
+                {num && (
+                  <button
+                    className="row-call"
+                    aria-label={`Call ${display}`}
+                    onClick={() => navigate('/call', { state: { dial: { number: num, name: display } } })}
+                  >
+                    <PhoneIcon size={18} strokeWidth={2.2} />
+                  </button>
+                )}
+              </div>
               {expandedId === c.id && (
                 <div className="history-transcript">
                   {c.quality_score != null && (

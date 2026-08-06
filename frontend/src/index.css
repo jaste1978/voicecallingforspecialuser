@@ -562,6 +562,40 @@ select.lang {
   overflow: hidden;
 }
 
+.history-head {
+  display: flex;
+  align-items: center;
+}
+
+.history-head .history-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-call {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  margin-left: 8px;
+  border: 1.5px solid var(--ok);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.row-call:active {
+  background: var(--ok);
+  color: #fff;
+}
+
+.row-call:active {
+  transform: scale(0.92);
+}
+
 .history-row {
   display: flex;
   align-items: center;
