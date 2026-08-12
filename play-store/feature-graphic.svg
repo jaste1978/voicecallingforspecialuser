@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#E4590A"/>
+  <!-- सुनो listening mark, from brand/tile.svg geometry -->
+  <g transform="translate(190,250) scale(2.2) translate(-71.5,-73)">
+    <path d="M100 26 C120 33 131 51 131 71 C131 100 111 120 84 120 C64 120 51 109 46 93" fill="none" stroke="#FFF8F1" stroke-width="9" stroke-linecap="round"/>
+    <path d="M46 93 C44 80 51 71 62 71 C73 71 80 80 78 91" fill="none" stroke="#FFF8F1" stroke-width="9" stroke-linecap="round"/>
+    <rect x="8" y="38" width="36" height="8" rx="4" fill="#FFF3E7"/>
+    <rect x="16" y="56" width="28" height="8" rx="4" fill="#FFF3E7" opacity=".85"/>
+    <rect x="24" y="74" width="20" height="8" rx="4" fill="#FFF3E7" opacity=".65"/>
+  </g>
+  <g font-family="Noto Sans Devanagari, Noto Sans, system-ui, sans-serif" fill="#FFF8F1">
+    <text x="400" y="215" font-size="86" font-weight="700">सुनोसाथी</text>
+    <text x="402" y="278" font-size="40" font-weight="600" opacity=".95">SunoSathi</text>
+    <text x="402" y="340" font-size="30" opacity=".9">Read your calls. Reply your way.</text>
+    <text x="402" y="385" font-size="26" opacity=".8">आपके कान, आपकी आवाज़</text>
+  </g>
+</svg>
