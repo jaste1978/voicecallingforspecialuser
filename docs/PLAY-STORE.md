@@ -45,11 +45,15 @@ Everything needed to publish. Files live in `play-store/`; the signed bundle is
 6. Add testers (email list or Google Group) → share the opt-in link → after 14
    days with 12+ testers, Dashboard shows **Apply for production**.
 
-### Demo account for Google reviewers
-Create a dedicated user (do NOT give them your admin): email
-`playreview@sunosathi.com`-style account via Users & Numbers, register a spare
-number, note the password in the App access form. Reviewers must be able to log
-in and see the Calls screen.
+### Demo account for Google reviewers (CREATED 2026-08-12)
+Live on production, plain `user` role (no admin access):
+- URL to enter in the form: `https://app.sunosathi.com`
+- Email: `playreview@sunosathi.com`
+- Password: `GoogleReview12e1c6de`
+Login verified working. In **App access** choose *All or some functionality is
+restricted* → add these credentials with instructions: "Log in, allow or skip
+the mic prompt; the Calls tab shows live captioned calling; Caption Tester
+under Settings demonstrates live captions using the device mic."
 
 ## Store listing copy
 
