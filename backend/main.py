@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -113,9 +114,65 @@ async def api_login(payload: dict):
     user = auth.verify(payload.get("email", ""), payload.get("password", ""))
     if user is None:
         return Response(status_code=401)
+    if user.get("status") == "pending":
+        return JSONResponse({"reason": "pending"}, status_code=403)
+    if user.get("status") == "rejected":
+        return JSONResponse({"reason": "rejected"}, status_code=403)
     token = auth.create_session(user["id"])
     logger.info("login: %s", user["email"])
     return {"token": token, "name": user["name"], "role": user["role"], "email": user["email"]}
+
+
+@app.post("/api/register")
+async def api_register(payload: dict):
+    import telegram_notify
+
+    name = (payload.get("name") or "").strip()
+    email = (payload.get("email") or "").strip()
+    password = payload.get("password") or ""
+    number = "".join(c for c in (payload.get("number") or "") if c.isdigit())
+    if len(number) == 12 and number.startswith("91"):
+        number = number[2:]
+    if not name or "@" not in email or len(password) < 8 or len(number) != 10:
+        return JSONResponse({"error": "invalid"}, status_code=422)
+    try:
+        uid = auth.register(email, password, name, number)
+    except Exception:
+        return JSONResponse({"error": "exists"}, status_code=409)
+    logger.info("registration: %s <%s> number=%s (pending approval)", name, email, number)
+    await telegram_notify.send(
+        f"🆕 <b>New SunoSathi registration</b>\n{name} &lt;{email}&gt;\n"
+        f"Number: {number}\nApprove in Settings → Users &amp; Numbers."
+    )
+    return {"ok": True, "id": uid}
+
+
+@app.post("/api/users/{user_id}/approve")
+async def api_user_approve(user_id: int, request: Request):
+    _require_admin(request)
+    import number_map
+
+    user = auth.set_status(user_id, "active")
+    if user is None:
+        return Response(status_code=404)
+    num = user.get("requested_number")
+    if num:
+        try:
+            number_map.add_number(user_id, num)
+        except Exception:
+            pass  # already registered
+    logger.info("user %s approved", user_id)
+    return {"ok": True}
+
+
+@app.post("/api/users/{user_id}/reject")
+async def api_user_reject(user_id: int, request: Request):
+    _require_admin(request)
+    user = auth.set_status(user_id, "rejected")
+    if user is None:
+        return Response(status_code=404)
+    logger.info("user %s rejected", user_id)
+    return {"ok": True}
 
 
 @app.post("/api/logout")

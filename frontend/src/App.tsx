@@ -5,6 +5,7 @@ import { syncNativeAuth } from './lib/native-bridge'
 import { startVersionWatch } from './lib/version-watch'
 import { callStore } from './lib/call-store'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import CaptionsPage from './pages/CaptionsPage'
 import CallPage from './pages/CallPage'
 import HistoryPage from './pages/HistoryPage'
@@ -67,7 +68,7 @@ export default function App() {
     const authed = Boolean(getToken())
     // keep the native shell's background ring service in sync with login
     syncNativeAuth(getToken())
-    if (!authed && pathname !== '/login' && pathname !== '/start') {
+    if (!authed && pathname !== '/login' && pathname !== '/start' && pathname !== '/register') {
       navigate('/start', { replace: true })
     } else if (authed && pathname === '/start') {
       navigate('/', { replace: true })
@@ -84,7 +85,7 @@ export default function App() {
     )
   }
 
-  if (pathname === '/login') {
+  if (pathname === '/login' || pathname === '/register') {
     return (
       <div className="app">
         <header className="topbar">
@@ -92,6 +93,7 @@ export default function App() {
         </header>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
       </div>
     )

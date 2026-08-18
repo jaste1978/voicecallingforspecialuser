@@ -20,6 +20,15 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
+      if (resp.status === 403) {
+        const d = await resp.json().catch(() => ({}))
+        setError(
+          d.reason === 'pending'
+            ? 'Your account is waiting for approval — we will SMS/WhatsApp you when it is ready. आपका खाता जल्द चालू होगा।'
+            : 'This account was not approved. Contact us from the Support page.',
+        )
+        return
+      }
       if (!resp.ok) {
         setError('Wrong email or password')
         return
@@ -69,8 +78,11 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="idle-hint" style={{ marginTop: 14 }}>
-          No account yet? Join the pilot at{' '}
-          <a href="https://sunosathi.com/#pilot">sunosathi.com</a> and we'll set you up.
+          No account yet?{' '}
+          <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register') }}>
+            Create one here
+          </a>{' '}
+          — it takes a minute.
         </p>
       </section>
     </main>

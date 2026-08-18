@@ -33,12 +33,6 @@ export default function StartPage() {
   const [demoIdx, setDemoIdx] = useState(0)
   const [shown, setShown] = useState<{ who: string; text: string }[]>([])
   const [typing, setTyping] = useState('')
-  // waitlist sheet
-  const [joining, setJoining] = useState(false)
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
-  const [error, setError] = useState('')
   const timeouts = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
@@ -85,25 +79,6 @@ export default function StartPage() {
   const demo = DEMOS[demoIdx]
   const typingWho = demo.lines[shown.length]?.who ?? 'in'
 
-  async function joinPilot() {
-    setError('')
-    if (!name.trim() || !email.includes('@')) {
-      setError('Please add your name and a valid email')
-      return
-    }
-    try {
-      const resp = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), role: 'app', message: 'Joined from the app welcome screen' }),
-      })
-      if (!resp.ok) throw new Error()
-      setSent(true)
-    } catch {
-      setError('Could not reach the server — try again')
-    }
-  }
-
   return (
     <main className="start-page">
       <div className="start-brand">
@@ -147,31 +122,9 @@ export default function StartPage() {
         Sign in · साइन इन
       </button>
 
-      {!joining && !sent && (
-        <button className="historylink" onClick={() => setJoining(true)}>
-          New here? Join the pilot →
-        </button>
-      )}
-      {joining && !sent && (
-        <div className="join-sheet">
-          <input className="dialinput" placeholder="Your name" value={name}
-            onChange={(e) => setName(e.target.value)} />
-          <input className="dialinput" type="email" placeholder="Email" value={email}
-            onChange={(e) => setEmail(e.target.value)} />
-          {error && <p className="status-line error">{error}</p>}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="promptbtn" onClick={() => setJoining(false)}>Cancel</button>
-            <button className="bigbtn start" style={{ minHeight: 46 }} onClick={() => void joinPilot()}>
-              Request access
-            </button>
-          </div>
-        </div>
-      )}
-      {sent && (
-        <p className="start-sub" style={{ fontWeight: 600 }}>
-          🙏 धन्यवाद! We got your request — we'll reach out soon.
-        </p>
-      )}
+      <button className="historylink" onClick={() => navigate('/register')}>
+        New here? Create your account →
+      </button>
     </main>
   )
 }

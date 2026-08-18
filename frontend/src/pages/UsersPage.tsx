@@ -15,6 +15,8 @@ interface User {
   email: string
   name: string
   role: string
+  status?: string
+  requested_number?: string | null
   numbers: MappedNumber[]
 }
 
@@ -112,6 +114,12 @@ export default function UsersPage() {
     load()
   }
 
+  async function decide(userId: number, action: 'approve' | 'reject') {
+    const resp = await authFetch(`/api/users/${userId}/${action}`, { method: 'POST' })
+    if (!resp.ok) setError(`Could not ${action} — try again`)
+    load()
+  }
+
   function copySetup(u: User) {
     const pw = createdPasswords[u.id]
     const lines = [
@@ -134,8 +142,41 @@ export default function UsersPage() {
     setTimeout(() => setCopiedFor(null), 2000)
   }
 
+  const pending = users.filter((u) => u.status === 'pending')
+  const rest = users.filter((u) => u.status !== 'pending')
+
   return (
     <main className="settings-page">
+      {pending.length > 0 && (
+        <section className="setting-block" style={{ borderColor: 'var(--accent)' }}>
+          <h3>⏳ Waiting for approval ({pending.length})</h3>
+          <p className="idle-hint">
+            Signed up from the app. Approving activates the account and links
+            their number so calls can reach them.
+          </p>
+          {pending.map((u) => (
+            <div className="configured-row" key={u.id}>
+              <span>
+                <strong>{u.name || u.email}</strong>
+                <small>
+                  {u.email}
+                  {u.requested_number ? ` · ${fmtNumber(u.requested_number)}` : ''}
+                </small>
+              </span>
+              <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button className="promptbtn" onClick={() => void decide(u.id, 'reject')}>
+                  Reject
+                </button>
+                <button className="bigbtn start" style={{ minHeight: 40, padding: '0 16px', flex: '0 0 auto' }}
+                  onClick={() => void decide(u.id, 'approve')}>
+                  Approve
+                </button>
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+
       <section className="setting-block">
         <h3>Add a pilot user</h3>
         <p className="idle-hint">
@@ -166,7 +207,7 @@ export default function UsersPage() {
         </div>
       </section>
 
-      {users.map((u) => (
+      {rest.map((u) => (
         <section className="setting-block" key={u.id}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span className="contact-avatar named" style={{ background: avatarColor(u.name || u.email) }}>
@@ -176,6 +217,7 @@ export default function UsersPage() {
               <span className="contact-name">
                 {u.name || u.email}
                 {u.role === 'admin' && ' 👑'}
+                {u.status === 'rejected' && ' · ❌ rejected'}
               </span>
               <span className="contact-number">{u.email}</span>
             </span>
