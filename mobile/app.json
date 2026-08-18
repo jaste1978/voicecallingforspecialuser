@@ -2,7 +2,7 @@
   "expo": {
     "name": "SunoSathi",
     "slug": "sunosathi",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     ],
     "android": {
       "package": "com.sunosathi.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "permissions": [
         "android.permission.VIBRATE",
         "android.permission.RECORD_AUDIO",
