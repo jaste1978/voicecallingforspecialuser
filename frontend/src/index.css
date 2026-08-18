@@ -58,7 +58,7 @@ a {
 }
 
 .topbar h1 {
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: 0.01em;
   margin: 0;
@@ -93,8 +93,8 @@ a {
 .home {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 24px 18px;
+  gap: 12px;
+  padding: 18px 16px;
   flex: 1;
   justify-content: center;
   max-width: 640px;
@@ -105,13 +105,13 @@ a {
 .home-btn {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   background: var(--panel);
   border: 1px solid var(--divider);
   border-radius: 18px;
   color: var(--text);
-  padding: 22px 20px;
-  font-size: 24px;
+  padding: 16px 16px;
+  font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -124,9 +124,9 @@ a {
 }
 
 .home-btn .emoji {
-  font-size: 34px;
-  width: 56px;
-  height: 56px;
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -137,7 +137,7 @@ a {
 
 .home-btn small {
   display: block;
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 400;
   color: var(--dim);
   margin-top: 3px;
@@ -326,9 +326,9 @@ a {
 
 .bigbtn {
   flex: 1;
-  min-height: 58px;
-  border-radius: 30px;
-  font-size: 20px;
+  min-height: 54px;
+  border-radius: 28px;
+  font-size: 18px;
   font-weight: 700;
   border: none;
   cursor: pointer;
@@ -415,12 +415,12 @@ select.lang {
 }
 
 .avatar {
-  width: 108px;
-  height: 108px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: var(--surface);
   color: #fff;
-  font-size: 44px;
+  font-size: 38px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -450,7 +450,7 @@ select.lang {
 }
 
 .caller-number {
-  font-size: 30px;
+  font-size: 26px;
   color: var(--text);
   font-weight: 600;
   margin: 0;
@@ -516,12 +516,12 @@ select.lang {
 }
 
 .idle-icon {
-  font-size: 56px;
+  font-size: 46px;
   margin: 0;
 }
 
 .call-idle h2 {
-  font-size: 24px;
+  font-size: 20px;
   margin: 0;
 }
 
@@ -1306,7 +1306,7 @@ select.lang.wide {
 
 .start-brand h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .start-brand .login-mark {
@@ -1317,7 +1317,7 @@ select.lang.wide {
 
 .start-tagline {
   margin: 8px 0 0;
-  font-size: 25px;
+  font-size: 22px;
   line-height: 1.35;
   font-weight: 700;
 }
@@ -1636,8 +1636,14 @@ select.lang.wide {
   cursor: default;
 }
 
+.voice-row {
+  flex-wrap: wrap;
+}
+
 .voice-row select.lang {
-  max-width: 46%;
+  flex: 1 1 100%;
+  max-width: 100%;
+  margin-top: 6px;
 }
 
 /* ---------- home tab + help ---------- */
@@ -1669,14 +1675,14 @@ select.lang.wide {
 }
 
 .home-tab .home-btn {
-  font-size: 19px;
+  font-size: 18px;
   padding: 16px 16px;
 }
 
 .home-tab .home-btn .emoji {
-  width: 48px;
-  height: 48px;
-  font-size: 26px;
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
 }
 
 .faq-item {
@@ -1854,6 +1860,7 @@ select.lang.wide {
 
 .dialinput {
   flex: 1;
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--divider);
   border-radius: 24px;
@@ -1869,7 +1876,8 @@ select.lang.wide {
 
 .dialcall {
   flex: 0 0 auto;
-  padding: 0 22px;
+  padding: 0 18px;
+  white-space: nowrap;
 }
 
 .contacts-list {
