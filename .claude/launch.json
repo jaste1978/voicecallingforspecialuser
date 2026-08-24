@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "backend",
-      "runtimeExecutable": "backend/venv/bin/uvicorn",
-      "runtimeArgs": ["main:app", "--app-dir", "backend", "--port", "8000"],
+      "runtimeExecutable": "backend/venv/bin/python3",
+      "runtimeArgs": ["-m", "uvicorn", "main:app", "--app-dir", "backend", "--port", "8000"],
       "port": 8000
     },
     {

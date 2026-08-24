@@ -7,7 +7,13 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sunosathi.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "SunoSathi uses the microphone so you can speak to your caller during a captioned call. You can decline and still read captions and type-to-speak.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": [
       "./plugins/withRingService"
