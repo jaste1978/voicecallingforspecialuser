@@ -29,3 +29,4 @@ backend/recordings/
 # generated native android project + built apks
 mobile/android/
 *.apk
+scrt/
