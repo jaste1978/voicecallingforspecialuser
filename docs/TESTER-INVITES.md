@@ -124,3 +124,20 @@ playreview demo login. iOS WhatsApp invite uses this link with the same
 4-step flow as Android (TestFlight app -> link -> install -> create account).
 Note for iOS testers: phone rings only while the app is open (CallKit
 background ringing is Phase 2).
+
+---
+
+## FINAL combined invite (31 Aug 2026) — the one to send
+
+Both platforms, fully self-serve:
+- iOS: TestFlight public link https://testflight.apple.com/join/jhavv6fG
+  (live once Apple beta review approves; up to 1000 testers)
+- Android: Google Group https://groups.google.com/g/sunosathi-testers
+  ("Ask to join" -> Tejas approves in Groups -> then opt-in link
+  https://play.google.com/apps/testing/com.sunosathi.app -> install).
+  The Play closed-testing track now uses the group INSTEAD of the email
+  list (change submitted for review 31 Aug). All 12 original testers are
+  already group members. New join requests appear under the group's
+  "Pending members" (owner gets an email too).
+- After install on either platform: Create account in app -> Tejas
+  approves in Users & Numbers -> fully active + Sathi ID.
