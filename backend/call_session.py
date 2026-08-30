@@ -568,22 +568,21 @@ class UserLine:
         await self._to_browser_audio(pcm)
 
     async def sathi_incoming_media(self, pcm: bytes) -> None:
-        """The peer Sathi user's mic audio — treated exactly like caller
-        audio from Vobiz: recorded, gated, captioned, played."""
+        """The peer Sathi user's mic audio: recorded, captioned, played.
+        NO noise gate here — it was tuned for loud telephony audio, and a
+        phone's browser mic (already OS-noise-suppressed) is quiet enough
+        that the gate can mute a soft speaker entirely. Sarvam's own VAD
+        handles the silence."""
         call = self.call
         if call is None or call.state != "active":
             return
         call.recorder.write("caller", pcm)
-        if call.gate is not None:
-            stt_pcm, speechy = call.gate.process(pcm)
-        else:
-            stt_pcm, speechy = pcm, True
-        await self._rescue_check(call, pcm, speechy)
+        await self._rescue_check(call, pcm, True)
         call.trace.count("caller_audio_frames")
         call.trace.count("caller_audio_bytes", len(pcm))
         if call.sarvam:
             try:
-                await call.sarvam.send_pcm(stt_pcm)
+                await call.sarvam.send_pcm(pcm)
             except Exception:
                 logger.exception("sarvam send failed")
         await self._to_browser_audio(pcm)
