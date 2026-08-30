@@ -96,8 +96,9 @@ Tejas
 ## WhatsApp — Android tester group (with email list, sent 30 Aug 2026)
 
 The closed-group version with all 12 tester emails listed inline so each
-person knows which account to use. Opt-in link:
-https://play.google.com/apps/testing/com.sunosathi.app
+person knows which account to use. Includes website (sunosathi.com) and
+picture guide (sunosathi.com/guide) up top for pre-signup viewing.
+Opt-in link: https://play.google.com/apps/testing/com.sunosathi.app
 
 Tester list as added in Play Console ("Internal", 12 users):
 1978jaste@gmail.com, cahrs79@gmail.com, divyeshnayee@gmail.com,
