@@ -90,3 +90,24 @@ Tejas
 > Android: [PLAY OPT-IN LINK] (उसी Gmail से खोलिए जो मैंने add किया है)
 > iPhone: [TESTFLIGHT LINK] (पहले TestFlight app install कीजिए)
 > Guide: sunosathi.com/guide 🧡
+
+---
+
+## WhatsApp — Android tester group (with email list, sent 30 Aug 2026)
+
+The closed-group version with all 12 tester emails listed inline so each
+person knows which account to use. Opt-in link:
+https://play.google.com/apps/testing/com.sunosathi.app
+
+Tester list as added in Play Console ("Internal", 12 users):
+1978jaste@gmail.com, cahrs79@gmail.com, divyeshnayee@gmail.com,
+nimesh.parekh07@gmail.com, pratik@ideamax.in, prince.swami@gmail.com,
+sunil@verticalinfinity.in, tejas.langalia@augmont.com,
+tejaslangalia@gmail.com, tlangalia@gmail.com, vivek@codebuster.io,
+viveksarvaiya4@gmail.com
+
+Flow reminded in the message: open link with the listed account →
+Become a tester → install → Create account in app → Tejas approves.
+Non-Gmail entries (ideamax.in / verticalinfinity.in / codebuster.io)
+must be Google Workspace accounts; message asks for a personal Gmail
+as fallback.
