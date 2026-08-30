@@ -141,3 +141,12 @@ Both platforms, fully self-serve:
   "Pending members" (owner gets an email too).
 - After install on either platform: Create account in app -> Tejas
   approves in Users & Numbers -> fully active + Sathi ID.
+
+---
+
+## Short WhatsApp ask — people NOT yet on the tester list (31 Aug 2026)
+
+Purpose: recruit new testers cold. Asks two things back — their OS and
+their email (Gmail for Android) — and gives both install links plus
+website/guide. On a "yes": add their email to the Google Group (Android)
+or just let the TestFlight link work (iOS, no email needed).
