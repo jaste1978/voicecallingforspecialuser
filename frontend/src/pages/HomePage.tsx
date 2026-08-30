@@ -10,6 +10,23 @@ export default function HomePage() {
   const [forwardCode, setForwardCode] = useState('')
   const [shared, setShared] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
+  const [testState, setTestState] = useState<'idle' | 'calling' | 'busy'>('idle')
+
+  async function startTestCall() {
+    setTestState('calling')
+    try {
+      const resp = await authFetch('/api/test-call', { method: 'POST' })
+      if (resp.status === 409) {
+        setTestState('busy')
+        setTimeout(() => setTestState('idle'), 3000)
+        return
+      }
+      // the call rings in a few seconds; callStore auto-navigates to /calls
+      setTimeout(() => setTestState('idle'), 20000)
+    } catch {
+      setTestState('idle')
+    }
+  }
 
   useEffect(() => {
     authFetch('/api/me')
@@ -75,6 +92,26 @@ export default function HomePage() {
           <p className="setup-text">To stop forwarding anytime: dial <b>##21#</b></p>
         </div>
       )}
+
+      <button
+        className="home-btn testcall"
+        disabled={testState === 'calling'}
+        onClick={() => void startTestCall()}
+      >
+        <span className="emoji icon">📞</span>
+        <span>
+          {testState === 'calling'
+            ? 'Calling you… रुकिए'
+            : testState === 'busy'
+              ? 'A call is already running'
+              : 'Try a test call · टेस्ट कॉल'}
+          <small>
+            {testState === 'calling'
+              ? 'SunoSathi is calling — accept and watch the captions!'
+              : 'SunoSathi calls you & speaks — see live captions in action'}
+          </small>
+        </span>
+      </button>
 
       <button className="home-btn" onClick={() => { window.location.href = '/guide' }}>
         <span className="emoji icon"><CaptionsIcon size={28} /></span>

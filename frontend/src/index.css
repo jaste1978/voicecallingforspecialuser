@@ -143,6 +143,19 @@ a {
   margin-top: 3px;
 }
 
+
+.home-btn.testcall {
+  border: 1.5px solid var(--ok);
+}
+
+.home-btn.testcall .emoji {
+  background: #E8F6EE;
+}
+
+.home-btn.testcall:disabled {
+  opacity: 0.75;
+}
+
 .home-btn.primary {
   background: var(--accent);
   border-color: var(--accent);

@@ -147,6 +147,26 @@ async def api_register(payload: dict):
     return {"ok": True, "id": uid}
 
 
+@app.post("/api/test-call")
+async def api_test_call(request: Request):
+    """Ring the user's own line with a spoken greeting so they can watch
+    live captions without needing a second phone."""
+    import asyncio as _asyncio
+
+    import test_call
+    from call_session import manager
+
+    user = _require_user(request)
+    line = manager.line(user["id"])
+    if line.call and line.call.state != "ended":
+        return JSONResponse({"error": "busy"}, status_code=409)
+    uuid = test_call.start(user["id"])
+    await line.register_pending(uuid, "SunoSathi", "test-call")
+    _asyncio.get_running_loop().create_task(test_call.run(user["id"], uuid))
+    logger.info("test call %s staged for user %s", uuid, user["id"])
+    return {"ok": True, "uuid": uuid}
+
+
 @app.post("/api/users/{user_id}/approve")
 async def api_user_approve(user_id: int, request: Request):
     _require_admin(request)
