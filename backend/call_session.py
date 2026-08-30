@@ -725,11 +725,37 @@ class UserLine:
             quality.schedule(call.call_uuid)
         await self._to_browser({"type": "call_ended", "reason": reason})
         self.call = None
+        await self._alert_if_issue(call, reason)
         # Sathi call: hanging up one side ends the other (idempotent — the
         # peer's end_call sees our state already 'ended'/None and no-ops)
         peer = call.peer_line
         if peer and peer.call and peer.call.state != "ended":
             await peer.end_call(reason)
+
+    async def _alert_if_issue(self, call: Call, reason: str) -> None:
+        """Telegram the admin about missed calls and technical failures.
+        Declines are a user choice; sentinel/test traffic is excluded."""
+        import auth
+        import telegram_notify
+
+        try:
+            user = auth.user_by_id(self.user_id) or {}
+            if user.get("email") == "sentinel@internal.sunosathi":
+                return
+            if call.from_number == "SunoSathi":  # onboarding test call
+                return
+            who = user.get("name") or user.get("email") or f"user {self.user_id}"
+            technical = "could not" in reason or "no media" in reason or "error" in reason
+            if call.direction == "in" and call.answered_at is None and reason != "declined":
+                await telegram_notify.send(
+                    f"📵 <b>Missed call</b> for {who}\n"
+                    f"From: {call.from_number} · {reason}")
+            elif technical:
+                await telegram_notify.send(
+                    f"⚠️ <b>Call problem</b> for {who}\n"
+                    f"{call.from_number} → {reason}")
+        except Exception:
+            logger.exception("issue alert failed")
 
 
 class CallManager:

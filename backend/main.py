@@ -120,6 +120,10 @@ async def api_login(payload: dict):
         return JSONResponse({"reason": "rejected"}, status_code=403)
     token = auth.create_session(user["id"])
     logger.info("login: %s", user["email"])
+    if user.get("role") != "admin":  # own logins would be noise
+        import telegram_notify
+        await telegram_notify.send(
+            f"🔓 <b>Login</b>: {user.get('name') or '?'} &lt;{user['email']}&gt;")
     return {"token": token, "name": user["name"], "role": user["role"], "email": user["email"]}
 
 
@@ -317,6 +321,11 @@ async def api_waitlist_add(payload: dict, request: Request):
         (payload.get("message") or "").strip(),
     )
     logger.info("waitlist signup: %s <%s> (%s)", name, email, payload.get("role"))
+    import telegram_notify
+    kind = "🆘 <b>Support message</b>" if payload.get("role") == "support" else "📥 <b>Waitlist signup</b>"
+    msg = (payload.get("message") or "").strip()
+    await telegram_notify.send(
+        f"{kind}\n{name} &lt;{email}&gt;" + (f"\n💬 {msg[:400]}" if msg else ""))
     return {"ok": True}
 
 
