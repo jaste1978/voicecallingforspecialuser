@@ -195,6 +195,9 @@ class Call:
         self.rescued = False    # already switched to romanized output
         self.gate = NoiseGate() if NOISE_GATE else None
         self.tts_chars = 0  # characters synthesized into this call (cost basis)
+        # Sathi-to-Sathi: the other participant's line. When set, audio and
+        # text route in-process to the peer instead of over Vobiz telephony.
+        self.peer_line: Optional["UserLine"] = None
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -276,12 +279,21 @@ class UserLine:
             if call and call.state == "ringing":
                 call.trace.event("ring_ack")
         elif mtype == "dial":
-            await self.start_outbound(
-                msg.get("number", ""), msg.get("name", ""), msg.get("language", "auto")
-            )
+            number = str(msg.get("number", "")).strip()
+            if number.startswith("@"):
+                await self.registry.start_sathi_call(self, number.lstrip("@"))
+            else:
+                await self.start_outbound(
+                    number, msg.get("name", ""), msg.get("language", "auto")
+                )
         elif mtype == "accept" and call and call.state == "ringing":
             call.language = msg.get("language", "auto")
             await self._activate(call)
+            # Sathi call: the caller's side goes active the moment we accept
+            peer = call.peer_line
+            if peer and peer.call and peer.call.state == "dialing":
+                await peer._to_browser({"type": "answered"})
+                await peer._activate(peer.call)
         elif mtype == "decline" and call and call.state == "ringing":
             await self.end_call("declined")
         elif mtype == "end":
@@ -293,7 +305,10 @@ class UserLine:
         elif mtype == "prompt" and call and call.state == "active":
             await self._play_prompt(call, msg.get("name", ""))
         elif mtype == "say" and call and call.state == "active":
-            await self._speak_text(call, str(msg.get("text") or ""))
+            if call.peer_line is not None:
+                await self._sathi_text(call, str(msg.get("text") or ""))
+            else:
+                await self._speak_text(call, str(msg.get("text") or ""))
         elif mtype == "set_language" and call and call.state == "active":
             language = msg.get("language", "auto")
             call.language = language
@@ -363,6 +378,13 @@ class UserLine:
     async def on_browser_audio(self, pcm: bytes) -> None:
         """User's mic -> into the phone call."""
         call = self.call
+        if call and call.state == "active" and call.peer_line is not None:
+            call.recorder.write("user", pcm)
+            call.trace.count("user_audio_frames")
+            peer = call.peer_line
+            if peer.call and peer.call.state == "active":
+                await peer.sathi_incoming_media(pcm)
+            return
         if call and call.state == "active" and call.vobiz_ws and call.stream_id:
             n = call.trace.count("user_audio_frames")
             call.trace.count("user_audio_bytes", len(pcm))
@@ -545,6 +567,43 @@ class UserLine:
                 logger.exception("sarvam send failed")
         await self._to_browser_audio(pcm)
 
+    async def sathi_incoming_media(self, pcm: bytes) -> None:
+        """The peer Sathi user's mic audio — treated exactly like caller
+        audio from Vobiz: recorded, gated, captioned, played."""
+        call = self.call
+        if call is None or call.state != "active":
+            return
+        call.recorder.write("caller", pcm)
+        if call.gate is not None:
+            stt_pcm, speechy = call.gate.process(pcm)
+        else:
+            stt_pcm, speechy = pcm, True
+        await self._rescue_check(call, pcm, speechy)
+        call.trace.count("caller_audio_frames")
+        call.trace.count("caller_audio_bytes", len(pcm))
+        if call.sarvam:
+            try:
+                await call.sarvam.send_pcm(stt_pcm)
+            except Exception:
+                logger.exception("sarvam send failed")
+        await self._to_browser_audio(pcm)
+
+    async def _sathi_text(self, call: Call, text: str) -> None:
+        """Typed text in a Sathi call: delivered instantly as text to the
+        peer's screen — no TTS, no waiting."""
+        text = " ".join(text.split())[:500]
+        if not text:
+            return
+        call.transcript.append(f"🔊 {text}")
+        call.trace.event("sathi_text_sent", chars=len(text))
+        await self._to_browser({"type": "spoken", "text": text})
+        peer = call.peer_line
+        if peer and peer.call and peer.call.state == "active":
+            peer.call.transcript.append(f"💬 {text}")
+            await peer._to_browser({
+                "type": "transcript", "text": f"💬 {text}",
+            })
+
     async def _rescue_check(self, call: Call, pcm: bytes, speechy: bool = True) -> None:
         """If plenty of loud speech produced zero captions, the language is
         likely one the model can't identify — switch to romanized output that
@@ -667,6 +726,11 @@ class UserLine:
             quality.schedule(call.call_uuid)
         await self._to_browser({"type": "call_ended", "reason": reason})
         self.call = None
+        # Sathi call: hanging up one side ends the other (idempotent — the
+        # peer's end_call sees our state already 'ended'/None and no-ops)
+        peer = call.peer_line
+        if peer and peer.call and peer.call.state != "ended":
+            await peer.end_call(reason)
 
 
 class CallManager:
@@ -729,6 +793,56 @@ class CallManager:
             logger.info("call %s unmatched (fwd=%s to=%s) — default line user %s",
                         call_uuid, forwarded_from or "-", to_number, line.user_id)
         await line.register_pending(call_uuid, from_number, to_number)
+
+    async def start_sathi_call(self, caller_line: "UserLine", handle: str) -> None:
+        """App-to-app call addressed by Sathi ID — no phone number, no
+        telephony. Two Call objects, one per line, linked as peers."""
+        import auth
+
+        callee = auth.by_handle(handle)
+        if callee is None:
+            await caller_line._to_browser({
+                "type": "error", "message": f"No Sathi with ID @{handle}",
+            })
+            return
+        if callee["id"] == caller_line.user_id:
+            await caller_line._to_browser({
+                "type": "error", "message": "That is your own Sathi ID",
+            })
+            return
+        caller = auth.user_by_id(caller_line.user_id) or {}
+        callee_line = self.line(callee["id"])
+        if caller_line.call and caller_line.call.state != "ended":
+            await caller_line._to_browser({
+                "type": "error", "message": "Another call is in progress"})
+            return
+        if callee_line.call and callee_line.call.state != "ended":
+            await caller_line._to_browser({
+                "type": "error", "message": f"@{handle} is on another call — try again soon",
+            })
+            return
+
+        ts = int(time.time())
+        out_call = Call(f"sathi-{ts}-{caller_line.user_id}",
+                        f"@{handle}", f"@{handle}")
+        out_call.direction = "out"
+        out_call.state = "dialing"
+        out_call.peer_line = callee_line
+        caller_line.call = out_call
+        self.bind_uuid(out_call.call_uuid, caller_line)
+
+        caller_label = f"@{caller.get('handle') or ''}".rstrip("@") or caller.get("name") or "Sathi"
+        in_call = Call(f"sathi-{ts}-{callee['id']}", caller_label, "sathi")
+        in_call.peer_line = caller_line
+        callee_line.call = in_call
+        self.bind_uuid(in_call.call_uuid, callee_line)
+
+        out_call.trace.event("sathi_dialing", to=handle)
+        in_call.trace.event("sathi_incoming", from_=caller_label)
+        await caller_line._to_browser({"type": "dialing", "to": f"@{handle}"})
+        logger.info("sathi call: user %s -> @%s (user %s)",
+                    caller_line.user_id, handle, callee["id"])
+        await callee_line._ring(in_call)
 
     async def outbound_answered(self, call_uuid: str, to_number: str = "") -> bool:
         """Find the line whose outbound dial this answer webhook belongs to."""

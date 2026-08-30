@@ -85,6 +85,14 @@ signed up" and "my calls are captioned."
 - Target: inbound all-in cost from ~₹1.5/min toward ~₹0.8/min.
 - _Effort: 2–3 days including a week of A/B monitoring via the sentinel._
 
+### Shipped early — 30 Aug 2026
+
+**Sathi-to-Sathi calls (v0.28.0)** — app-to-app calls addressed by Sathi ID
+(@handle), no phone number, no telephony cost. Both-direction live captions,
+instant typed text (💬) and picture board, audio relayed in-process, Android
+background ring works, history on both sides. This makes SunoSathi a network:
+deaf-to-deaf calls where each person uses whatever channel they have.
+
 ### P2 — Delight and reach (weeks 6–10)
 
 **8. Sound alerts** (original phase-3 idea, promoted)

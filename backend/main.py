@@ -243,6 +243,7 @@ async def api_me(request: Request):
     did = _did_digits()
     return {
         **user,
+        "handle": auth.ensure_handle(user["id"]),
         # the number callers dial: the user's own forwarded number, or the
         # shared DID until one is registered
         "number": _fmt_number(own) if own else _fmt_number(did),

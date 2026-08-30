@@ -35,6 +35,7 @@ interface RecentCall {
 // peer's dialable number: caller for incoming, dialed number for outgoing
 export function peerNumber(c: { from_number: string; to_number?: string; direction?: string }): string | null {
   const raw = (c.direction === 'out' ? c.to_number : c.from_number) ?? ''
+  if (raw.startsWith('@')) return raw // Sathi ID — always callable
   const digits = raw.replace(/\D/g, '')
   return digits.length >= 8 ? raw : null
 }

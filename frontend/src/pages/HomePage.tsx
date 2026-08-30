@@ -7,6 +7,8 @@ export default function HomePage() {
   const navigate = useNavigate()
   const [number, setNumber] = useState('')
   const [hasOwn, setHasOwn] = useState(false)
+  const [handle, setHandle] = useState('')
+  const [handleCopied, setHandleCopied] = useState(false)
   const [forwardCode, setForwardCode] = useState('')
   const [shared, setShared] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
@@ -34,6 +36,7 @@ export default function HomePage() {
       .then((d) => {
         setNumber(d.number || '')
         setHasOwn(Boolean(d.has_own_number))
+        setHandle(d.handle || '')
         setForwardCode(d.forward_code || '')
       })
       .catch(() => {})
@@ -68,6 +71,29 @@ export default function HomePage() {
             }}
           >
             {shared ? '✓ Copied' : 'Share'}
+          </button>
+        </div>
+      )}
+
+      {handle && (
+        <div className="number-card">
+          <div>
+            <small>Your Sathi ID · free app-to-app calls</small>
+            <b>@{handle}</b>
+          </div>
+          <button
+            className="sharebtn"
+            onClick={() => {
+              const text = `Call me FREE on SunoSathi — my Sathi ID is @${handle}. Get the app: sunosathi.com`
+              if (navigator.share) void navigator.share({ text })
+              else {
+                void navigator.clipboard?.writeText(text)
+                setHandleCopied(true)
+                setTimeout(() => setHandleCopied(false), 2000)
+              }
+            }}
+          >
+            {handleCopied ? '✓ Copied' : 'Share'}
           </button>
         </div>
       )}

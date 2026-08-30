@@ -55,9 +55,9 @@ export default function ContactsPage() {
       <div className="dialbar">
         <input
           className="dialinput"
-          type="tel"
-          inputMode="tel"
-          placeholder="Type any number…"
+          type="text"
+          inputMode="email"
+          placeholder="Number or @sathi-id…"
           value={dialNumber}
           onChange={(e) => setDialNumber(e.target.value)}
         />

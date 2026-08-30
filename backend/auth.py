@@ -38,6 +38,8 @@ def init() -> None:
         for ddl in (
             "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
             "ALTER TABLE users ADD COLUMN requested_number TEXT",
+            # Sathi ID: app-to-app calling address, no phone number needed
+            "ALTER TABLE users ADD COLUMN handle TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -75,6 +77,53 @@ def set_status(user_id: int, status: str) -> dict | None:
     with _conn() as conn:
         conn.execute("UPDATE users SET status = ? WHERE id = ?", (status, user_id))
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def _slug(text: str) -> str:
+    import re
+    s = re.sub(r"[^a-z0-9]", "", (text or "").lower())
+    return s[:20]
+
+
+def ensure_handle(user_id: int) -> str:
+    """Return the user's Sathi ID, generating one from their name if absent."""
+    with _conn() as conn:
+        row = conn.execute("SELECT name, email, handle FROM users WHERE id = ?",
+                           (user_id,)).fetchone()
+        if row is None:
+            return ""
+        if row["handle"]:
+            return row["handle"]
+        base = _slug(row["name"]) or _slug(row["email"].split("@")[0]) or f"sathi{user_id}"
+        handle = base
+        n = 1
+        while conn.execute("SELECT 1 FROM users WHERE handle = ? AND id != ?",
+                           (handle, user_id)).fetchone():
+            n += 1
+            handle = f"{base}{n}"
+        conn.execute("UPDATE users SET handle = ? WHERE id = ?", (handle, user_id))
+    return handle
+
+
+def by_handle(handle: str) -> dict | None:
+    """Active user for a Sathi ID (case-insensitive)."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id, email, name, role, handle,"
+            " COALESCE(status, 'active') AS status"
+            " FROM users WHERE lower(handle) = ?", (handle.strip().lower(),)
+        ).fetchone()
+    if row is None or row["status"] != "active":
+        return None
+    return dict(row)
+
+
+def user_by_id(user_id: int) -> dict | None:
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id, email, name, role, handle FROM users WHERE id = ?",
+            (user_id,)).fetchone()
     return dict(row) if row else None
 
 
