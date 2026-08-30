@@ -9,7 +9,7 @@ link in each before sending.
   Testers tab. Add each tester's **Gmail** to the email list there FIRST,
   then copy the opt-in link (`play.google.com/apps/testing/com.sunosathi.app`).
   Testers must open it with the same Gmail you added.
-- **[TESTFLIGHT LINK]** — App Store Connect → Suno Sathi → TestFlight →
+- **https://testflight.apple.com/join/jhavv6fG** — App Store Connect → Suno Sathi → TestFlight →
   External Testing → create a group → enable **public link**
   (`testflight.apple.com/join/XXXXXX`). First public link triggers a one-time
   Beta App Review (~1 day). Until it clears, add up to 100 **internal**
@@ -66,7 +66,7 @@ call **पढ़** सकते हैं — Hindi, Gujarati या English म
 **Install (2 minutes):**
 1. App Store से **TestFlight** app install कीजिए (Apple का official testing
    app है)
-2. फिर iPhone पर यह link खोलिए: **[TESTFLIGHT LINK]**
+2. फिर iPhone पर यह link खोलिए: **https://testflight.apple.com/join/jhavv6fG**
 3. "Accept" → "Install" — SunoSathi आपके phone पर आ जाएगा
 4. App खोलकर **"Create your account"** से अपना नाम, email, password और
    mobile number भरिए — मैं approve करते ही आपको बता दूँगा
@@ -112,3 +112,15 @@ Become a tester → install → Create account in app → Tejas approves.
 Non-Gmail entries (ideamax.in / verticalinfinity.in / codebuster.io)
 must be Google Workspace accounts; message asks for a personal Gmail
 as fallback.
+
+---
+
+## TestFlight public link (created 30 Aug 2026)
+
+**https://testflight.apple.com/join/jhavv6fG** — external group "Pilot",
+limit 1000 testers. Works once Apple's Beta App Review approves build 1
+(submitted 30 Aug, state WAITING_FOR_REVIEW). Beta review details carry the
+playreview demo login. iOS WhatsApp invite uses this link with the same
+4-step flow as Android (TestFlight app -> link -> install -> create account).
+Note for iOS testers: phone rings only while the app is open (CallKit
+background ringing is Phase 2).
