@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogoMark } from '../components/icons'
+import { track } from '../lib/analytics'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -33,6 +34,7 @@ export default function RegisterPage() {
         return
       }
       setDone(true)
+      track('sign_up')
     } catch {
       setError('Could not reach the server — try again')
     } finally {

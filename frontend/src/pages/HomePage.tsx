@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch } from '../lib/auth'
 import { LogoMark, CaptionsIcon, PhoneIcon } from '../components/icons'
+import { track } from '../lib/analytics'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function HomePage() {
 
   async function startTestCall() {
     setTestState('calling')
+    track('test_call')
     try {
       const resp = await authFetch('/api/test-call', { method: 'POST' })
       if (resp.status === 409) {

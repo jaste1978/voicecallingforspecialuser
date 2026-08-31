@@ -4,6 +4,7 @@ import { getToken } from './lib/auth'
 import { syncNativeAuth } from './lib/native-bridge'
 import { startVersionWatch } from './lib/version-watch'
 import { callStore } from './lib/call-store'
+import { trackPage } from './lib/analytics'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CaptionsPage from './pages/CaptionsPage'
@@ -55,6 +56,10 @@ export default function App() {
   useEffect(() => {
     startVersionWatch()
   }, [])
+
+  useEffect(() => {
+    trackPage(pathname)
+  }, [pathname])
 
   useEffect(() => {
     // a ring can land while the user is on Contacts/Settings — bring them

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setAuth } from '../lib/auth'
 import { LogoMark } from '../components/icons'
+import { track } from '../lib/analytics'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -35,6 +36,7 @@ export default function LoginPage() {
       }
       const d = await resp.json()
       setAuth(d.token, d.name || d.email, d.role)
+      track('login')
       navigate('/', { replace: true })
     } catch {
       setError('Could not reach the server — try again')

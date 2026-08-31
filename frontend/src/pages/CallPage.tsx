@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { type CallClient } from '../lib/call-client'
 import { callStore } from '../lib/call-store'
+import { track } from '../lib/analytics'
 import { PcmPlayer } from '../lib/audio-playback'
 import { notifyNative } from '../lib/native-bridge'
 import { captionHapticEnabled, speechHapticEnabled } from '../lib/haptics-settings'
@@ -171,6 +172,7 @@ export default function CallPage() {
     const detach = callStore.attach({
       onEvent: (e) => {
         if (e.type === 'ring') {
+          track('call_ring', { kind: (e.from || '').startsWith('@') ? 'sathi' : 'pstn' })
           setCaller(e.from || 'Unknown caller')
           setSegments([])
           setState('ringing')
@@ -191,6 +193,7 @@ export default function CallPage() {
           ringtoneRef.current?.stop()
           notifyNative('haptic:connect')
           addSegment('sys', '✓ Call connected')
+          track('call_connected')
           typingNoticeSent.current = false
           startTimer()
           setState('active')
@@ -217,6 +220,7 @@ export default function CallPage() {
               (e.provider ? ` · ${e.provider}` : ''),
           )
         } else if (e.type === 'call_ended') {
+          track('call_ended')
           notifyNative('ring_stop')
           notifyNative('haptic:end')
           stopTimer()
