@@ -189,6 +189,26 @@ async def api_user_approve(user_id: int, request: Request):
     return {"ok": True}
 
 
+@app.delete("/api/users/{user_id}")
+async def api_user_delete(user_id: int, request: Request):
+    """Admin: remove a user and everything they own. Admins are protected."""
+    admin = _require_admin(request)
+    target = auth.user_by_id(user_id)
+    if target is None:
+        return Response(status_code=404)
+    if target["id"] == admin["id"] or target.get("role") == "admin":
+        return JSONResponse({"error": "cannot delete an admin"}, status_code=400)
+    from history import _conn
+    with _conn() as conn:
+        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM numbers WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM contacts WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM calls WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    logger.info("user %s deleted by admin", user_id)
+    return {"ok": True}
+
+
 @app.post("/api/users/{user_id}/reject")
 async def api_user_reject(user_id: int, request: Request):
     _require_admin(request)
