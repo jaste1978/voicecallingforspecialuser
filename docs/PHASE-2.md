@@ -93,6 +93,18 @@ instant typed text (💬) and picture board, audio relayed in-process, Android
 background ring works, history on both sides. This makes SunoSathi a network:
 deaf-to-deaf calls where each person uses whatever channel they have.
 
+### Testing infrastructure (added 31 Aug 2026)
+
+**Virtual user fleet** (`scrt/sathi_fleet.py`, gitignored — contains admin
+creds): N simulated users register on production, get auto-approved, make
+N/2 simultaneous Sathi calls with unique TTS speech + typed messages,
+measure ring/answer/caption latencies and accuracy, then delete themselves
+(admin DELETE /api/users/{id}, v0.29.1). Baseline 31 Aug: 5 concurrent
+calls — ring 65-67ms flat, answer 0.6-1.0s, first caption 0.9s (1 call) to
+3.4s (5th concurrent call; STT session contention is the scaling frontier).
+All captions word-accurate. Cheaper and more honest than device farms for
+multi-user testing; farms can't test SIM forwarding or mic anyway.
+
 ### P2 — Delight and reach (weeks 6–10)
 
 **8. Sound alerts** (original phase-3 idea, promoted)
