@@ -10,6 +10,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [forgotSent, setForgotSent] = useState(false)
+
+  async function forgot() {
+    if (!email) {
+      setError('Type your email above first, then tap Forgot password')
+      return
+    }
+    try {
+      await fetch('/api/forgot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+    } catch { /* ignore */ }
+    setForgotSent(true)
+    setError('')
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,8 +92,17 @@ export default function LoginPage() {
             required
           />
           {error && <p className="status-line error">{error}</p>}
+          {forgotSent && (
+            <p className="status-line">
+              ✓ Request sent — we will WhatsApp you a temporary password soon.
+              आपको जल्द ही नया password भेजा जाएगा।
+            </p>
+          )}
           <button className="bigbtn start" type="submit" disabled={busy || !email || !password}>
             {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+          <button type="button" className="historylink" onClick={() => void forgot()}>
+            Forgot password? · पासवर्ड भूल गए?
           </button>
         </form>
         <p className="idle-hint" style={{ marginTop: 14 }}>

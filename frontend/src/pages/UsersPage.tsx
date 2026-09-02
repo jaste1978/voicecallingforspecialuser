@@ -114,6 +114,19 @@ export default function UsersPage() {
     load()
   }
 
+  const [resetPw, setResetPw] = useState<Record<number, string>>({})
+
+  async function resetPassword(userId: number) {
+    const resp = await authFetch(`/api/users/${userId}/reset-password`, { method: 'POST' })
+    if (resp.ok) {
+      const d = await resp.json()
+      setResetPw((p) => ({ ...p, [userId]: d.temp_password }))
+      setCreatedPasswords((p) => ({ ...p, [userId]: d.temp_password }))
+    } else {
+      setError('Could not reset password')
+    }
+  }
+
   async function decide(userId: number, action: 'approve' | 'reject') {
     const resp = await authFetch(`/api/users/${userId}/${action}`, { method: 'POST' })
     if (!resp.ok) setError(`Could not ${action} — try again`)
@@ -254,6 +267,15 @@ export default function UsersPage() {
             </div>
           </div>
 
+          {resetPw[u.id] && (
+            <p className="status-line">
+              🔑 Temporary password: <strong>{resetPw[u.id]}</strong> — WhatsApp it
+              to them; other devices are signed out.
+            </p>
+          )}
+          <button className="historylink" onClick={() => void resetPassword(u.id)}>
+            Reset password
+          </button>
           <button className="historylink" onClick={() => copySetup(u)}>
             {copiedFor === u.id ? '✓ Copied — paste into WhatsApp' : 'Copy setup message'}
           </button>

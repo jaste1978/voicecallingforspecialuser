@@ -48,6 +48,30 @@ export default function SettingsTab() {
     })
   }
 
+  const [pwOpen, setPwOpen] = useState(false)
+  const [pwOld, setPwOld] = useState('')
+  const [pwNew, setPwNew] = useState('')
+  const [pwMsg, setPwMsg] = useState('')
+
+  async function changePassword() {
+    setPwMsg('')
+    const resp = await authFetch('/api/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ old: pwOld, new: pwNew }),
+    })
+    if (resp.ok) {
+      setPwMsg('✓ Password changed · पासवर्ड बदल गया')
+      setPwOld('')
+      setPwNew('')
+      setTimeout(() => { setPwOpen(false); setPwMsg('') }, 2500)
+    } else if (resp.status === 403) {
+      setPwMsg('Current password is wrong')
+    } else {
+      setPwMsg('New password must be at least 8 characters')
+    }
+  }
+
   async function logout() {
     try {
       await authFetch('/api/logout', { method: 'POST' })
@@ -144,6 +168,39 @@ export default function SettingsTab() {
           </button>
         </>
       )}
+      {!pwOpen ? (
+        <button className="home-btn" onClick={() => setPwOpen(true)}>
+          <span className="emoji icon">🔑</span>
+          <span>
+            Change password · पासवर्ड बदलें
+            <small>Set a new sign-in password for your account</small>
+          </span>
+        </button>
+      ) : (
+        <div className="setting-block">
+          <h3>Change password · पासवर्ड बदलें</h3>
+          <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+            <input className="dialinput" type="password" placeholder="Current password"
+              autoComplete="current-password"
+              value={pwOld} onChange={(e) => setPwOld(e.target.value)} />
+            <input className="dialinput" type="password" placeholder="New password (8+ characters)"
+              autoComplete="new-password"
+              value={pwNew} onChange={(e) => setPwNew(e.target.value)} />
+            {pwMsg && <p className="status-line">{pwMsg}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="promptbtn" onClick={() => { setPwOpen(false); setPwMsg('') }}>
+                Cancel
+              </button>
+              <button className="bigbtn start" style={{ minHeight: 46 }}
+                disabled={!pwOld || pwNew.length < 8}
+                onClick={() => void changePassword()}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button className="logout-btn" onClick={() => void logout()}>
         Log out{authName() ? ` · ${authName()}` : ''}
       </button>

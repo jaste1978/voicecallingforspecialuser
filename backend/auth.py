@@ -73,6 +73,35 @@ def register(email: str, password: str, name: str, number: str) -> int:
         return cur.lastrowid
 
 
+def set_password(user_id: int, new_password: str) -> None:
+    salt = secrets.token_bytes(16)
+    with _conn() as conn:
+        conn.execute("UPDATE users SET pw_salt = ?, pw_hash = ? WHERE id = ?",
+                     (salt, _hash(new_password, salt), user_id))
+
+
+def change_password(user_id: int, old_password: str, new_password: str) -> bool:
+    """Verify the old password, then set the new one. Keeps other rules
+    (length) to the caller."""
+    with _conn() as conn:
+        row = conn.execute("SELECT pw_salt, pw_hash FROM users WHERE id = ?",
+                           (user_id,)).fetchone()
+    if row is None or not hmac.compare_digest(
+            _hash(old_password, row["pw_salt"]), row["pw_hash"]):
+        return False
+    set_password(user_id, new_password)
+    return True
+
+
+def drop_sessions(user_id: int, keep_token: str | None = None) -> None:
+    with _conn() as conn:
+        if keep_token:
+            conn.execute("DELETE FROM sessions WHERE user_id = ? AND token != ?",
+                         (user_id, keep_token))
+        else:
+            conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+
+
 def set_status(user_id: int, status: str) -> dict | None:
     with _conn() as conn:
         conn.execute("UPDATE users SET status = ? WHERE id = ?", (status, user_id))

@@ -189,6 +189,62 @@ async def api_user_approve(user_id: int, request: Request):
     return {"ok": True}
 
 
+@app.post("/api/password")
+async def api_change_password(payload: dict, request: Request):
+    """Logged-in password change: verifies the old password first."""
+    user = _require_user(request)
+    old = payload.get("old") or ""
+    new = payload.get("new") or ""
+    if len(new) < 8:
+        return JSONResponse({"error": "short"}, status_code=422)
+    if not auth.change_password(user["id"], old, new):
+        return JSONResponse({"error": "wrong"}, status_code=403)
+    # other devices must log in again; this one stays signed in
+    header = request.headers.get("authorization", "")
+    token = header[7:] if header.lower().startswith("bearer ") else None
+    auth.drop_sessions(user["id"], keep_token=token)
+    logger.info("password changed for user %s", user["id"])
+    return {"ok": True}
+
+
+@app.post("/api/forgot")
+async def api_forgot(payload: dict):
+    """Public 'forgot password': never reveals whether the account exists;
+    pings the admin on Telegram to do a reset + WhatsApp the user."""
+    import telegram_notify
+
+    email = (payload.get("email") or "").strip().lower()
+    if "@" in email:
+        with _history._conn() as conn:
+            row = conn.execute("SELECT id, name FROM users WHERE email = ?",
+                               (email,)).fetchone()
+        if row:
+            await telegram_notify.send(
+                f"🔑 <b>Password reset requested</b>\n{row['name'] or '?'} "
+                f"&lt;{email}&gt;\nReset in Settings → Users &amp; Numbers, "
+                f"then WhatsApp them the temporary password.")
+        logger.info("forgot-password request for %s (exists=%s)", email, bool(row))
+    return {"ok": True}
+
+
+@app.post("/api/users/{user_id}/reset-password")
+async def api_admin_reset_password(user_id: int, request: Request):
+    """Admin reset: returns a one-time temporary password to hand to the
+    user out-of-band (WhatsApp). All their sessions are dropped."""
+    import secrets as _secrets
+
+    _require_admin(request)
+    target = auth.user_by_id(user_id)
+    if target is None:
+        return Response(status_code=404)
+    words = ["Suno", "Sathi", "Awaaz", "Baat", "Dost", "Seva", "Kaan", "Mitra"]
+    temp = f"{_secrets.choice(words)}{_secrets.randbelow(9000) + 1000}{_secrets.choice(words)}"
+    auth.set_password(user_id, temp)
+    auth.drop_sessions(user_id)
+    logger.info("admin reset password for user %s", user_id)
+    return {"ok": True, "temp_password": temp}
+
+
 @app.delete("/api/users/{user_id}")
 async def api_user_delete(user_id: int, request: Request):
     """Admin: remove a user and everything they own. Admins are protected."""
