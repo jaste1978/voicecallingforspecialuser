@@ -145,7 +145,8 @@ multi-user testing; farms can't test SIM forwarding or mic anyway.
 - Sentinel expansion: nightly check should also exercise type-to-speak and
   the new push path once built.
 - Weekly cost + quality brief via Telegram (extend existing morning brief).
-- Google Search Console + sitemap (10-minute task, still pending).
+- ~~Google Search Console + sitemap~~ DONE 7 Sep 2026: domain property
+  sc-domain:sunosathi.com auto-verified (Cloudflare DNS), sitemap submitted.
 
 ---
 

@@ -98,6 +98,11 @@ phrase → keypoints sequences + consent records), stats.
 4. **M4**: credit wall, dataset export for Track B, phrase list grows to
    300.
 
+## Analytics (decision 7 Sep 2026)
+
+No GA until the platform launches publicly (M3); then reuse the existing
+GA4 property (tag G-P1N8M3JYTC, no PII, mirror frontend/src/lib/analytics.ts).
+
 ## What Tejas provides
 
 - NGO conversation → first reviewers + contributors.
