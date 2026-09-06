@@ -641,7 +641,12 @@ def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
 @app.get("/api/health")
 def api_health():
     return {"ok": True, "r2": storage.configured(),
-            "consent_version": consent.VERSION, "pose_format": POSE_FORMAT}
+            "consent_version": consent.VERSION, "pose_format": POSE_FORMAT,
+            "access_mode": db.ACCESS_MODE,
+            # Public by design — the sitekey is the half of a Turnstile pair
+            # that is meant to be in the page. Served rather than compiled in
+            # so it can change without a rebuild.
+            "turnstile_sitekey": os.environ.get("TURNSTILE_SITEKEY", "")}
 
 
 # ---- static site -----------------------------------------------------------

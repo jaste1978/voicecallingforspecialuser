@@ -129,7 +129,7 @@ presigned GET URLs, never public links — these are videos of people's faces.
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Videos are skipped; keypoints still stored. |
 | `R2_BUCKET` | Defaults to `isl-contributions`. |
 | `TURNSTILE_SECRET` | Turnstile check is a no-op. Share the value from the main service. |
-| `VITE_TURNSTILE_SITEKEY` | Build-time. Widget is not rendered. Use `0x4AAAAAAEqa3x_MLNDKWW_D` (covers `*.sunosathi.com`) — leave it unset for local and tunnel testing, where a sitekey scoped to that domain cannot validate. |
+| `TURNSTILE_SITEKEY` | Widget is not rendered. Use `0x4AAAAAAEqa3x_MLNDKWW_D` (covers `*.sunosathi.com`). Served to the page at runtime, so changing it does not need a rebuild — leave it unset for local and tunnel testing, where a sitekey scoped to that domain cannot validate. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | **No admin account exists**, so nobody can approve anyone. Set both; the account is created on boot. |
 | `ADMIN_NAME` | Admin shows up as "Admin". |
 | `ADMIN_PASSWORD_RESET` | Set to any value to force `ADMIN_PASSWORD` onto an existing admin account, then remove it. Without it a redeploy never overwrites a password you changed later. |

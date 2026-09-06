@@ -6,8 +6,8 @@ import Landing from './components/Landing'
 import Pending from './components/Pending'
 import type { Take } from './components/Recorder'
 import {
-  getCurrentConsent, getMe, getPhrases, getProgress, logout, postContribution,
-  putVideo, reportVideo,
+  getConfig, getCurrentConsent, getMe, getPhrases, getProgress, logout,
+  postContribution, putVideo, reportVideo,
 } from './lib/api'
 import type { Auth as AuthResult, Phrase, Progress, User } from './lib/api'
 import { loadLang, saveLang } from './lib/device'
@@ -84,6 +84,7 @@ export default function App() {
   // Resume wherever this browser left off — a contributor who recorded
   // yesterday should land on a phrase, not on a sign-in form.
   useEffect(() => {
+    getConfig().then((c) => turnstile.configure(c.turnstile_sitekey)).catch(() => {})
     getMe()
       .then(async ({ user: u }) => {
         setUser(u)

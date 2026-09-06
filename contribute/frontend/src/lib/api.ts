@@ -100,6 +100,15 @@ export interface Auth {
 
 export const getMe = () => json<Auth>('/api/auth/me')
 
+export interface ServerConfig {
+  access_mode: 'approval' | 'open'
+  turnstile_sitekey: string
+  consent_version: string
+  r2: boolean
+}
+
+export const getConfig = () => json<ServerConfig>('/api/health')
+
 export const register = (body: {
   name: string; identifier: string; password: string; note: string
 }) => json<Auth>('/api/auth/register', { method: 'POST', body: JSON.stringify(body) })
