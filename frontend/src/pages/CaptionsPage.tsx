@@ -113,32 +113,27 @@ export default function CaptionsPage() {
         {segments.length === 0 && !speaking && (
           <p className="caption-placeholder">Captions will appear here 👋</p>
         )}
-        {segments.length > 0 && (
-          <p className="caption-flow">
-            {segments.map((s, i) => (
-              <span
-                key={s.id}
-                className={i === segments.length - 1 ? 'latest' : ''}
-              >
-                {s.text}{' '}
-              </span>
-            ))}
-          </p>
-        )}
+        {segments.map((s, i) => {
+          const cards = pictureCaptionsEnabled() ? conceptsFor(s.text) : []
+          return (
+            <div key={s.id} className="tester-line">
+              <p className={`caption-flow ${i === segments.length - 1 ? 'latest' : ''}`}>
+                {s.text}
+              </p>
+              {cards.length > 0 && (
+                <div className="pic-strip pic-strip-tester">
+                  {cards.map((c, j) => (
+                    <span key={j} className="pic-card">
+                      <span className="pic-emoji">{c.emoji}</span>
+                      <span className="pic-word">{c.word}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
-      {pictureCaptionsEnabled() && segments.length > 0 && (() => {
-        const cards = conceptsFor(segments[segments.length - 1].text)
-        return cards.length > 0 ? (
-          <div className="pic-strip pic-strip-tester">
-            {cards.map((c, i) => (
-              <span key={i} className="pic-card">
-                <span className="pic-emoji">{c.emoji}</span>
-                <span className="pic-word">{c.word}</span>
-              </span>
-            ))}
-          </div>
-        ) : null
-      })()}
       <div className="speaking-indicator">
         {speaking && (
           <>

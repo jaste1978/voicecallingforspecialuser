@@ -2036,3 +2036,18 @@ select.lang.wide {
 .pic-strip-tester .pic-word {
   font-size: 14px;
 }
+
+.tester-line {
+  margin-bottom: 4px;
+}
+
+.tester-line .caption-flow.latest {
+  color: var(--accent-ink);
+}
+
+.tester-line .pic-strip {
+  border-top: none;
+  padding: 4px 0 10px;
+  margin-top: 2px;
+  border-bottom: 1px dashed var(--divider);
+}
