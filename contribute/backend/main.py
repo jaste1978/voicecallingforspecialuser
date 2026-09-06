@@ -18,6 +18,7 @@ inconvenience; losing the keypoints would mean asking them to sign again.
 
 import logging
 import os
+import sqlite3
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -491,6 +492,128 @@ def api_stats():
             "phrases_total": total}
 
 
+# ---- review ----------------------------------------------------------------
+
+REJECT_REASONS = ("wrong-sign", "unclear", "face-not-visible", "other")
+
+
+def _can_review(u: dict | None) -> bool:
+    return bool(u and u["status"] == "approved" and u["role"] in ("reviewer", "admin"))
+
+
+@app.get("/api/review/queue")
+def api_review_queue(request: Request, limit: int = 12):
+    """Clips still waiting on a verdict from this reviewer.
+
+    Two exclusions matter. A reviewer never sees their own recording — a
+    person is the worst judge of whether their own signing was clear. And a
+    clip they have already voted on is gone from their queue, because two
+    approvals has to mean two people.
+    """
+    u = current_user(request)
+    if not _can_review(u):
+        return JSONResponse({"error": "not a reviewer"}, status_code=403)
+
+    limit = max(1, min(limit, 50))
+    with db.conn() as c:
+        rows = c.execute(
+            """
+            SELECT c.id, c.phrase_id, c.duration_ms, c.fps, c.frame_count,
+                   c.cov_body, c.cov_face, c.cov_hand_l, c.cov_hand_r,
+                   c.video_key, c.video_status, c.created_at, c.variant_tag,
+                   p.hi, p.en, p.gloss, p.kind, p.face AS face_prompt,
+                   p.note AS phrase_note,
+                   u.display_name AS contributor_name,
+                   (SELECT COUNT(*) FROM reviews r2 WHERE r2.contribution_id = c.id
+                     AND r2.verdict = 'approve') AS approvals,
+                   (SELECT COUNT(*) FROM reviews r3 WHERE r3.contribution_id = c.id
+                     AND r3.verdict = 'reject') AS rejections
+              FROM contributions c
+              JOIN phrases p ON p.id = c.phrase_id
+              LEFT JOIN users u ON u.id = c.contributor_id
+             WHERE c.deleted_at IS NULL
+               AND c.review_status = 'pending'
+               AND c.contributor_id != ?
+               AND NOT EXISTS (SELECT 1 FROM reviews r
+                                WHERE r.contribution_id = c.id AND r.reviewer_id = ?)
+             ORDER BY c.created_at ASC
+             LIMIT ?
+            """,
+            (u["id"], u["id"], limit),
+        ).fetchall()
+
+        items = []
+        for r in rows:
+            d = dict(r)
+            # Keypoints travel with the clip: the pose is what gets trained
+            # on, so it is what a reviewer should be looking at. The video is
+            # a bonus that may not exist at all until R2 is configured.
+            kp = c.execute("SELECT keypoints FROM contributions WHERE id = ?",
+                           (r["id"],)).fetchone()
+            d["frames"] = db.unpack_keypoints(kp["keypoints"])
+            d["video_url"] = (storage.presign_get(r["video_key"])
+                              if r["video_status"] == "stored" and r["video_key"] else None)
+            items.append(d)
+
+    return {"clips": items, "reasons": list(REJECT_REASONS),
+            "needed": db.REVIEWS_TO_SETTLE}
+
+
+@app.post("/api/review/{cid}")
+def api_review(cid: str, payload: dict, request: Request):
+    u = current_user(request)
+    if not _can_review(u):
+        return JSONResponse({"error": "not a reviewer"}, status_code=403)
+
+    verdict = str(payload.get("verdict") or "")
+    if verdict not in ("approve", "reject"):
+        return JSONResponse({"error": "bad verdict"}, status_code=422)
+    reason = str(payload.get("reason") or "")[:40]
+    if verdict == "reject" and reason not in REJECT_REASONS:
+        return JSONResponse({"error": "a reason is required"}, status_code=422)
+    variant_tag = str(payload.get("variant_tag") or "").strip()[:60]
+    note = str(payload.get("note") or "").strip()[:400]
+
+    with db.conn() as c:
+        row = c.execute(
+            "SELECT contributor_id FROM contributions WHERE id = ? AND deleted_at IS NULL",
+            (cid,),
+        ).fetchone()
+        if not row:
+            return JSONResponse({"error": "unknown clip"}, status_code=404)
+        if row["contributor_id"] == u["id"]:
+            return JSONResponse({"error": "you cannot review your own clip"},
+                                status_code=403)
+        try:
+            c.execute(
+                "INSERT INTO reviews (id, contribution_id, reviewer_id, verdict,"
+                " reason, variant_tag, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (db.new_id("r"), cid, u["id"], verdict, reason, variant_tag, note),
+            )
+        except sqlite3.IntegrityError:
+            return JSONResponse({"error": "you have already reviewed this clip"},
+                                status_code=409)
+        status = db.settle(cid, c)
+
+    return {"ok": True, "id": cid, "review_status": status}
+
+
+@app.get("/api/review/stats")
+def api_review_stats(request: Request):
+    u = current_user(request)
+    if not _can_review(u):
+        return JSONResponse({"error": "not a reviewer"}, status_code=403)
+    with db.conn() as c:
+        mine = c.execute("SELECT COUNT(*) FROM reviews WHERE reviewer_id = ?",
+                         (u["id"],)).fetchone()[0]
+        waiting = c.execute(
+            "SELECT COUNT(*) FROM contributions c WHERE c.deleted_at IS NULL"
+            " AND c.review_status = 'pending' AND c.contributor_id != ?"
+            " AND NOT EXISTS (SELECT 1 FROM reviews r WHERE r.contribution_id = c.id"
+            "                  AND r.reviewer_id = ?)", (u["id"], u["id"])).fetchone()[0]
+    return {"reviewed": mine, "waiting": waiting}
+
+
 # ---- admin -----------------------------------------------------------------
 
 @app.get("/api/admin/stats")
@@ -603,7 +726,7 @@ def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
     if not _is_admin(request, x_admin_key):
         return Response(status_code=401)
 
-    sql = ("SELECT c.*, p.gloss, p.hi, p.en FROM contributions c"
+    sql = ("SELECT c.*, p.gloss, p.hi, p.gu, p.en, p.kind, p.tier FROM contributions c"
            " JOIN phrases p ON p.id = c.phrase_id"
            " WHERE c.deleted_at IS NULL")
     args: list = []
@@ -621,7 +744,10 @@ def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
                 yield _json.dumps({
                     "phrase_id": r["phrase_id"],
                     "gloss": r["gloss"],
-                    "text": {"hi": r["hi"], "en": r["en"]},
+                    "kind": r["kind"],
+                    "tier": r["tier"],
+                    "text": {"hi": r["hi"], "en": r["en"],
+                             **({"gu": r["gu"]} if r["gu"] else {})},
                     "contributor_id": r["contributor_id"],
                     "consent_id": r["consent_id"],
                     "review_status": r["review_status"],

@@ -29,10 +29,14 @@ Done:
 - MediaPipe Holistic in the browser during recording; keypoints to SQLite,
   video straight to R2 with a presigned PUT.
 - Phrase queue ordered by what the dataset still needs.
+- **Review queue.** Two agreeing reviewers settle a clip; a reviewer never
+  sees their own recording, and can only vote once on any clip. Rejections
+  need a reason from a fixed list. A regional variant is *tagged and kept*,
+  never rejected — the tag sticks even while the clip is still undecided.
 - Admin stats and the JSONL export Track B consumes.
 
-Not yet (M2+): review queue, contributor profiles page, Telegram digest,
-credit wall, deletion-request handling in the UI.
+Not yet: contributor profiles page, Telegram digest, credit wall,
+deletion-request handling in the UI.
 
 ### A note on the gate
 
@@ -138,6 +142,21 @@ presigned GET URLs, never public links — these are videos of people's faces.
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Registration alerts are logged instead of sent. |
 
 ---
+
+## Reviewing
+
+`/review`, for anyone with the `reviewer` or `admin` role.
+
+What plays back is the **pose**, not the video. The keypoints are what gets
+trained on, and a video can look perfectly fine while the tracking underneath
+it lost a hand for half the clip — so the reviewer sees the same line figure
+the app draws, from the same keypoints that go into the export. The video is
+a second tab, for when the pose looks wrong and you need to know why. It is
+also the reason review works at all before R2 exists.
+
+A clip needs **two approvals** to enter the dataset, and two rejections to
+leave it. A split verdict stays pending and waits for a third opinion, which
+is the honest outcome when two fluent signers disagree about a sign.
 
 ## Roles and access
 

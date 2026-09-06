@@ -128,6 +128,22 @@ CREATE TABLE IF NOT EXISTS contributions (
 CREATE INDEX IF NOT EXISTS idx_contrib_phrase ON contributions(phrase_id);
 CREATE INDEX IF NOT EXISTS idx_contrib_contributor ON contributions(contributor_id);
 CREATE INDEX IF NOT EXISTS idx_contrib_review ON contributions(review_status);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id TEXT PRIMARY KEY,
+    contribution_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    verdict TEXT NOT NULL,          -- 'approve' | 'reject'
+    reason TEXT DEFAULT '',         -- why, when rejecting
+    variant_tag TEXT DEFAULT '',    -- a regional variant is data, not a fault
+    note TEXT DEFAULT '',
+    created_at REAL DEFAULT (unixepoch('now'))
+);
+-- One vote per reviewer per clip. Without this, refreshing the queue twice
+-- would let one person carry a clip to the two approvals it needs.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_once
+    ON reviews(contribution_id, reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_contribution ON reviews(contribution_id);
 """
 
 
@@ -207,6 +223,43 @@ def seed_phrases(seed_path: str | None = None) -> int:
                  r.get("target_count", 4), r.get("sort", 0)),
             )
     return len(rows)
+
+
+# How many agreeing reviewers settle a clip. Two, per the brief: one person
+# can be wrong about a sign, and regional variation means "that is not how I
+# sign it" is not the same as "that is wrong".
+REVIEWS_TO_SETTLE = 2
+
+
+def settle(contribution_id: str, c: sqlite3.Connection) -> str:
+    """Recompute a clip's review status from the votes cast on it.
+
+    Derived rather than incremented, so a changed vote or a removed reviewer
+    can never leave a clip stuck in a status nobody voted for. Split verdicts
+    stay pending and wait for a third opinion — a disagreement about a sign is
+    exactly the case where a tie-break is worth having.
+    """
+    rows = c.execute(
+        "SELECT verdict, variant_tag FROM reviews WHERE contribution_id = ?",
+        (contribution_id,),
+    ).fetchall()
+    approve = sum(1 for r in rows if r["verdict"] == "approve")
+    reject = sum(1 for r in rows if r["verdict"] == "reject")
+
+    status = "pending"
+    if approve >= REVIEWS_TO_SETTLE:
+        status = "approved"
+    elif reject >= REVIEWS_TO_SETTLE:
+        status = "rejected"
+
+    # A variant tag from any reviewer sticks: it is a fact about the clip, not
+    # a vote about it, and it is what keeps regional signing in the dataset
+    # instead of being quietly outvoted by whoever signs it differently.
+    tag = next((r["variant_tag"] for r in rows if r["variant_tag"]), "")
+
+    c.execute("UPDATE contributions SET review_status = ?, variant_tag = ?"
+              " WHERE id = ?", (status, tag, contribution_id))
+    return status
 
 
 # ---- keypoints -------------------------------------------------------------

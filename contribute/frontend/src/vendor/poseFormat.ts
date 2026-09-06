@@ -154,6 +154,12 @@ export interface SignClip {
   text: { hi: string; gu?: string; en: string }
   /** ISL gloss, upper-case, the model's target vocabulary. */
   gloss: string
+  /**
+   * Whether this clip is a whole utterance or a single lexical item. Decides
+   * how the call screen indexes it — a sentence matches the whole caption, a
+   * word matches inside one. Optional so format-1 clips still load.
+   */
+  kind?: 'word' | 'phrase' | 'number' | 'letter'
   signer: SignerConsent
   fps: number // nominal capture rate; frames carry real timestamps
   durationMs: number

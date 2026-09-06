@@ -4,6 +4,7 @@ import Auth from './components/Auth'
 import Consent from './components/Consent'
 import Landing from './components/Landing'
 import Pending from './components/Pending'
+import Review from './components/Review'
 import type { Take } from './components/Recorder'
 import {
   getConfig, getCurrentConsent, getMe, getPhrases, getProgress, logout,
@@ -20,7 +21,7 @@ import * as turnstile from './lib/turnstile'
 // the model code downloads while they are reading.
 const Recorder = lazy(() => import('./components/Recorder'))
 
-type Screen = 'landing' | 'auth' | 'pending' | 'consent' | 'record' | 'admin'
+type Screen = 'landing' | 'auth' | 'pending' | 'consent' | 'record' | 'admin' | 'review'
 
 /** Refill the queue before it runs dry, so nobody watches a spinner between
  *  two signs. */
@@ -32,7 +33,7 @@ const T = {
     doneNote: 'अभी के लिए सारे शब्द रिकॉर्ड हो चुके हैं। बाद में और जुड़ेंगे।',
     loading: 'शब्द लाए जा रहे हैं…', retry: 'दोबारा कोशिश करें',
     videoLost: 'वीडियो नहीं भेजा जा सका, पर साइन का डेटा सुरक्षित है।',
-    signOut: 'साइन आउट', admin: 'एडमिन', booting: 'खुल रहा है…',
+    signOut: 'साइन आउट', admin: 'एडमिन', review: 'जाँच', booting: 'खुल रहा है…',
   },
   en: {
     thanks: 'Thank you 🙏', signs: (n: number) => `sign${n === 1 ? '' : 's'} contributed`,
@@ -40,7 +41,7 @@ const T = {
     doneNote: 'Every word is recorded for now. More will be added.',
     loading: 'Loading words…', retry: 'Try again',
     videoLost: 'The video did not upload, but your sign data is saved.',
-    signOut: 'Sign out', admin: 'Admin', booting: 'Starting…',
+    signOut: 'Sign out', admin: 'Admin', review: 'Review', booting: 'Starting…',
   },
 } as const
 
@@ -74,7 +75,9 @@ export default function App() {
   const routeFor = useCallback(async (u: User | null): Promise<Screen> => {
     if (!u) return 'auth'
     if (u.status !== 'approved') return 'pending'
-    if (u.role === 'admin' && window.location.pathname === '/admin') return 'admin'
+    const path = window.location.pathname
+    if (u.role === 'admin' && path === '/admin') return 'admin'
+    if (path === '/review' && (u.role === 'reviewer' || u.role === 'admin')) return 'review'
     const current = await getCurrentConsent().catch(() => ({ consent_id: null }))
     if (!current.consent_id) return 'consent'
     setConsentId(current.consent_id)
@@ -89,8 +92,7 @@ export default function App() {
       .then(async ({ user: u }) => {
         setUser(u)
         if (!u) return
-        const where = await routeFor(u)
-        setScreen(where === 'admin' ? 'admin' : where)
+        setScreen(await routeFor(u))
       })
       .catch(() => {})
       .finally(() => setBooting(false))
@@ -201,12 +203,12 @@ export default function App() {
     }
   }
 
-  const openAdmin = () => {
-    window.history.pushState(null, '', '/admin')
-    setScreen('admin')
+  const openAt = (path: string, next: Screen) => {
+    window.history.pushState(null, '', path)
+    setScreen(next)
   }
 
-  const leaveAdmin = async () => {
+  const leaveSubScreen = async () => {
     window.history.pushState(null, '', '/')
     setScreen(await routeFor(user))
   }
@@ -219,8 +221,14 @@ export default function App() {
           <span className="count">{progress.total} {t.signs(progress.total)}</span>
         )}
         <div className="bar-right">
+          {user && (user.role === 'reviewer' || user.role === 'admin')
+            && screen !== 'review' && (
+            <button className="link" onClick={() => openAt('/review', 'review')}>
+              {t.review}
+            </button>
+          )}
           {user?.role === 'admin' && screen !== 'admin' && (
-            <button className="link" onClick={openAdmin}>{t.admin}</button>
+            <button className="link" onClick={() => openAt('/admin', 'admin')}>{t.admin}</button>
           )}
           {user && screen !== 'pending' && (
             <button className="link" onClick={signOut}>{t.signOut}</button>
@@ -255,7 +263,11 @@ export default function App() {
         )}
 
         {!booting && screen === 'admin' && user && (
-          <Admin selfId={user.id} onLeave={leaveAdmin} />
+          <Admin selfId={user.id} onLeave={leaveSubScreen} />
+        )}
+
+        {!booting && screen === 'review' && (
+          <Review lang={lang} onLeave={leaveSubScreen} />
         )}
 
         {!booting && screen === 'record' && (

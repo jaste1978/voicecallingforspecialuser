@@ -14,6 +14,11 @@
 // training set. `--check` runs in the build, so a drifted copy fails loudly
 // instead of quietly poisoning the dataset.
 //
+// The renderer comes along for the review queue. A reviewer approving a clip
+// should be looking at the keypoints that will actually be trained on, drawn
+// exactly as the app draws them — not only at the video they were extracted
+// from, which can look fine while the tracking underneath it is a mess.
+//
 // Imports are left alone — `@sign` and `@studio` both alias to this folder.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -26,6 +31,9 @@ const VENDOR = resolve(REPO, 'contribute/frontend/src/vendor')
 
 const FILES = [
   ['frontend/src/lib/sign/poseFormat.ts', 'poseFormat.ts'],
+  ['frontend/src/lib/sign/skeleton.ts', 'skeleton.ts'],
+  ['frontend/src/lib/sign/renderPose.ts', 'renderPose.ts'],
+  ['frontend/src/lib/sign/player.ts', 'player.ts'],
   ['sign-studio/src/lib/holistic.ts', 'holistic.ts'],
 ]
 

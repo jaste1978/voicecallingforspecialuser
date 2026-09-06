@@ -121,6 +121,55 @@ export const logout = () => json<{ ok: boolean }>('/api/auth/logout', { method: 
 export const getCurrentConsent = () =>
   json<{ consent_id: string | null; version: string }>('/api/consent/current')
 
+// ---- review ----------------------------------------------------------------
+
+export interface ReviewClip {
+  id: string
+  phrase_id: string
+  hi: string
+  en: string
+  gloss: string
+  kind: 'word' | 'phrase' | 'number' | 'letter'
+  face_prompt: string
+  phrase_note: string
+  contributor_name: string
+  duration_ms: number
+  fps: number
+  frame_count: number
+  cov_body: number
+  cov_face: number
+  cov_hand_l: number
+  cov_hand_r: number
+  approvals: number
+  rejections: number
+  variant_tag: string
+  created_at: number
+  video_url: string | null
+  video_status: string
+  frames: SignFrame[]
+}
+
+export interface ReviewQueue {
+  clips: ReviewClip[]
+  reasons: string[]
+  needed: number
+}
+
+export const getReviewQueue = (limit = 12) =>
+  json<ReviewQueue>(`/api/review/queue?limit=${limit}`)
+
+export const getReviewStats = () =>
+  json<{ reviewed: number; waiting: number }>('/api/review/stats')
+
+export const postReview = (id: string, body: {
+  verdict: 'approve' | 'reject'
+  reason?: string
+  variant_tag?: string
+  note?: string
+}) => json<{ ok: boolean; review_status: string }>(`/api/review/${id}`, {
+  method: 'POST', body: JSON.stringify(body),
+})
+
 // ---- admin -----------------------------------------------------------------
 
 export const adminUsers = (status = '') =>
