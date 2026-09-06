@@ -25,6 +25,8 @@ backend/recordings/
 !frontend/**/*.json
 !mobile/**/*.json
 !backend/**/*.json
+!contribute/**/*.json
+!sign-studio/**/*.json
 
 # generated native android project + built apks
 mobile/android/

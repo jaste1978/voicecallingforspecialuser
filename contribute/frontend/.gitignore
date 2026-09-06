@@ -1,0 +1,5 @@
+# Fetched by scripts/setup-assets.mjs — 10MB model + wasm runtime, not ours to vendor
+public/models/
+public/mediapipe/
+dist/
+*.tsbuildinfo

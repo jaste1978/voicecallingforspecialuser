@@ -4,14 +4,63 @@
     {
       "name": "backend",
       "runtimeExecutable": "backend/venv/bin/python3",
-      "runtimeArgs": ["-m", "uvicorn", "main:app", "--app-dir", "backend", "--port", "8000"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--app-dir",
+        "backend",
+        "--port",
+        "8000"
+      ],
       "port": 8000
     },
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "frontend"
+      ],
       "port": 5173
+    },
+    {
+      "name": "sign-studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "sign-studio"
+      ],
+      "port": 5180
+    },
+    {
+      "name": "contribute-api",
+      "runtimeExecutable": "backend/venv/bin/python3",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--app-dir",
+        "contribute/backend",
+        "--port",
+        "8100"
+      ],
+      "port": 8100
+    },
+    {
+      "name": "contribute",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "contribute/frontend"
+      ],
+      "port": 5190
     }
   ]
 }
