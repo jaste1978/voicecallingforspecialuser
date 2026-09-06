@@ -16,16 +16,33 @@ def init() -> None:
                 created_at REAL DEFAULT (unixepoch('now'))
             )
         """)
+        try:
+            conn.execute("ALTER TABLE waitlist ADD COLUMN phone TEXT")
+        except Exception:
+            pass
+        # auto welcome email: when it was sent (NULL = not yet)
+        try:
+            conn.execute("ALTER TABLE waitlist ADD COLUMN emailed_at REAL")
+        except Exception:
+            pass
 
 
-def add(name: str, email: str, role: str, org: str, message: str) -> int:
+def add(name: str, email: str, role: str, org: str, message: str,
+        phone: str = "") -> int:
     with _conn() as conn:
         cur = conn.execute(
-            "INSERT INTO waitlist (name, email, role, org, message)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (name[:80], email[:120], role[:60], org[:120], message[:1000]),
+            "INSERT INTO waitlist (name, email, role, org, message, phone)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (name[:80], email[:120], role[:60], org[:120], message[:1000],
+             phone[:20]),
         )
         return cur.lastrowid
+
+
+def mark_emailed(row_id: int) -> None:
+    with _conn() as conn:
+        conn.execute("UPDATE waitlist SET emailed_at = unixepoch('now')"
+                     " WHERE id = ?", (row_id,))
 
 
 def list_all() -> list[dict]:

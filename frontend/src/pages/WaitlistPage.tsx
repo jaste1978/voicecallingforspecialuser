@@ -8,6 +8,8 @@ interface Signup {
   role: string
   org: string
   message: string
+  phone?: string
+  emailed_at?: number | null
   created_at: number
 }
 
@@ -40,6 +42,16 @@ export default function WaitlistPage() {
         <section className="setting-block" key={s.id}>
           <strong>{s.name}</strong>{' '}
           <a href={`mailto:${s.email}`}>{s.email}</a>
+          {s.emailed_at ? ' ✉️✓' : ''}
+          {s.phone && (
+            <>
+              {' · '}
+              <a href={`https://wa.me/${(() => { const d = s.phone.replace(/\D/g, '').replace(/^0+/, ''); return d.length === 10 ? `91${d}` : d })()}`}
+                target="_blank" rel="noreferrer">
+                📱 {s.phone}
+              </a>
+            </>
+          )}
           <p className="idle-hint" style={{ textAlign: 'left' }}>
             {s.role}
             {s.org && <> · {s.org}</>}

@@ -411,21 +411,55 @@ async def api_waitlist_add(payload: dict, request: Request):
 
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip()
+    phone = (payload.get("phone") or "").strip()
     if not name or "@" not in email:
         return Response(status_code=422)
-    waitlist.add(
+    row_id = waitlist.add(
         name, email,
         (payload.get("role") or "").strip(),
         (payload.get("org") or "").strip(),
         (payload.get("message") or "").strip(),
+        phone,
     )
     logger.info("waitlist signup: %s <%s> (%s)", name, email, payload.get("role"))
     import telegram_notify
     kind = "🆘 <b>Support message</b>" if payload.get("role") == "support" else "📥 <b>Waitlist signup</b>"
     msg = (payload.get("message") or "").strip()
     await telegram_notify.send(
-        f"{kind}\n{name} &lt;{email}&gt;" + (f"\n💬 {msg[:400]}" if msg else ""))
+        f"{kind}\n{name} &lt;{email}&gt;"
+        + (f"\n📱 {phone}" if phone else "")
+        + (f"\n💬 {msg[:400]}" if msg else ""))
+    # auto welcome email (no-op until RESEND_API_KEY is configured)
+    if payload.get("role") != "support":
+        import emailer
+        subject, html = emailer.waitlist_welcome(name)
+        if await emailer.send(email, subject, html):
+            waitlist.mark_emailed(row_id)
     return {"ok": True}
+
+
+@app.post("/api/waitlist/email-pending")
+async def api_waitlist_email_pending(request: Request):
+    """Admin: send the welcome email to signups that never got one."""
+    import emailer
+    import waitlist
+
+    if not _is_admin_req(request):
+        return Response(status_code=403)
+    if not emailer.configured():
+        return JSONResponse({"error": "email not configured"}, status_code=503)
+    sent, skipped = [], []
+    for s in waitlist.list_all():
+        if s.get("emailed_at") or s.get("role") == "support" or \
+                s["email"].endswith((".test", ".sunosathi")):
+            skipped.append(s["email"])
+            continue
+        subject, html = emailer.waitlist_welcome(s["name"])
+        if await emailer.send(s["email"], subject, html):
+            waitlist.mark_emailed(s["id"])
+            sent.append(s["email"])
+    logger.info("waitlist backfill emails: %s sent", len(sent))
+    return {"sent": sent, "skipped": skipped}
 
 
 @app.get("/api/waitlist")
