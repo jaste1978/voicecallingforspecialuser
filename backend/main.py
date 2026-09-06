@@ -128,9 +128,11 @@ async def api_login(payload: dict):
 
 
 @app.post("/api/register")
-async def api_register(payload: dict):
+async def api_register(payload: dict, request: Request):
     import telegram_notify
 
+    if not await _turnstile_ok(payload, request):
+        return JSONResponse({"error": "verification failed"}, status_code=403)
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip()
     password = payload.get("password") or ""
@@ -405,10 +407,35 @@ async def api_settings_update(payload: dict, request: Request):
     return providers.describe()
 
 
+async def _turnstile_ok(payload: dict, request: Request) -> bool:
+    """Cloudflare Turnstile check for public forms. No-op until
+    TURNSTILE_SECRET is set; admin-key requests (fleet/QA) bypass."""
+    secret = os.environ.get("TURNSTILE_SECRET")
+    if not secret or _is_admin_req(request):
+        return True
+    token = payload.get("cf-turnstile-response") or payload.get("turnstile") or ""
+    if not token:
+        return False
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                data={"secret": secret, "response": token,
+                      "remoteip": request.client.host if request.client else ""},
+            )
+        return bool(r.json().get("success"))
+    except Exception:
+        logger.exception("turnstile verify error")
+        return True  # fail open: never lock out real users on CF outage
+
+
 @app.post("/api/waitlist")
 async def api_waitlist_add(payload: dict, request: Request):
     import waitlist
 
+    if not await _turnstile_ok(payload, request):
+        return JSONResponse({"error": "verification failed"}, status_code=403)
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip()
     phone = (payload.get("phone") or "").strip()

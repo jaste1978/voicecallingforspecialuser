@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogoMark } from '../components/icons'
 import { track } from '../lib/analytics'
+
+const TURNSTILE_SITEKEY = '0x4AAAAAAEqa3x_MLNDKWW_D'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -15,16 +17,33 @@ export default function RegisterPage() {
 
   const numberOk = number.replace(/\D/g, '').replace(/^91/, '').length === 10
 
+  // Cloudflare Turnstile: invisible bot check, renders into the form div
+  useEffect(() => {
+    if (document.getElementById('turnstile-js')) return
+    const s = document.createElement('script')
+    s.id = 'turnstile-js'
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+    s.async = true
+    document.head.appendChild(s)
+  }, [])
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError('')
     try {
+      const token = (document.querySelector(
+        'input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value || ''
       const resp = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, number }),
+        body: JSON.stringify({ name, email, password, number,
+          'cf-turnstile-response': token }),
       })
+      if (resp.status === 403) {
+        setError('Could not verify you are human — wait a moment and try again. फिर से कोशिश कीजिए।')
+        return
+      }
       if (resp.status === 409) {
         setError('This email already has an account — try signing in instead.')
         return
@@ -121,6 +140,8 @@ export default function RegisterPage() {
             This is the number your callers already dial — after approval you
             forward it to SunoSathi with one code.
           </p>
+          <div className="cf-turnstile" data-sitekey={TURNSTILE_SITEKEY}
+            data-theme="light" />
           {error && <p className="status-line error">{error}</p>}
           <button
             className="bigbtn start"

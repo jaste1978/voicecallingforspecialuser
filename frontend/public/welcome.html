@@ -437,6 +437,7 @@ footer .right{margin-left:auto}
     </select>
     <input name="org" placeholder="Organisation (optional)" maxlength="120" />
     <textarea name="message" rows="3" placeholder="Anything you'd like to tell us (optional)" maxlength="1000"></textarea>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAAEqa3x_MLNDKWW_D" data-theme="light"></div>
     <button class="btn" type="submit">Request access</button>
     <div class="err-msg" id="err">Something went wrong — please try again.</div>
   </form>
@@ -557,6 +558,11 @@ async function scene() {
   }
 }
 if (chat) scene()
+
+const ts = document.createElement('script')
+ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+ts.async = true
+document.head.appendChild(ts)
 
 document.getElementById('wl').addEventListener('submit', async (e) => {
   e.preventDefault()
