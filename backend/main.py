@@ -265,6 +265,29 @@ async def api_user_delete(user_id: int, request: Request):
     return {"ok": True}
 
 
+@app.delete("/api/me")
+async def api_delete_me(payload: dict, request: Request):
+    """Self-serve account deletion (App Store guideline 5.1.1(v)): the user
+    confirms with their password and everything they own is removed."""
+    import telegram_notify
+
+    user = _require_user(request)
+    if user.get("role") == "admin":
+        return JSONResponse({"error": "admins cannot self-delete"}, status_code=400)
+    if not auth.verify(user["email"], payload.get("password") or ""):
+        return JSONResponse({"error": "wrong password"}, status_code=403)
+    from history import _conn
+    with _conn() as conn:
+        for table in ("sessions", "numbers", "contacts", "calls"):
+            conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user["id"],))
+        conn.execute("DELETE FROM users WHERE id = ?", (user["id"],))
+    logger.info("user %s deleted their own account", user["id"])
+    await telegram_notify.send(
+        f"🗑 <b>Account deleted</b> (self-serve): {user.get('name') or '?'} "
+        f"&lt;{user['email']}&gt;")
+    return {"ok": True}
+
+
 @app.post("/api/users/{user_id}/reject")
 async def api_user_reject(user_id: int, request: Request):
     _require_admin(request)

@@ -72,6 +72,35 @@ export default function SettingsTab() {
     }
   }
 
+  const [delOpen, setDelOpen] = useState(false)
+  const [delPw, setDelPw] = useState('')
+  const [delMsg, setDelMsg] = useState('')
+  const [delBusy, setDelBusy] = useState(false)
+
+  async function deleteAccount() {
+    setDelMsg('')
+    setDelBusy(true)
+    try {
+      const resp = await authFetch('/api/me', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: delPw }),
+      })
+      if (resp.ok) {
+        clearAuth()
+        navigate('/start', { replace: true })
+      } else if (resp.status === 403) {
+        setDelMsg('Password is wrong · पासवर्ड गलत है')
+      } else {
+        setDelMsg('Could not delete the account — contact us from Support')
+      }
+    } catch {
+      setDelMsg('Could not reach the server — try again')
+    } finally {
+      setDelBusy(false)
+    }
+  }
+
   async function logout() {
     try {
       await authFetch('/api/logout', { method: 'POST' })
@@ -200,6 +229,42 @@ export default function SettingsTab() {
           </div>
         </div>
       )}
+
+      {!admin && (!delOpen ? (
+        <button className="home-btn" onClick={() => setDelOpen(true)}>
+          <span className="emoji icon">🗑</span>
+          <span>
+            Delete my account · खाता हटाएँ
+            <small>Permanently removes your account, numbers and call history</small>
+          </span>
+        </button>
+      ) : (
+        <div className="setting-block" style={{ borderColor: '#c0392b' }}>
+          <h3>Delete my account · खाता हटाएँ</h3>
+          <p className="idle-hint" style={{ textAlign: 'left' }}>
+            This permanently deletes your account, linked numbers, contacts and
+            call history. It cannot be undone. Remember to dial <strong>##21#</strong>{' '}
+            afterwards to stop call forwarding.
+          </p>
+          <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+            <input className="dialinput" type="password"
+              placeholder="Confirm with your password"
+              autoComplete="current-password"
+              value={delPw} onChange={(e) => setDelPw(e.target.value)} />
+            {delMsg && <p className="status-line error">{delMsg}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="promptbtn" onClick={() => { setDelOpen(false); setDelMsg(''); setDelPw('') }}>
+                Cancel
+              </button>
+              <button className="bigbtn start" style={{ minHeight: 46, background: '#c0392b' }}
+                disabled={delBusy || !delPw}
+                onClick={() => void deleteAccount()}>
+                {delBusy ? 'Deleting…' : 'Delete forever'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
 
       <button className="logout-btn" onClick={() => void logout()}>
         Log out{authName() ? ` · ${authName()}` : ''}

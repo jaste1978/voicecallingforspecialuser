@@ -31,13 +31,19 @@ signed up" and "my calls are captioned."
   listing (Hindi).
 - _Effort: mostly waiting + 1 day of fixes._
 
-**2. App Store public release**
-- TestFlight external group + public link (one-time Beta review).
-- App Store listing: screenshots (6.7" + 5.5"), description, keywords,
-  accessibility declarations. App Review notes with the demo login.
-- Expect one round of App Review questions (mic + calling app); answers
-  largely exist from the Play data-safety work.
-- _Effort: 1–2 days + review wait._
+**2. App Store public release** — ✅ SUBMITTED 5 Sep 2026
+- TestFlight external group + public link live (beta review approved).
+- Version 1.0 (build 1.4.1) submitted to App Review 5 Sep 2026 with:
+  full listing (description, keywords, promo, subtitle "Live captions for
+  your calls"), 5 iPhone 6.7" + 5 iPad 13" screenshots, App Privacy
+  published (Contact Info / User Content linked, Usage Data not linked,
+  no tracking), privacy policy URL, age rating 4+ (new social-media
+  questions answered: none, messaging/chat yes), content rights (no
+  third-party content), pricing Free in all 175 regions, review notes
+  with playreview demo login. Review ETA ≤48h.
+- iPad screenshots regenerate via `scrt/ipad_shots.js` +
+  `scrt/upload_ipad_shots.py` (puppeteer-core + ASC API).
+- _Remaining: respond to App Review questions if any, then release._
 
 **3. Onboarding automation — approve → notify → forward**
 - On approval, auto-send the setup message (forwarding code, login link)
