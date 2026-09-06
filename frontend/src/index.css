@@ -1208,6 +1208,14 @@ select.lang.wide {
 .settings-list {
   justify-content: flex-start;
   padding-top: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+/* children must not compress when the list overflows and scrolls */
+.settings-list > * {
+  flex-shrink: 0;
 }
 
 /* ---------- skeletons ---------- */
