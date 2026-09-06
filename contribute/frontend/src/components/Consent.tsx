@@ -7,26 +7,21 @@
 import { useEffect, useState } from 'react'
 import { getConsentDoc, postConsent } from '../lib/api'
 import type { ConsentDoc } from '../lib/api'
-import { deviceId } from '../lib/device'
 import type { Lang } from '../lib/device'
 
 const T = {
   hi: {
     loading: 'लोड हो रहा है…',
-    nameLabel: 'नाम (मर्ज़ी से)',
-    namePlaceholder: 'जैसे: प्रिया',
-    contactLabel: 'फ़ोन या ईमेल (मर्ज़ी से)',
-    contactHint: 'सिर्फ़ इसलिए कि आप बाद में अपना डेटा हटवा सकें।',
+    contactLabel: 'हटाने के लिए संपर्क (मर्ज़ी से)',
+    contactHint: 'खाली छोड़ेंगे तो साइन-इन वाला नंबर/ईमेल इस्तेमाल होगा।',
     agree: 'सहमत हूँ, आगे बढ़ें',
     back: 'वापस',
     needed: 'आगे बढ़ने के लिए ऊपर के दोनों बॉक्स पर टिक करें।',
   },
   en: {
     loading: 'Loading…',
-    nameLabel: 'Name (optional)',
-    namePlaceholder: 'e.g. Priya',
-    contactLabel: 'Phone or email (optional)',
-    contactHint: 'Only so you can ask us to delete your data later.',
+    contactLabel: 'Contact for deletion requests (optional)',
+    contactHint: 'Leave blank to use the number or email you signed in with.',
     agree: 'I agree, continue',
     back: 'Back',
     needed: 'Tick both boxes above to continue.',
@@ -35,7 +30,7 @@ const T = {
 
 interface Props {
   lang: Lang
-  onDone: (s: { contributorId: string; consentId: string; consentVersion: string }) => void
+  onDone: (consentId: string) => void
   onBack: () => void
 }
 
@@ -43,7 +38,6 @@ export default function Consent({ lang, onDone, onBack }: Props) {
   const t = T[lang]
   const [doc, setDoc] = useState<ConsentDoc | null>(null)
   const [checks, setChecks] = useState<Record<string, boolean>>({})
-  const [name, setName] = useState('')
   const [contact, setContact] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -63,18 +57,8 @@ export default function Consent({ lang, onDone, onBack }: Props) {
     setBusy(true)
     setError('')
     try {
-      const r = await postConsent({
-        device_id: deviceId(),
-        display_name: name.trim(),
-        contact: contact.trim(),
-        lang,
-        checks,
-      })
-      onDone({
-        contributorId: r.contributor_id,
-        consentId: r.consent_id,
-        consentVersion: r.version,
-      })
+      const r = await postConsent({ contact: contact.trim(), lang, checks })
+      onDone(r.consent_id)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
       setBusy(false)
@@ -115,11 +99,6 @@ export default function Consent({ lang, onDone, onBack }: Props) {
       </div>
 
       <div className="fields">
-        <label>
-          <span>{t.nameLabel}</span>
-          <input value={name} onChange={(e) => setName(e.target.value)}
-                 placeholder={t.namePlaceholder} maxLength={80} />
-        </label>
         <label>
           <span>{t.contactLabel}</span>
           <input value={contact} onChange={(e) => setContact(e.target.value)}

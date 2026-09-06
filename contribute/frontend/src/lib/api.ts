@@ -45,9 +45,33 @@ export interface Progress {
   phrases: number
 }
 
+export type Role = 'contributor' | 'reviewer' | 'admin'
+export type Status = 'pending' | 'approved' | 'rejected' | 'suspended'
+
+export interface User {
+  id: string
+  name: string
+  identifier: string
+  role: Role
+  status: Status
+  credit_optin: boolean
+}
+
+export interface AdminUser extends Omit<User, 'credit_optin'> {
+  note: string
+  clips: number
+  created_at: number
+  approved_at: number | null
+  last_seen_at: number | null
+}
+
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
+    // The session is an httpOnly cookie, so it has to ride along on every
+    // call — and it must never be readable by script, which is the whole
+    // reason it is not in localStorage.
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
   })
   if (!res.ok) {
@@ -62,13 +86,43 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const getConsentDoc = () => json<ConsentDoc>('/api/consent-text')
 
-export const getPhrases = (contributorId: string, limit = 25) =>
-  json<{ phrases: Phrase[] }>(
-    `/api/phrases?contributor_id=${encodeURIComponent(contributorId)}&limit=${limit}`,
-  ).then((r) => r.phrases)
+export const getPhrases = (limit = 25) =>
+  json<{ phrases: Phrase[] }>(`/api/phrases?limit=${limit}`).then((r) => r.phrases)
 
-export const getProgress = (contributorId: string) =>
-  json<Progress>(`/api/me?contributor_id=${encodeURIComponent(contributorId)}`)
+export const getProgress = () => json<Progress>('/api/me')
+
+// ---- accounts --------------------------------------------------------------
+
+export interface Auth {
+  user: User | null
+  access_mode: 'approval' | 'open'
+}
+
+export const getMe = () => json<Auth>('/api/auth/me')
+
+export const register = (body: {
+  name: string; identifier: string; password: string; note: string
+}) => json<Auth>('/api/auth/register', { method: 'POST', body: JSON.stringify(body) })
+
+export const login = (body: { identifier: string; password: string }) =>
+  json<Auth>('/api/auth/login', { method: 'POST', body: JSON.stringify(body) })
+
+export const logout = () => json<{ ok: boolean }>('/api/auth/logout', { method: 'POST' })
+
+export const getCurrentConsent = () =>
+  json<{ consent_id: string | null; version: string }>('/api/consent/current')
+
+// ---- admin -----------------------------------------------------------------
+
+export const adminUsers = (status = '') =>
+  json<{ users: AdminUser[] }>(
+    `/api/admin/users${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+  ).then((r) => r.users)
+
+export const setUserStatus = (id: string, status: Status, role?: Role) =>
+  json<{ ok: boolean }>(`/api/admin/users/${id}/status`, {
+    method: 'POST', body: JSON.stringify({ status, ...(role ? { role } : {}) }),
+  })
 
 export const getStats = () =>
   json<{ clips: number; people: number; phrases_covered: number; phrases_total: number }>(
@@ -76,8 +130,6 @@ export const getStats = () =>
   )
 
 export function postConsent(body: {
-  device_id: string
-  display_name: string
   contact: string
   lang: string
   checks: Record<string, boolean>
@@ -89,7 +141,6 @@ export function postConsent(body: {
 
 export interface SubmitBody {
   phrase_id: string
-  contributor_id: string
   consent_id: string
   frames: SignFrame[]
   duration_ms: number

@@ -54,9 +54,9 @@ html, body, #root {
 }
 
 .brand { font-weight: 700; letter-spacing: .01em; }
-.count { color: var(--dim); font-size: 14px; margin-left: auto; }
-.langs { display: flex; gap: 4px; margin-left: auto; }
-.count + .langs { margin-left: 0; }
+.count { color: var(--dim); font-size: 14px; }
+.bar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.langs { display: flex; gap: 4px; }
 
 .langs button {
   border: 1px solid var(--divider);
@@ -330,3 +330,103 @@ main { flex: 1; display: flex; flex-direction: column; }
 .error-pane { text-align: center; padding-top: 40px; }
 
 .hint.stalled { color: var(--danger); }
+
+/* ---- accounts ---- */
+.auth h1 { font-size: 24px; margin: 0 0 10px; }
+.auth .lead { font-size: 15px; color: var(--dim); margin-bottom: 20px; }
+.fields textarea {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  padding: 11px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  background: var(--panel);
+  resize: vertical;
+}
+.fields textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* The reveal button sits inside the field's box so the tap target is where
+   the eye expects it, not floating beside a full-width input. */
+.with-action { position: relative; display: block; }
+.with-action input { width: 100%; padding-right: 74px; }
+.with-action .link {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+.switch { display: block; margin: 18px auto 0; }
+.auth .controls { margin-top: 4px; }
+.auth .controls .btn.ghost { flex: 0 0 64px; }
+
+/* ---- waiting room ---- */
+.waiting { text-align: center; padding-top: 44px; }
+.waiting-mark { font-size: 46px; line-height: 1; margin-bottom: 14px; }
+.waiting h1 { font-size: 23px; margin: 0 0 12px; }
+.waiting .lead { font-size: 16px; }
+.waiting .controls { margin-top: 26px; }
+
+/* ---- admin ---- */
+.admin-head { display: flex; align-items: baseline; justify-content: space-between; }
+.admin h1 { font-size: 22px; margin: 0 0 12px; }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tabs button {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--divider);
+  background: var(--panel);
+  color: var(--dim);
+  cursor: pointer;
+}
+.tabs button.on { background: var(--surface); border-color: var(--accent); color: var(--accent-ink); }
+
+.users { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.user {
+  background: var(--panel);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 14px;
+}
+.user.pending { border-color: var(--accent); }
+.user-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.user-name { font-weight: 700; }
+.user-id { color: var(--dim); font-size: 14px; margin-top: 2px; }
+.user-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.user-meta { color: var(--dim); font-size: 12.5px; margin-top: 8px; }
+.user-acts { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: flex-end; }
+
+.pill {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--dim);
+}
+.pill.approved { background: #E4F5EA; color: #14794A; }
+.pill.pending { background: #FFF1D9; color: #8A5B00; }
+.pill.rejected, .pill.suspended { background: #FDECEC; color: var(--danger); }
+.pill.role { background: var(--surface); color: var(--accent-ink); }
+
+.admin .btn.small { flex: none; font-size: 13px; padding: 8px 14px; min-height: 0; }

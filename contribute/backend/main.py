@@ -22,13 +22,37 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+
+def _load_env_file() -> None:
+    """Read backend/.env into the environment for local runs.
+
+    Railway injects real variables, so anything already set always wins and
+    this is a no-op in production. The file is gitignored: it is where an R2
+    key or an admin password lives on a laptop, instead of in a committed
+    launch config.
+    """
+    path = Path(__file__).with_name(".env")
+    if not path.exists():
+        return
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+_load_env_file()
+
 from fastapi import FastAPI, Header, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
+import auth
 import consent
 import db
 import storage
+import telegram
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("contribute")
@@ -37,10 +61,15 @@ logger = logging.getLogger("contribute")
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     db.init()
+    auth.ensure_admin()
     with db.conn() as c:
         n = c.execute("SELECT COUNT(*) FROM phrases").fetchone()[0]
-    logger.info("db ready at %s — %d phrases, R2 %s", db.DB_PATH, n,
+        admins = c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0]
+    logger.info("db ready at %s — %d phrases, %d admin(s), access=%s, R2 %s",
+                db.DB_PATH, n, admins, db.ACCESS_MODE,
                 "configured" if storage.configured() else "NOT configured (videos skipped)")
+    if admins == 0:
+        logger.warning("no admin account — set ADMIN_EMAIL and ADMIN_PASSWORD")
     yield
 
 
@@ -54,9 +83,47 @@ POSE_FORMAT = 2          # keep in step with frontend/src/lib/sign/poseFormat.ts
 
 # ---- helpers ---------------------------------------------------------------
 
-def _admin_ok(key: str | None) -> bool:
+def _admin_key_ok(key: str | None) -> bool:
+    """The scripted way in — used by the dataset export, which Track B runs
+    from a shell and not from a browser."""
     want = os.environ.get("ADMIN_KEY", "")
     return bool(want) and key == want
+
+
+def current_user(request: Request) -> dict | None:
+    return auth.user_for_token(request.cookies.get(auth.SESSION_COOKIE, ""))
+
+
+def _is_admin(request: Request, key: str | None = None) -> bool:
+    if _admin_key_ok(key):
+        return True
+    u = current_user(request)
+    return bool(u and u["role"] == "admin" and u["status"] == "approved")
+
+
+def _public_user(u: dict) -> dict:
+    return {
+        "id": u["id"],
+        "name": u["display_name"],
+        "identifier": u["identifier"],
+        "role": u["role"],
+        "status": u["status"],
+        "credit_optin": bool(u["credit_optin"]),
+    }
+
+
+def _set_session_cookie(response: Response, token: str, request: Request) -> None:
+    response.set_cookie(
+        auth.SESSION_COOKIE, token,
+        max_age=auth.SESSION_DAYS * 86400,
+        httponly=True,          # a stolen session should need the browser, not a script
+        samesite="lax",
+        # Set only over TLS in production; a `secure` cookie on plain http
+        # would silently never be stored, which is a confusing way to make
+        # local development impossible.
+        secure=request.url.scheme == "https",
+        path="/",
+    )
 
 
 async def _turnstile_ok(payload: dict, request: Request) -> bool:
@@ -88,6 +155,107 @@ def _client_note(request: Request) -> str:
     return (request.headers.get("user-agent") or "")[:180]
 
 
+# ---- accounts --------------------------------------------------------------
+
+@app.get("/api/auth/me")
+def api_auth_me(request: Request):
+    u = current_user(request)
+    if not u:
+        return JSONResponse({"user": None, "access_mode": db.ACCESS_MODE}, status_code=200)
+    return {"user": _public_user(u), "access_mode": db.ACCESS_MODE}
+
+
+@app.post("/api/auth/register")
+async def api_register(payload: dict, request: Request):
+    if not await _turnstile_ok(payload, request):
+        return JSONResponse({"error": "verification failed"}, status_code=403)
+
+    name = str(payload.get("name") or "").strip()[:80]
+    raw = str(payload.get("identifier") or "")
+    password = str(payload.get("password") or "")
+    note = str(payload.get("note") or "").strip()[:500]
+
+    if len(name) < 2:
+        return JSONResponse({"error": "name required"}, status_code=422)
+    identifier = auth.normalise_identifier(raw)
+    if not auth.identifier_ok(identifier):
+        return JSONResponse({"error": "enter a valid email or phone number"},
+                            status_code=422)
+    if len(password) < auth.MIN_PASSWORD:
+        return JSONResponse(
+            {"error": f"password must be at least {auth.MIN_PASSWORD} characters"},
+            status_code=422)
+
+    # Open mode is how this becomes a public platform again once the pilot is
+    # over: same code path, no waiting room.
+    status = "approved" if db.ACCESS_MODE == "open" else "pending"
+    uid = db.new_id("u")
+
+    with db.conn() as c:
+        if c.execute("SELECT 1 FROM users WHERE identifier = ?", (identifier,)).fetchone():
+            return JSONResponse({"error": "an account with this already exists"},
+                                status_code=409)
+        c.execute(
+            "INSERT INTO users (id, identifier, display_name, password_hash, role,"
+            " status, note, approved_at) VALUES (?, ?, ?, ?, 'contributor', ?, ?, ?)",
+            (uid, identifier, name, auth.hash_password(password), status, note,
+             time.time() if status == "approved" else None),
+        )
+
+    token = auth.start_session(uid, _client_note(request))
+    body = {"user": {"id": uid, "name": name, "identifier": identifier,
+                     "role": "contributor", "status": status, "credit_optin": False},
+            "access_mode": db.ACCESS_MODE}
+    response = JSONResponse(body)
+    _set_session_cookie(response, token, request)
+
+    if status == "pending":
+        await telegram.send(
+            f"<b>New ISL contributor waiting</b>\n{name} · {identifier}"
+            + (f"\n<i>{note}</i>" if note else "")
+            + "\n\nApprove at contribute.sunosathi.com/admin")
+    return response
+
+
+@app.post("/api/auth/login")
+async def api_login(payload: dict, request: Request):
+    identifier = auth.normalise_identifier(str(payload.get("identifier") or ""))
+    password = str(payload.get("password") or "")
+
+    if auth.locked_out(identifier):
+        return JSONResponse({"error": "too many attempts — try again later"},
+                            status_code=429)
+
+    with db.conn() as c:
+        row = c.execute("SELECT * FROM users WHERE identifier = ?",
+                        (identifier,)).fetchone()
+
+    # Same message either way: which half was wrong is not the guesser's
+    # business, and it is how you keep a login from confirming who has an
+    # account here.
+    if not row or not auth.verify_password(password, row["password_hash"] or ""):
+        auth.note_failure(identifier)
+        return JSONResponse({"error": "wrong login or password"}, status_code=401)
+
+    if row["status"] in ("rejected", "suspended"):
+        return JSONResponse({"error": "this account cannot sign in"}, status_code=403)
+
+    auth.clear_failures(identifier)
+    token = auth.start_session(row["id"], _client_note(request))
+    response = JSONResponse({"user": _public_user(dict(row)),
+                             "access_mode": db.ACCESS_MODE})
+    _set_session_cookie(response, token, request)
+    return response
+
+
+@app.post("/api/auth/logout")
+def api_logout(request: Request):
+    auth.end_session(request.cookies.get(auth.SESSION_COOKIE, ""))
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(auth.SESSION_COOKIE, path="/")
+    return response
+
+
 # ---- consent ---------------------------------------------------------------
 
 @app.get("/api/consent-text")
@@ -97,60 +265,68 @@ def api_consent_text():
 
 @app.post("/api/consent")
 def api_consent(payload: dict, request: Request):
-    device_id = str(payload.get("device_id") or "").strip()[:64]
-    if not device_id:
-        return JSONResponse({"error": "device_id required"}, status_code=422)
+    u = current_user(request)
+    if not u:
+        return JSONResponse({"error": "sign in first"}, status_code=401)
+    if u["status"] != "approved":
+        return JSONResponse({"error": "account not approved yet"}, status_code=403)
 
     checks = payload.get("checks") or {}
     if not (checks.get("agree") and checks.get("adult")):
         return JSONResponse({"error": "consent not given"}, status_code=422)
 
-    name = str(payload.get("display_name") or "").strip()[:80]
-    contact = str(payload.get("contact") or "").strip()[:120]
     credit = 1 if checks.get("credit") else 0
     lang = str(payload.get("lang") or "hi")[:5]
+    contact = str(payload.get("contact") or "").strip()[:120]
 
     with db.conn() as c:
-        row = c.execute(
-            "SELECT id FROM contributors WHERE device_id = ? ORDER BY created_at LIMIT 1",
-            (device_id,),
-        ).fetchone()
-        if row:
-            contributor_id = row["id"]
-            c.execute(
-                "UPDATE contributors SET display_name = ?, contact = ?, credit_optin = ?"
-                " WHERE id = ?", (name, contact, credit, contributor_id),
-            )
-        else:
-            contributor_id = db.new_id("c")
-            c.execute(
-                "INSERT INTO contributors (id, device_id, display_name, contact, credit_optin)"
-                " VALUES (?, ?, ?, ?, ?)",
-                (contributor_id, device_id, name, contact, credit),
-            )
-
+        c.execute("UPDATE users SET credit_optin = ?, contact = ? WHERE id = ?",
+                  (credit, contact or u["identifier"], u["id"]))
         consent_id = db.new_id("k")
         c.execute(
             "INSERT INTO consents (id, contributor_id, version, text_hash, lang,"
             " credit_optin, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (consent_id, contributor_id, consent.VERSION, consent.text_hash(),
+            (consent_id, u["id"], consent.VERSION, consent.text_hash(),
              lang, credit, _client_note(request)),
         )
 
-    return {"contributor_id": contributor_id, "consent_id": consent_id,
+    return {"contributor_id": u["id"], "consent_id": consent_id,
             "version": consent.VERSION}
+
+
+@app.get("/api/consent/current")
+def api_consent_current(request: Request):
+    """The consent this account has already given, if it is still the current
+    wording. Returning it is what lets a contributor come back tomorrow and
+    record without re-reading a screen they have already agreed to — while a
+    bumped version puts the screen back in front of them."""
+    u = current_user(request)
+    if not u:
+        return JSONResponse({"error": "sign in first"}, status_code=401)
+    with db.conn() as c:
+        row = c.execute(
+            "SELECT id FROM consents WHERE contributor_id = ? AND version = ?"
+            " AND text_hash = ? AND withdrawn_at IS NULL"
+            " ORDER BY agreed_at DESC LIMIT 1",
+            (u["id"], consent.VERSION, consent.text_hash()),
+        ).fetchone()
+    return {"consent_id": row["id"] if row else None, "version": consent.VERSION}
 
 
 # ---- phrases ---------------------------------------------------------------
 
 @app.get("/api/phrases")
-def api_phrases(contributor_id: str = "", limit: int = 20):
+def api_phrases(request: Request, limit: int = 20):
     """The queue, neediest first.
 
     A phrase this contributor has already recorded drops to the back rather
     than out: one person signing the same phrase twice is far less useful
     than two people signing it once, but on a pilot with three contributors
     a second take still beats no take."""
+    u = current_user(request)
+    if not u or u["status"] != "approved":
+        return JSONResponse({"error": "not approved"}, status_code=403)
+    contributor_id = u["id"]
     limit = max(1, min(limit, 100))
     with db.conn() as c:
         rows = c.execute(
@@ -184,8 +360,17 @@ async def api_contribute(payload: dict, request: Request):
     if not await _turnstile_ok(payload, request):
         return JSONResponse({"error": "verification failed"}, status_code=403)
 
+    u = current_user(request)
+    if not u:
+        return JSONResponse({"error": "sign in first"}, status_code=401)
+    if u["status"] != "approved":
+        return JSONResponse({"error": "account not approved yet"}, status_code=403)
+
+    # Whose clip this is comes from the session cookie. Taking it from the
+    # body would let anyone file recordings under someone else's name — and
+    # under someone else's consent record.
+    contributor_id = u["id"]
     phrase_id = str(payload.get("phrase_id") or "")[:80]
-    contributor_id = str(payload.get("contributor_id") or "")[:64]
     consent_id = str(payload.get("consent_id") or "")[:64]
     frames = payload.get("frames")
 
@@ -240,12 +425,16 @@ async def api_contribute(payload: dict, request: Request):
 
 
 @app.post("/api/contributions/{cid}/video")
-def api_contribute_video(cid: str, payload: dict):
+def api_contribute_video(cid: str, payload: dict, request: Request):
     """Called after the browser's PUT. We verify against R2 rather than
     trusting the report — a video the bucket does not have is not a video."""
+    u = current_user(request)
+    if not u:
+        return JSONResponse({"error": "sign in first"}, status_code=401)
     with db.conn() as c:
         row = c.execute(
-            "SELECT video_key, video_status FROM contributions WHERE id = ?", (cid,),
+            "SELECT video_key, video_status FROM contributions"
+            " WHERE id = ? AND contributor_id = ?", (cid, u["id"]),
         ).fetchone()
         if not row:
             return JSONResponse({"error": "unknown contribution"}, status_code=404)
@@ -267,12 +456,14 @@ def api_contribute_video(cid: str, payload: dict):
 
 
 @app.get("/api/me")
-def api_me(contributor_id: str = ""):
+def api_me(request: Request):
     """Progress for the encouragement line. Rejected clips still count here:
     a person who showed up and signed did contribute, and telling them
     otherwise would be both discouraging and beside the point."""
-    if not contributor_id:
+    u = current_user(request)
+    if not u:
         return {"total": 0, "today": 0, "phrases": 0}
+    contributor_id = u["id"]
     day_start = time.time() - (time.time() % 86400)
     with db.conn() as c:
         r = c.execute(
@@ -303,8 +494,8 @@ def api_stats():
 # ---- admin -----------------------------------------------------------------
 
 @app.get("/api/admin/stats")
-def api_admin_stats(x_admin_key: str | None = Header(None)):
-    if not _admin_ok(x_admin_key):
+def api_admin_stats(request: Request, x_admin_key: str | None = Header(None)):
+    if not _is_admin(request, x_admin_key):
         return Response(status_code=401)
     with db.conn() as c:
         by_status = {r["review_status"]: r["n"] for r in c.execute(
@@ -328,15 +519,88 @@ def api_admin_stats(x_admin_key: str | None = Header(None)):
             "most_needed": [dict(r) for r in need]}
 
 
+@app.get("/api/admin/users")
+def api_admin_users(request: Request, status: str = "",
+                    x_admin_key: str | None = Header(None)):
+    if not _is_admin(request, x_admin_key):
+        return Response(status_code=401)
+    sql = ("SELECT u.*,"
+           " (SELECT COUNT(*) FROM contributions x WHERE x.contributor_id = u.id"
+           "   AND x.deleted_at IS NULL) AS clips"
+           " FROM users u")
+    args: list = []
+    if status:
+        sql += " WHERE u.status = ?"
+        args.append(status)
+    # Pending first: the whole point of this screen is the waiting room.
+    sql += (" ORDER BY CASE u.status WHEN 'pending' THEN 0 ELSE 1 END,"
+            " u.created_at DESC LIMIT 500")
+    with db.conn() as c:
+        rows = c.execute(sql, args).fetchall()
+    return {"users": [{
+        "id": r["id"], "name": r["display_name"], "identifier": r["identifier"],
+        "role": r["role"], "status": r["status"], "note": r["note"],
+        "clips": r["clips"], "created_at": r["created_at"],
+        "approved_at": r["approved_at"], "last_seen_at": r["last_seen_at"],
+    } for r in rows]}
+
+
+@app.post("/api/admin/users/{uid}/status")
+def api_admin_set_status(uid: str, payload: dict, request: Request,
+                         x_admin_key: str | None = Header(None)):
+    """Approve, reject or suspend an account, and set its role while you are
+    there — approving an NGO partner as a reviewer is one action, not two."""
+    if not _is_admin(request, x_admin_key):
+        return Response(status_code=401)
+
+    status = str(payload.get("status") or "")
+    if status not in ("approved", "rejected", "suspended", "pending"):
+        return JSONResponse({"error": "bad status"}, status_code=422)
+    role = str(payload.get("role") or "")
+    if role and role not in ("contributor", "reviewer", "admin"):
+        return JSONResponse({"error": "bad role"}, status_code=422)
+
+    actor = current_user(request)
+    with db.conn() as c:
+        row = c.execute("SELECT id, role FROM users WHERE id = ?", (uid,)).fetchone()
+        if not row:
+            return JSONResponse({"error": "unknown user"}, status_code=404)
+        # Locking yourself out of the only admin account on a box with no
+        # shell is not a recoverable mistake.
+        if actor and actor["id"] == uid and status != "approved":
+            return JSONResponse({"error": "you cannot lock yourself out"},
+                                status_code=422)
+        if row["role"] == "admin" and role and role != "admin":
+            admins = c.execute(
+                "SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0]
+            if admins <= 1:
+                return JSONResponse({"error": "this is the only admin"},
+                                    status_code=422)
+
+        c.execute(
+            "UPDATE users SET status = ?, role = COALESCE(NULLIF(?, ''), role),"
+            " approved_at = CASE WHEN ? = 'approved' THEN unixepoch('now')"
+            "                    ELSE approved_at END,"
+            " approved_by = ? WHERE id = ?",
+            (status, role, status, actor["id"] if actor else "admin-key", uid),
+        )
+
+    # Revoking access has to actually revoke it, not wait for a cookie to age
+    # out thirty days from now.
+    if status in ("rejected", "suspended"):
+        auth.end_all_sessions(uid)
+    return {"ok": True, "id": uid, "status": status}
+
+
 @app.get("/api/admin/export.jsonl")
-def api_admin_export(x_admin_key: str | None = Header(None),
+def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
                      review_status: str = "", limit: int = 5000):
     """The handover format, exactly as agreed with Track B in the brief.
 
     Defaults to everything not deleted so the pilot can be inspected before
     review exists; pass ?review_status=approved once M2 is running and this
     becomes the training export."""
-    if not _admin_ok(x_admin_key):
+    if not _is_admin(request, x_admin_key):
         return Response(status_code=401)
 
     sql = ("SELECT c.*, p.gloss, p.hi, p.en FROM contributions c"

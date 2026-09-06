@@ -13,11 +13,16 @@ Plan and rationale: [`docs/CONTRIBUTE-PLATFORM.md`](../docs/CONTRIBUTE-PLATFORM.
 
 ---
 
-## Status — Milestone 1 (the record loop)
+## Status
 
 Done:
 
-- Landing → consent → record loop, mobile-first, Hindi + English throughout.
+- **Accounts with admin approval.** Anyone can register; nobody records until
+  an admin approves them. Sessions are httpOnly cookies over scrypt-hashed
+  passwords — no auth library, no token in localStorage. Suspending an
+  account revokes its live sessions immediately.
+- Landing → register → *approval* → consent → record loop, mobile-first,
+  Hindi + English throughout.
 - Consent stored per contribution, versioned, with a hash of the exact
   wording that was on screen. `contributions.consent_id` is `NOT NULL` and
   the API refuses any clip whose consent it cannot find.
@@ -28,6 +33,16 @@ Done:
 
 Not yet (M2+): review queue, contributor profiles page, Telegram digest,
 credit wall, deletion-request handling in the UI.
+
+### A note on the gate
+
+The original brief specified *zero login friction* for contributors, and this
+is deliberately the opposite. For a pilot of a handful of NGO signers that is
+the right trade: no spam, no clips from someone who never read the consent
+screen, and a real name against every recording. It stops being right at
+scale, so it is a setting rather than a design — `ACCESS_MODE=open` makes
+registration self-approving and the waiting room disappears, with no code
+change.
 
 **Consent wording is a DRAFT** (`backend/consent.py`, version `v1-draft`).
 Tejas has final say before this goes in front of NGO partners. Changing it
@@ -115,9 +130,27 @@ presigned GET URLs, never public links — these are videos of people's faces.
 | `R2_BUCKET` | Defaults to `isl-contributions`. |
 | `TURNSTILE_SECRET` | Turnstile check is a no-op. Share the value from the main service. |
 | `VITE_TURNSTILE_SITEKEY` | Build-time. Widget is not rendered. Use `0x4AAAAAAEqa3x_MLNDKWW_D` (covers `*.sunosathi.com`) — leave it unset for local and tunnel testing, where a sitekey scoped to that domain cannot validate. |
-| `ADMIN_KEY` | Admin endpoints return 401 to everyone, including you. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | **No admin account exists**, so nobody can approve anyone. Set both; the account is created on boot. |
+| `ADMIN_NAME` | Admin shows up as "Admin". |
+| `ADMIN_PASSWORD_RESET` | Set to any value to force `ADMIN_PASSWORD` onto an existing admin account, then remove it. Without it a redeploy never overwrites a password you changed later. |
+| `ACCESS_MODE` | Defaults to `approval` — new accounts wait for an admin. `open` auto-approves. |
+| `ADMIN_KEY` | Header-key access to the admin API is off. Browser admin login still works; this is only for scripted export. |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Registration alerts are logged instead of sent. |
 
 ---
+
+## Roles and access
+
+| Role | Can |
+|---|---|
+| `contributor` | Record clips once approved. |
+| `reviewer` | Contributor, plus the review queue (M2). Approve someone as a reviewer in one click from the admin screen. |
+| `admin` | Everything, plus `/admin` — the approval queue, and suspend/re-approve. |
+
+Sign in at `/`, and the admin screen is at `/admin`. A registration sends a
+Telegram alert immediately rather than waiting for a digest — someone
+standing in an NGO office waiting to be let in is the one case where a daily
+summary is too slow.
 
 ## The phrase list
 
@@ -140,6 +173,24 @@ admin's to tune.
 whole call sentences, 11 numbers.
 
 ---
+
+## Borrowed code
+
+`frontend/src/vendor/` holds generated copies of two files this service does
+not own: the pose format (`frontend/src/lib/sign/poseFormat.ts`) and Track
+B's landmark extraction (`sign-studio/src/lib/holistic.ts`). They are copies
+because this service deploys on its own, from committed code, and both
+originals still live in another track's uncommitted working tree.
+
+They must stay byte-identical to their originals — a clip recorded on a
+contributor's phone and one recorded in the studio land in the same training
+set. `npm run sync` refreshes them; the build runs `--check` and fails on
+drift rather than shipping a quiet divergence. When Track B commits its
+folder, this can go back to a plain alias.
+
+```bash
+npm run sync --prefix contribute/frontend   # refresh vendor + phrase seed
+```
 
 ## Handover to Track B
 
@@ -165,7 +216,15 @@ One JSON object per line, the format agreed in the brief:
 the same objects the studio writes and the app's renderer draws. Drop
 `?review_status=approved` to see everything including unreviewed clips.
 
-Deploy note: the frontend compiles against `frontend/src/lib/sign` and
-`sign-studio/src/lib`, so **both must be committed before this service can
-build**. `sign-studio/` is Track B's and is currently untracked; the Docker
-build will fail until it lands. Local development is unaffected.
+## Deploying
+
+Own Railway service in the `sunosathi` project, built from
+`contribute/Dockerfile` with the repo root as context. Deploy committed code
+only — three chats share this working tree:
+
+```bash
+./scripts/deploy.sh
+```
+
+It needs a volume mounted at `/data` (for `CONTRIBUTE_DB`) and the variables
+above.

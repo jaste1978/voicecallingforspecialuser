@@ -1,54 +1,25 @@
-// Who is at this phone, remembered locally.
+// Per-browser preferences.
 //
-// There is no login. A contributor is a device id plus whatever they chose
-// to tell us, which is usually nothing. That is a deliberate trade: asking a
-// deaf signer at an NGO drop-in session to create an account is how you get
-// zero recordings.
+// Identity used to live here, as a device id. It does not any more: an
+// account is a session cookie the browser holds and script cannot read, so
+// there is nothing about who you are left to keep in localStorage. What is
+// left is the one thing that genuinely belongs to this device — which
+// language the person reads.
 
-const DEVICE_KEY = 'isl.device'
-const SESSION_KEY = 'isl.session'
 const LANG_KEY = 'isl.lang'
-
-export interface Session {
-  contributorId: string
-  consentId: string
-  consentVersion: string
-}
-
-export function deviceId(): string {
-  let id = localStorage.getItem(DEVICE_KEY)
-  if (!id) {
-    id = `d_${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`
-    localStorage.setItem(DEVICE_KEY, id)
-  }
-  return id
-}
-
-export function loadSession(): Session | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    if (!raw) return null
-    const s = JSON.parse(raw) as Session
-    return s.contributorId && s.consentId ? s : null
-  } catch {
-    return null
-  }
-}
-
-export function saveSession(s: Session) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(s))
-}
-
-export function clearSession() {
-  localStorage.removeItem(SESSION_KEY)
-}
 
 export type Lang = 'hi' | 'en'
 
 export function loadLang(): Lang {
-  return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'hi'
+  try {
+    return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'hi'
+  } catch {
+    return 'hi' // private mode, or storage blocked; a default is fine here
+  }
 }
 
 export function saveLang(l: Lang) {
-  localStorage.setItem(LANG_KEY, l)
+  try {
+    localStorage.setItem(LANG_KEY, l)
+  } catch { /* the choice just will not persist; nothing else breaks */ }
 }

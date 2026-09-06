@@ -16,8 +16,8 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "paths": {
-      "@sign/*": ["../../frontend/src/lib/sign/*"],
-      "@studio/*": ["../../sign-studio/src/lib/*"]
+      "@sign/*": ["./src/vendor/*"],
+      "@studio/*": ["./src/vendor/*"]
     }
   },
   "include": ["src"]

@@ -16,6 +16,10 @@ Shape notes worth knowing:
 * `review_status` and `variant_tag` exist from day one even though the
   review UI is M2, because Track B's export format includes them and the
   format is a contract, not an afterthought.
+* People are one table, `users`, whatever their role. Tejas reviews and also
+  records; an NGO partner who reviews may well contribute too. Splitting
+  contributors from reviewers would have meant two rows for the same person
+  and a choice about which one owns their consent.
 """
 
 import gzip
@@ -30,16 +34,43 @@ DB_PATH = os.environ.get("CONTRIBUTE_DB", str(Path(__file__).with_name("contribu
 
 CONSENT_VERSION = "v1-draft"
 
+# 'approval' — new accounts wait for an admin. 'open' — anyone who registers
+# can record straight away. The pilot runs on approval, but flipping this is
+# how the platform opens up later without any of it being rewritten.
+ACCESS_MODE = os.environ.get("ACCESS_MODE", "approval")
+
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS contributors (
+CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     device_id TEXT,
     display_name TEXT DEFAULT '',
     contact TEXT DEFAULT '',
     credit_optin INTEGER DEFAULT 0,
-    created_at REAL DEFAULT (unixepoch('now'))
+    created_at REAL DEFAULT (unixepoch('now')),
+    identifier TEXT DEFAULT '',
+    password_hash TEXT DEFAULT '',
+    role TEXT DEFAULT 'contributor',
+    status TEXT DEFAULT 'pending',
+    note TEXT DEFAULT '',
+    approved_at REAL,
+    approved_by TEXT DEFAULT '',
+    last_seen_at REAL
 );
-CREATE INDEX IF NOT EXISTS idx_contributors_device ON contributors(device_id);
+CREATE INDEX IF NOT EXISTS idx_users_device ON users(device_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_identifier
+    ON users(identifier) WHERE identifier != '';
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    -- The raw token never lands here, only its SHA-256. A copy of this file
+    -- is a list of who signed in, not a way to sign in as them.
+    token_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    created_at REAL DEFAULT (unixepoch('now')),
+    expires_at REAL NOT NULL,
+    user_agent TEXT DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 
 CREATE TABLE IF NOT EXISTS consents (
     id TEXT PRIMARY KEY,
@@ -114,8 +145,42 @@ def new_id(prefix: str) -> str:
 
 def init(seed_path: str | None = None) -> None:
     with conn() as c:
+        _rename_legacy(c)
         c.executescript(SCHEMA)
+        _add_missing_columns(c)
+        c.execute("DELETE FROM sessions WHERE expires_at < unixepoch('now')")
     seed_phrases(seed_path)
+
+
+def _rename_legacy(c: sqlite3.Connection) -> None:
+    """M1 shipped this table as `contributors`, before accounts existed. Any
+    clips recorded in that window still point at these ids, so the table is
+    renamed rather than replaced."""
+    tables = {r[0] for r in c.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if "contributors" in tables and "users" not in tables:
+        c.execute("ALTER TABLE contributors RENAME TO users")
+
+
+def _add_missing_columns(c: sqlite3.Connection) -> None:
+    """CREATE TABLE IF NOT EXISTS does nothing to a table that already
+    exists, so a renamed M1 table needs its new columns added by hand."""
+    have = {r[1] for r in c.execute("PRAGMA table_info(users)")}
+    added = {
+        "identifier": "TEXT DEFAULT ''",
+        "password_hash": "TEXT DEFAULT ''",
+        "role": "TEXT DEFAULT 'contributor'",
+        # Accounts that pre-date the login keep working: they were recording
+        # under a consent they had already given.
+        "status": "TEXT DEFAULT 'approved'",
+        "note": "TEXT DEFAULT ''",
+        "approved_at": "REAL",
+        "approved_by": "TEXT DEFAULT ''",
+        "last_seen_at": "REAL",
+    }
+    for name, decl in added.items():
+        if name not in have:
+            c.execute(f"ALTER TABLE users ADD COLUMN {name} {decl}")
 
 
 def seed_phrases(seed_path: str | None = None) -> int:
