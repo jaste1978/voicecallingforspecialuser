@@ -36,9 +36,18 @@ Live voice→ISL generation does not exist to buy (no vendor, no API; the
 closest, Signapse UK, only pre-renders fixed announcements). ISL is
 data-poor. So we build the data flywheel ourselves:
 
-1. **Capture tooling**: web app that records an ISL signer phrase-by-
-   phrase (top-300 list from Track A), extracts pose keypoints (MediaPipe
-   Holistic — hands + face + body) → phrase→pose-sequence dataset.
+1. **Capture tooling — built as a PUBLIC contribution platform**
+   (decision 7 Sep 2026): sunosathi.com/contribute. Anyone — NGO members,
+   deaf signers, interpreters — is shown a phrase (top-300 list from
+   Track A), records ~3s on their phone camera, MediaPipe Holistic
+   extracts pose keypoints in the browser (hands + face + body) →
+   phrase→pose-sequence dataset. Common Voice model, for ISL.
+   Non-negotiables: explicit bilingual CONSENT per contribution (data
+   trains SunoSathi's sign AI — stored with each recording), a review
+   queue where fluent signers approve/vote (NGO partners as reviewers),
+   multiple recordings per phrase (regional ISL variation is a feature,
+   capture it), contributor credit wall (opt-in names), Turnstile
+   protection (already live on the domain).
 2. **Pose playback renderer**: replay captured keypoints as a clean 2D
    line-figure animation in-app (brand-styled, tiny files, natural human
    motion without 3D rigging or video). This alone beats static cards for
