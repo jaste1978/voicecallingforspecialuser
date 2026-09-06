@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { startAudioCapture, type AudioCapture } from '../lib/audio-capture'
 import { connectStt, type LanguageKey, type SttClient } from '../lib/stt-client'
+import { conceptsFor, pictureCaptionsEnabled } from '../lib/pictureCaptions'
 
 interface Segment {
   id: number
@@ -125,6 +126,19 @@ export default function CaptionsPage() {
           </p>
         )}
       </div>
+      {pictureCaptionsEnabled() && segments.length > 0 && (() => {
+        const cards = conceptsFor(segments[segments.length - 1].text)
+        return cards.length > 0 ? (
+          <div className="pic-strip pic-strip-tester">
+            {cards.map((c, i) => (
+              <span key={i} className="pic-card">
+                <span className="pic-emoji">{c.emoji}</span>
+                <span className="pic-word">{c.word}</span>
+              </span>
+            ))}
+          </div>
+        ) : null
+      })()}
       <div className="speaking-indicator">
         {speaking && (
           <>

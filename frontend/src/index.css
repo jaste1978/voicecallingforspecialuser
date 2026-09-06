@@ -2020,3 +2020,19 @@ select.lang.wide {
   color: var(--dim);
   font-weight: 600;
 }
+
+/* caption tester: strip for the latest utterance, larger cards */
+.pic-strip-tester {
+  border-top: none;
+  margin: 0;
+  padding: 8px 16px 4px;
+  flex-shrink: 0;
+}
+
+.pic-strip-tester .pic-emoji {
+  font-size: 40px;
+}
+
+.pic-strip-tester .pic-word {
+  font-size: 14px;
+}
