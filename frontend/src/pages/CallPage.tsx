@@ -7,6 +7,7 @@ import { track } from '../lib/analytics'
 import { PcmPlayer } from '../lib/audio-playback'
 import { notifyNative } from '../lib/native-bridge'
 import { captionHapticEnabled, speechHapticEnabled } from '../lib/haptics-settings'
+import { conceptsFor, pictureCaptionsEnabled } from '../lib/pictureCaptions'
 import { Ringtone } from '../lib/ringtone'
 import { authFetch } from '../lib/auth'
 import type { LanguageKey } from '../lib/stt-client'
@@ -405,6 +406,19 @@ export default function CallPage() {
             ) : (
               <div key={s.id} className={`bubble ${s.who === 'me' ? 'out' : 'in'}`}>
                 {s.text}
+                {s.who === 'caller' && pictureCaptionsEnabled() && (() => {
+                  const cards = conceptsFor(s.text)
+                  return cards.length > 0 ? (
+                    <span className="pic-strip">
+                      {cards.map((c, i) => (
+                        <span key={i} className="pic-card">
+                          <span className="pic-emoji">{c.emoji}</span>
+                          <span className="pic-word">{c.word}</span>
+                        </span>
+                      ))}
+                    </span>
+                  ) : null
+                })()}
                 <span className="bubble-time">{fmtTime(s.at)}</span>
               </div>
             ),

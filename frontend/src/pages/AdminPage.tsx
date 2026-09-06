@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
+import { pictureCaptionsEnabled, setPictureCaptions } from '../lib/pictureCaptions'
 import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon, MicIcon, RupeeIcon } from '../components/icons'
 
 // Bulbul speakers: the voice callers hear when you type-to-speak
@@ -19,6 +20,7 @@ export default function SettingsTab() {
   const navigate = useNavigate()
   const [voice, setVoice] = useState('')
   const [admin, setAdmin] = useState(isAdmin())
+  const [picMode, setPicMode] = useState(pictureCaptionsEnabled())
 
   useEffect(() => {
     authFetch('/api/prefs')
@@ -143,6 +145,17 @@ export default function SettingsTab() {
           ))}
         </select>
       </div>
+      <button className="home-btn"
+        onClick={() => { const v = !picMode; setPicMode(v); setPictureCaptions(v) }}>
+        <span className="emoji icon">🖼️</span>
+        <span style={{ flex: 1 }}>
+          Picture captions · चित्र मोड
+          <small>Show the caller's words as pictures during calls</small>
+        </span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: picMode ? 'var(--ok)' : 'var(--dim)' }}>
+          {picMode ? 'ON' : 'OFF'}
+        </span>
+      </button>
       <button className="home-btn" onClick={() => navigate('/help')}>
         <span className="emoji icon"><CaptionsIcon size={28} /></span>
         <span>
