@@ -63,6 +63,22 @@ phrase → keypoints sequences + consent records), stats.
 - Telegram alerts (existing bot) on new contributions/reviews daily
   digest, not per-clip.
 
+## Reference dictionaries (decision 7 Sep 2026)
+
+- **indiansignlanguage.org** (community ISL video dictionary) and
+  **islrtc.nic.in** (official ISLRTC dictionary) are the approved
+  REFERENCE sources: in the record flow, a "see reference · सही sign
+  देखिए" link opens the dictionary page for the current word so unsure
+  contributors can check the standard sign; reviewers use the same links
+  to verify correctness.
+- **LINK ONLY — never scrape, embed, or download their videos** into our
+  app or dataset. Their clips are copyrighted; our dataset must stay
+  consent-clean (our own recordings only). Drawing our own 2D artwork of
+  a standard sign is fine (a sign is language, not copyrightable).
+- Their gap is our value: they hold isolated citation-form signs; nobody
+  has conversational phone-domain signing from diverse signers — that is
+  what this platform collects.
+
 ## Non-negotiables
 
 1. Consent stored per contribution, versioned. Deletion honored.
