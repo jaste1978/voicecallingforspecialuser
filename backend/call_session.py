@@ -34,6 +34,31 @@ logger = logging.getLogger("call_session")
 RING_TIMEOUT_S = 60
 AUDIO_STATS_EVERY = 250  # frames (~5s of 20ms telephony frames)
 
+# Ring-back for the caller: our answer webhook picks the call up instantly
+# to open the media stream, which kills the network's own ringing — the
+# caller would otherwise sit in dead silence while the user's app rings.
+# Standard Indian double-ring: 400 Hz, 0.4s on / 0.2s off / 0.4s on / 2s off.
+_RINGBACK_PCM: bytes | None = None
+
+
+def _ringback_pcm() -> bytes:
+    global _RINGBACK_PCM
+    if _RINGBACK_PCM is None:
+        import math
+        rate, freq, amp = 16000, 400.0, 0.25
+        ramp = int(rate * 0.005)  # 5ms edges so bursts don't click
+        samples: list[int] = []
+        for on_s, off_s in ((0.4, 0.2), (0.4, 2.0)):
+            n_on = int(rate * on_s)
+            for i in range(n_on):
+                gain = min(1.0, i / ramp, (n_on - i) / ramp)
+                v = amp * gain * math.sin(2 * math.pi * freq * i / rate)
+                samples.append(int(v * 32767))
+            samples.extend([0] * int(rate * off_s))
+        import struct
+        _RINGBACK_PCM = struct.pack(f"<{len(samples)}h", *samples)
+    return _RINGBACK_PCM
+
 # Romanized rescue: if this much loud speech passes with zero captions,
 # the language is likely unidentifiable — switch to as-it-sounds Roman output
 RESCUE_AFTER_MS = int(os.environ.get("RESCUE_AFTER_MS", "8000"))
@@ -507,10 +532,39 @@ class UserLine:
         await self._to_browser({
             "type": "ring", "from": call.from_number, "callId": call.call_uuid,
         })
+        asyncio.ensure_future(self._ringback_loop(call))
         asyncio.get_running_loop().call_later(
             RING_TIMEOUT_S,
             lambda: asyncio.ensure_future(self._ring_timeout(call.call_uuid)),
         )
+
+    async def _ringback_loop(self, call: Call) -> None:
+        """The caller hears normal ringing until the user accepts. Paced in
+        real time (100ms chunks) so at most ~200ms of tone is queued at
+        Vobiz when the call is answered."""
+        pcm = _ringback_pcm()
+        chunk = 3200  # 100ms of 16kHz 16-bit mono
+        call.trace.event("ringback_started")
+        while (self.call is call and call.state == "ringing"
+               and call.vobiz_ws and call.stream_id):
+            for i in range(0, len(pcm), chunk):
+                if not (self.call is call and call.state == "ringing"
+                        and call.vobiz_ws and call.stream_id):
+                    return
+                payload = base64.b64encode(pcm[i:i + chunk]).decode("ascii")
+                try:
+                    await call.vobiz_ws.send_text(json.dumps({
+                        "event": "playAudio",
+                        "streamId": call.stream_id,
+                        "media": {
+                            "contentType": "audio/x-l16",
+                            "sampleRate": 16000,
+                            "payload": payload,
+                        },
+                    }))
+                except Exception:
+                    return  # stream gone; hangup handling owns the rest
+                await asyncio.sleep(0.1)
 
     async def _ring_timeout(self, call_uuid: str) -> None:
         call = self.call
@@ -686,6 +740,15 @@ class UserLine:
 
     async def _activate(self, call: Call) -> None:
         call.trace.event("user_accepted")
+        # drop any ring-back still queued at Vobiz so the caller hears the
+        # user immediately, not the tail of the tone
+        if call.vobiz_ws and call.stream_id:
+            try:
+                await call.vobiz_ws.send_text(json.dumps({
+                    "event": "clearAudio", "streamId": call.stream_id,
+                }))
+            except Exception:
+                pass
         await self._start_stt(call)
         call.state = "active"
         call.answered_at = time.time()
