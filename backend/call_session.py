@@ -439,6 +439,23 @@ class UserLine:
     # ---------- outbound ----------
 
     async def start_outbound(self, number: str, name: str, language: str) -> None:
+        # Numbers pasted from WhatsApp/iOS Contacts arrive wrapped in
+        # invisible bidi marks (U+202A/U+202C) with spaces and +91 — Vobiz
+        # rejects that with a 400. Dial digits only.
+        if not number.lstrip().startswith("@"):
+            digits = "".join(c for c in number if c.isdigit())
+            if len(digits) == 12 and digits.startswith("91"):
+                digits = digits[2:]
+            elif len(digits) == 11 and digits.startswith("0"):
+                digits = digits[1:]
+            if len(digits) != 10:
+                await self._to_browser({
+                    "type": "error",
+                    "message": "That number doesn't look right — a 10-digit "
+                               "mobile number is needed · 10 अंकों का नंबर चाहिए",
+                })
+                return
+            number = digits
         if not number.strip():
             await self._to_browser({"type": "error", "message": "No number to call"})
             return
