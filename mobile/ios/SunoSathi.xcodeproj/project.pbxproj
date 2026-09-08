@@ -11,6 +11,7 @@
 		24A67A7E96A565924F5A0923 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434FA9AE6A0EF215E804487A /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		6BC14D029CF614295273E462 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 78359C03FF0C127A1F3F2060 /* PrivacyInfo.xcprivacy */; };
+		AA10R1NG4CAF00000000B1LD /* ring4.caf in Resources */ = {isa = PBXBuildFile; fileRef = AA10R1NG4CAF00000000FREF /* ring4.caf */; };
 		7F752159E783DC9E97B95B14 /* libPods-SunoSathi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A67FBF313530B07797BB9B59 /* libPods-SunoSathi.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
@@ -23,6 +24,7 @@
 		2BFC6E926274FECA3A664163 /* Pods-SunoSathi.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SunoSathi.release.xcconfig"; path = "Target Support Files/Pods-SunoSathi/Pods-SunoSathi.release.xcconfig"; sourceTree = "<group>"; };
 		434FA9AE6A0EF215E804487A /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SunoSathi/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		78359C03FF0C127A1F3F2060 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = SunoSathi/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		AA10R1NG4CAF00000000FREF /* ring4.caf */ = {isa = PBXFileReference; includeInIndex = 1; name = ring4.caf; path = SunoSathi/ring4.caf; sourceTree = "<group>"; };
 		A67FBF313530B07797BB9B59 /* libPods-SunoSathi.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SunoSathi.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = SunoSathi/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				78359C03FF0C127A1F3F2060 /* PrivacyInfo.xcprivacy */,
+				AA10R1NG4CAF00000000FREF /* ring4.caf */,
 			);
 			name = SunoSathi;
 			sourceTree = "<group>";
@@ -197,6 +200,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				6BC14D029CF614295273E462 /* PrivacyInfo.xcprivacy in Resources */,
+				AA10R1NG4CAF00000000B1LD /* ring4.caf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

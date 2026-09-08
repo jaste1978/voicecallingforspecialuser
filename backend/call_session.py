@@ -540,13 +540,24 @@ class UserLine:
         )
 
     async def _ring_push(self, call: Call) -> None:
-        """iOS with the app closed: an APNs alert opens the app into the
-        ring screen (Android's foreground service handles this natively)."""
+        """iOS with the app closed: repeated APNs alerts (one banner via
+        collapse-id) make the phone re-buzz every few seconds for the
+        whole ring window — as close to a real ring as pushes allow.
+        Android's foreground service handles this natively."""
         try:
             import apns
-            sent = await apns.ring_push(self.user_id, call.from_number)
-            if sent:
-                call.trace.event("apns_ring_push", devices=sent)
+            ring_no = 0
+            while (self.call is call and call.state == "ringing"
+                   and ring_no * 8 < RING_TIMEOUT_S - 5):
+                ring_no += 1
+                sent = await apns.ring_push(
+                    self.user_id, call.from_number,
+                    call_uuid=call.call_uuid, ring_no=ring_no)
+                if sent == 0 and ring_no == 1:
+                    return  # no iOS devices — don't loop for nothing
+                if ring_no == 1:
+                    call.trace.event("apns_ring_push", devices=sent)
+                await asyncio.sleep(8)
         except Exception:
             logger.exception("ring push failed")
 

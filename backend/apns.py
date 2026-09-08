@@ -84,9 +84,13 @@ def _bearer() -> str:
     return token
 
 
-async def ring_push(user_id: int, caller: str) -> int:
-    """Time-sensitive alert to every iOS device of this user. Returns the
-    number of pushes accepted by APNs."""
+async def ring_push(user_id: int, caller: str, call_uuid: str = "",
+                    ring_no: int = 1) -> int:
+    """Time-sensitive alert to every iOS device of this user. Called
+    repeatedly during the ring window (apns-collapse-id keeps it ONE
+    banner that re-buzzes) so the phone vibrates rhythmically like a
+    real ring — vibration is the channel that matters for deaf users.
+    Returns the number of pushes accepted by APNs."""
     if not configured():
         logger.info("apns not configured — would ring-push user %s", user_id)
         return 0
@@ -99,26 +103,29 @@ async def ring_push(user_id: int, caller: str) -> int:
                 "title": "SunoSathi 📞 कॉल आ रहा है",
                 "body": f"{caller} — tap to answer · जवाब देने के लिए tap कीजिए",
             },
-            "sound": "default",
+            # bundled double-ring; falls back to default on old builds
+            "sound": "ring4.caf",
             "interruption-level": "time-sensitive",
         },
         "kind": "incoming-call",
+        "ring": ring_no,
     }
     sent = 0
     async with httpx.AsyncClient(http2=True, timeout=10) as client:
         for token in tokens:
             try:
+                headers = {
+                    "authorization": f"bearer {_bearer()}",
+                    "apns-topic": TOPIC,
+                    "apns-push-type": "alert",
+                    "apns-priority": "10",
+                    # a ring is worthless after the 60s window
+                    "apns-expiration": str(int(time.time()) + 50),
+                }
+                if call_uuid:
+                    headers["apns-collapse-id"] = call_uuid[:64]
                 r = await client.post(
-                    f"{HOST}/3/device/{token}",
-                    json=payload,
-                    headers={
-                        "authorization": f"bearer {_bearer()}",
-                        "apns-topic": TOPIC,
-                        "apns-push-type": "alert",
-                        "apns-priority": "10",
-                        # a ring is worthless after the 60s window
-                        "apns-expiration": str(int(time.time()) + 50),
-                    },
+                    f"{HOST}/3/device/{token}", json=payload, headers=headers,
                 )
                 if r.status_code == 200:
                     sent += 1
