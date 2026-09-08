@@ -300,6 +300,22 @@ async def api_user_reject(user_id: int, request: Request):
     return {"ok": True}
 
 
+@app.post("/api/push/register")
+async def api_push_register(payload: dict, request: Request):
+    """The native shell registers its APNs/FCM device token so calls can
+    ring with the app closed."""
+    import apns
+
+    user = _require_user(request)
+    token = (payload.get("token") or "").strip()
+    platform = (payload.get("platform") or "ios").strip()
+    if not token:
+        return JSONResponse({"error": "no token"}, status_code=422)
+    apns.register(user["id"], token, platform)
+    logger.info("push token registered for user %s (%s)", user["id"], platform)
+    return {"ok": True}
+
+
 @app.post("/api/logout")
 async def api_logout(request: Request):
     header = request.headers.get("authorization", "")

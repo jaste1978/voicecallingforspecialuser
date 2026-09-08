@@ -533,10 +533,22 @@ class UserLine:
             "type": "ring", "from": call.from_number, "callId": call.call_uuid,
         })
         asyncio.ensure_future(self._ringback_loop(call))
+        asyncio.ensure_future(self._ring_push(call))
         asyncio.get_running_loop().call_later(
             RING_TIMEOUT_S,
             lambda: asyncio.ensure_future(self._ring_timeout(call.call_uuid)),
         )
+
+    async def _ring_push(self, call: Call) -> None:
+        """iOS with the app closed: an APNs alert opens the app into the
+        ring screen (Android's foreground service handles this natively)."""
+        try:
+            import apns
+            sent = await apns.ring_push(self.user_id, call.from_number)
+            if sent:
+                call.trace.event("apns_ring_push", devices=sent)
+        except Exception:
+            logger.exception("ring push failed")
 
     async def _ringback_loop(self, call: Call) -> None:
         """The caller hears normal ringing until the user accepts. Paced in

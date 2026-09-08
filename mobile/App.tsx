@@ -24,6 +24,11 @@ function handleNativeMessage(msg: string) {
     // web app hands over (or clears) the session token so the background
     // ring service can watch for calls with the app closed
     if (CAN_BACKGROUND_RING) void ringService().setRingToken(msg.slice(5))
+    if (Platform.OS === 'ios' && Constants.executionEnvironment !== 'storeClient') {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      void (require('./push-ios') as typeof import('./push-ios'))
+        .registerIosPush(msg.slice(5))
+    }
     return
   }
   switch (msg) {
