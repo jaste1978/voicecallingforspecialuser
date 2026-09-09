@@ -17,12 +17,13 @@ def configured() -> bool:
     return bool(os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID"))
 
 
-async def send(text: str) -> bool:
+async def send(text: str, chat_id: str | int | None = None) -> bool:
+    """Send to the admin chat by default, or to any linked user chat."""
     if not configured():
         logger.info("telegram not configured — message would be:\n%s", text)
         return False
     token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat = os.environ["TELEGRAM_CHAT_ID"]
+    chat = str(chat_id) if chat_id else os.environ["TELEGRAM_CHAT_ID"]
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.post(

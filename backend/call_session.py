@@ -854,6 +854,15 @@ class UserLine:
                 await telegram_notify.send(
                     f"📵 <b>Missed call</b> for {who}\n"
                     f"From: {call.from_number} · {reason}")
+                # the user's own Telegram, if they linked it in Settings
+                import telegram_link
+                chat = telegram_link.chat_for(self.user_id)
+                if chat:
+                    await telegram_notify.send(
+                        f"📞 <b>छूटा हुआ call · Missed call</b>\n"
+                        f"From: <b>{call.from_number}</b>\n"
+                        f"Callback from the app → app.sunosathi.com",
+                        chat_id=chat)
             elif technical:
                 await telegram_notify.send(
                     f"⚠️ <b>Call problem</b> for {who}\n"

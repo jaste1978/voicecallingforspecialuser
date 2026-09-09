@@ -21,6 +21,21 @@ export default function SettingsTab() {
   const [voice, setVoice] = useState('')
   const [admin, setAdmin] = useState(isAdmin())
   const [picMode, setPicMode] = useState(pictureCaptionsEnabled())
+  const [tgLinked, setTgLinked] = useState(false)
+
+  useEffect(() => {
+    authFetch('/api/telegram/link')
+      .then((r) => r.json())
+      .then((d) => setTgLinked(!!d.linked))
+      .catch(() => {})
+  }, [])
+
+  async function openTelegramLink() {
+    try {
+      const d = await (await authFetch('/api/telegram/link')).json()
+      if (d.url) window.open(d.url, '_blank')
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     authFetch('/api/prefs')
@@ -154,6 +169,16 @@ export default function SettingsTab() {
         </span>
         <span style={{ fontSize: 15, fontWeight: 700, color: picMode ? 'var(--ok)' : 'var(--dim)' }}>
           {picMode ? 'ON' : 'OFF'}
+        </span>
+      </button>
+      <button className="home-btn" onClick={() => void openTelegramLink()}>
+        <span className="emoji icon">✈️</span>
+        <span style={{ flex: 1 }}>
+          Telegram alerts · टेलीग्राम
+          <small>Missed calls reach you on Telegram, even with the app closed</small>
+        </span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: tgLinked ? 'var(--ok)' : 'var(--dim)' }}>
+          {tgLinked ? '✓' : 'Link'}
         </span>
       </button>
       <button className="home-btn" onClick={() => navigate('/help')}>

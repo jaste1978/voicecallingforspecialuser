@@ -300,6 +300,54 @@ async def api_user_reject(user_id: int, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/telegram/link")
+async def api_telegram_link(request: Request):
+    """Settings: mint a deep link that binds this user to our bot."""
+    import telegram_link
+
+    user = _require_user(request)
+    return {"url": telegram_link.make_link(user["id"]),
+            "linked": telegram_link.chat_for(user["id"]) is not None}
+
+
+@app.post("/api/telegram/unlink")
+async def api_telegram_unlink(request: Request):
+    import telegram_link
+
+    user = _require_user(request)
+    telegram_link.unlink(user["id"])
+    return {"ok": True}
+
+
+@app.post("/api/telegram/webhook")
+async def api_telegram_webhook(payload: dict, request: Request):
+    """Bot updates from Telegram. Only /start <token> matters."""
+    import telegram_link
+    import telegram_notify
+
+    if request.query_params.get("secret") != os.environ.get(
+            "TG_WEBHOOK_SECRET", ""):
+        return Response(status_code=403)
+    msg = payload.get("message") or {}
+    text = (msg.get("text") or "").strip()
+    chat_id = (msg.get("chat") or {}).get("id")
+    if not chat_id or not text.startswith("/start"):
+        return {"ok": True}
+    parts = text.split(maxsplit=1)
+    user_id = telegram_link.claim(parts[1].strip(), chat_id) if len(parts) == 2 else None
+    if user_id:
+        logger.info("telegram linked for user %s", user_id)
+        await telegram_notify.send(
+            "✅ <b>SunoSathi जुड़ गया!</b>\nछूटे हुए calls की सूचना अब यहाँ "
+            "मिलेगी · Missed-call alerts will arrive here.", chat_id=chat_id)
+    else:
+        await telegram_notify.send(
+            "🙏 Namaste! SunoSathi app के <b>Settings → Telegram alerts</b> "
+            "से link कीजिए · Please link from the app's Settings.",
+            chat_id=chat_id)
+    return {"ok": True}
+
+
 @app.post("/api/push/register")
 async def api_push_register(payload: dict, request: Request):
     """The native shell registers its APNs/FCM device token so calls can
