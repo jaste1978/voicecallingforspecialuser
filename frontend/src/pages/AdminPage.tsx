@@ -33,7 +33,12 @@ export default function SettingsTab() {
   async function openTelegramLink() {
     try {
       const d = await (await authFetch('/api/telegram/link')).json()
-      if (d.url) window.open(d.url, '_blank')
+      if (!d.url) return
+      // inside the native shells window.open is a silent no-op — navigate
+      // instead; the shell (new builds) intercepts t.me and opens the
+      // Telegram app, and t.me itself offers "Open in Telegram" otherwise
+      const w = window.open(d.url, '_blank')
+      if (!w) window.location.href = d.url
     } catch { /* ignore */ }
   }
 

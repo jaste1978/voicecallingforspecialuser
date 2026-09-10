@@ -2,7 +2,7 @@ import Constants from 'expo-constants'
 import * as Haptics from 'expo-haptics'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
-import { PermissionsAndroid, Platform, StyleSheet, Vibration, View } from 'react-native'
+import { Linking, PermissionsAndroid, Platform, StyleSheet, Vibration, View } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { APP_URL } from './config'
 
@@ -82,6 +82,15 @@ export default function App() {
         mediaCapturePermissionGrantType="grant"
         // native bridge: the web app posts events, the shell reacts natively
         onMessage={(e) => handleNativeMessage(e.nativeEvent.data)}
+        // external destinations (Telegram linking, WhatsApp) open in their
+        // own app instead of loading inside our webview
+        onShouldStartLoadWithRequest={(req) => {
+          if (/^(https:\/\/(t\.me|wa\.me)|tg:|whatsapp:)/.test(req.url)) {
+            void Linking.openURL(req.url).catch(() => {})
+            return false
+          }
+          return true
+        }}
         originWhitelist={['https://*', 'http://*']}
         setSupportMultipleWindows={false}
         allowsBackForwardNavigationGestures
