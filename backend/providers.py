@@ -68,6 +68,17 @@ class SarvamSTT:
         return SarvamSTTSession(language, on_event, sample_rate=sample_rate)
 
 
+# Sarvam retired bulbul:v2 (and its speakers) on 12 Sep 2026 — every user
+# who had picked a voice got a 400 and silent type-to-speak. Pin v3 and map
+# the old speaker ids users have saved onto v3 voices of the same gender.
+BULBUL_MODEL = "bulbul:v3"
+BULBUL_DEFAULT_SPEAKER = "priya"
+LEGACY_SPEAKERS = {
+    "anushka": "priya", "manisha": "neha", "vidya": "pooja", "arya": "simran",
+    "abhilash": "rahul", "karun": "aditya", "hitesh": "rohan",
+}
+
+
 class SarvamTTS:
     name = "sarvam"
     label = "Sarvam Bulbul"
@@ -75,12 +86,13 @@ class SarvamTTS:
     async def synthesize(self, text, language="hi-IN", speaker=None):
         try:
             client = get_client()
-            kwargs = {"speaker": speaker} if speaker else {}
+            speaker = LEGACY_SPEAKERS.get(speaker or "", speaker) or BULBUL_DEFAULT_SPEAKER
             resp = await client.text_to_speech.convert(
                 text=text,
                 target_language_code=language,
                 speech_sample_rate=16000,
-                **kwargs,
+                model=BULBUL_MODEL,
+                speaker=speaker,
             )
             wav_bytes = base64.b64decode(resp.audios[0])
             with wave.open(io.BytesIO(wav_bytes), "rb") as w:

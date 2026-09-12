@@ -4,16 +4,17 @@ import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
 import { pictureCaptionsEnabled, setPictureCaptions } from '../lib/pictureCaptions'
 import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon, MicIcon, RupeeIcon } from '../components/icons'
 
-// Bulbul speakers: the voice callers hear when you type-to-speak
+// Bulbul v3 speakers: the voice callers hear when you type-to-speak
+// (old v2 ids users saved — anushka, manisha… — are mapped server-side)
 const VOICES = [
-  { id: '', label: 'Default (Anushka)' },
-  { id: 'anushka', label: 'Anushka · female' },
-  { id: 'manisha', label: 'Manisha · female' },
-  { id: 'vidya', label: 'Vidya · female' },
-  { id: 'arya', label: 'Arya · female' },
-  { id: 'abhilash', label: 'Abhilash · male' },
-  { id: 'karun', label: 'Karun · male' },
-  { id: 'hitesh', label: 'Hitesh · male' },
+  { id: '', label: 'Default (Priya)' },
+  { id: 'priya', label: 'Priya · female' },
+  { id: 'neha', label: 'Neha · female' },
+  { id: 'pooja', label: 'Pooja · female' },
+  { id: 'simran', label: 'Simran · female' },
+  { id: 'rahul', label: 'Rahul · male' },
+  { id: 'aditya', label: 'Aditya · male' },
+  { id: 'rohan', label: 'Rohan · male' },
 ]
 
 export default function SettingsTab() {
