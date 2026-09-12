@@ -5,7 +5,7 @@
   --surface: #FFEFE0;     /* inputs, incoming bubbles */
   --bubble-out: #E4590A;  /* outgoing bubbles */
   --text: #241B12;
-  --dim: #8A7767;
+  --dim: #6E5C4B;
   --accent: #E4590A;      /* website burnt orange */
   --accent-ink: #C2410C;  /* darker orange for text/links */
   --accent-text: #ffffff;
@@ -2021,6 +2021,34 @@ select.lang.wide {
   font-weight: 600;
 }
 
+/* a card upgraded to real signing — Phase 3 Track B */
+.pic-card.sign {
+  background: var(--panel);
+  border-color: var(--accent);
+  padding: 4px 8px 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.pic-card.sign canvas {
+  border-radius: 8px;
+}
+
+/* sentence-level signing: one clip for the whole utterance */
+.sign-whole {
+  display: block;
+  /* own line, but hugging the figure rather than stretching across it */
+  flex-basis: 100%;
+  width: fit-content;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  font: inherit;
+}
+
 /* caption tester: strip for the latest utterance, larger cards */
 .pic-strip-tester {
   border-top: none;
@@ -2050,4 +2078,49 @@ select.lang.wide {
   padding: 4px 0 10px;
   margin-top: 2px;
   border-bottom: 1px dashed var(--divider);
+}
+
+
+/* ---------- app-wide polish: smooth scrolling + page transitions ---------- */
+.settings-page,
+.settings-list,
+.chat-scroll,
+.caption-scroll,
+.home {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+/* gentle enter animation so page switches feel intentional, not abrupt */
+main {
+  animation: page-in 0.16s ease-out;
+}
+
+@keyframes page-in {
+  from { opacity: 0.55; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main { animation: none; }
+  .settings-page, .settings-list, .chat-scroll, .caption-scroll, .home {
+    scroll-behavior: auto;
+  }
+}
+
+/* readability: larger secondary text across lists and FAQ */
+.home-btn small {
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.faq-a {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.faq-q {
+  font-size: 17.5px;
 }

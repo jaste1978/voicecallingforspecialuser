@@ -31,16 +31,30 @@ export default function SettingsTab() {
       .catch(() => {})
   }, [])
 
+  const [tgCode, setTgCode] = useState('')
+  const [tgCopied, setTgCopied] = useState(false)
+
   async function openTelegramLink() {
     try {
       const d = await (await authFetch('/api/telegram/link')).json()
       if (!d.url) return
-      // inside the native shells window.open is a silent no-op — navigate
-      // instead; the shell (new builds) intercepts t.me and opens the
-      // Telegram app, and t.me itself offers "Open in Telegram" otherwise
+      // show the always-works manual path; old app shells can't reliably
+      // hand https://t.me over to the Telegram app
+      const code = new URL(d.url).searchParams.get('start') || ''
+      setTgCode(code)
+      // still try the direct route — works in browsers and new shells
       const w = window.open(d.url, '_blank')
-      if (!w) window.location.href = d.url
+      if (!w && !navigator.userAgent.includes('wv')) {
+        // plain browser with popups blocked
+        window.location.href = d.url
+      }
     } catch { /* ignore */ }
+  }
+
+  function copyStartCommand() {
+    void navigator.clipboard?.writeText(`/start ${tgCode}`)
+    setTgCopied(true)
+    setTimeout(() => setTgCopied(false), 2500)
   }
 
   useEffect(() => {
@@ -187,6 +201,29 @@ export default function SettingsTab() {
           {tgLinked ? '✓' : 'Link'}
         </span>
       </button>
+      {tgCode && !tgLinked && (
+        <div className="setting-block">
+          <h3>Telegram से जोड़िए · Link Telegram</h3>
+          <p className="idle-hint" style={{ textAlign: 'left' }}>
+            1️⃣ <strong>Telegram</strong> app खोलिए<br />
+            2️⃣ Search: <strong>@sunosathibot</strong><br />
+            3️⃣ यह message भेजिए · send this message:
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <code style={{ flex: 1, background: 'var(--surface)', borderRadius: 12,
+              padding: '12px 14px', fontSize: 15, wordBreak: 'break-all' }}>
+              /start {tgCode}
+            </code>
+            <button className="promptbtn" style={{ flex: '0 0 auto' }}
+              onClick={copyStartCommand}>
+              {tgCopied ? '✓ Copied' : 'Copy'}
+            </button>
+          </div>
+          <p className="idle-hint" style={{ textAlign: 'left', marginTop: 8 }}>
+            Bot का ✅ reply आते ही missed calls की सूचना Telegram पर मिलेगी।
+          </p>
+        </div>
+      )}
       <button className="home-btn" onClick={() => navigate('/help')}>
         <span className="emoji icon"><CaptionsIcon size={28} /></span>
         <span>
