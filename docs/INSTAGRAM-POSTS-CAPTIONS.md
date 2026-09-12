@@ -8,7 +8,7 @@ picture board) were composited onto the phone in perspective with
 `brand/social/photos/`. The earlier illustrated set was rejected (too cartoon,
 story over product) and is kept only in git history.
 
-Post one a day. Order: 1, 3, 2, 4.
+ALL FOUR POSTED on @sunosathiapp on 13 Sep 2026 (order 1, 3, 2, 4), via the Claude browser bridge. Image posts upload fine from the bridge; video does not (see docs/INSTAGRAM-REELS-CAPTIONS.md).
 
 ## Post 1 — Phone calls you can read (man on verandah)
 Phone calls you can read.
