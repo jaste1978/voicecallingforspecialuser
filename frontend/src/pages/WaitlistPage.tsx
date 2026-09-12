@@ -9,6 +9,7 @@ interface Signup {
   org: string
   message: string
   phone?: string
+  os?: string
   emailed_at?: number | null
   created_at: number
 }
@@ -52,6 +53,8 @@ export default function WaitlistPage() {
               </a>
             </>
           )}
+          {s.os === 'android' && <> {' · '}🤖 Android</>}
+          {s.os === 'iphone' && <> {' · '}🍎 iPhone</>}
           <p className="idle-hint" style={{ textAlign: 'left' }}>
             {s.role}
             {s.org && <> · {s.org}</>}

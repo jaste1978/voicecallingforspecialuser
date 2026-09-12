@@ -454,7 +454,16 @@ footer .right{margin-left:auto}
   <p class="sub">We're onboarding early users, families, and NGOs now. It's free during the pilot — we want feedback, not money. Tell us who you are and we'll reach out personally.</p>
   <form id="wl">
     <input name="name" placeholder="Your name" required maxlength="80" />
-    <input name="email" type="email" placeholder="Email" required maxlength="120" />
+    <select name="os" id="wl-os" required>
+      <option value="" disabled selected>आपका phone? · Your phone…</option>
+      <option value="android">📱 Android</option>
+      <option value="iphone">🍎 iPhone</option>
+      <option value="other">Other / no smartphone</option>
+    </select>
+    <input name="email" id="wl-email" type="email" placeholder="Email" required maxlength="120" />
+    <p id="wl-email-hint" style="display:none;margin:-6px 0 0;font-size:14px;color:var(--dim)">
+      ⚠️ वही Gmail लिखिए जो आपके phone के <b>Play Store</b> में है — app testing invite उसी पर आएगा।
+    </p>
     <input name="phone" type="tel" placeholder="Mobile / WhatsApp number · मोबाइल नंबर" required maxlength="20" pattern="[0-9+\s\-]{10,20}" />
     <select name="role" required>
       <option value="" disabled selected>I am…</option>
@@ -592,6 +601,13 @@ const ts = document.createElement('script')
 ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
 ts.async = true
 document.head.appendChild(ts)
+
+document.getElementById('wl-os').addEventListener('change', (e) => {
+  const android = e.target.value === 'android'
+  document.getElementById('wl-email-hint').style.display = android ? 'block' : 'none'
+  document.getElementById('wl-email').placeholder = android
+    ? 'Gmail (Play Store वाला)' : 'Email'
+})
 
 document.getElementById('wl').addEventListener('submit', async (e) => {
   e.preventDefault()

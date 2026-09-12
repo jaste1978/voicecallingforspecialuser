@@ -505,12 +505,13 @@ async def api_waitlist_add(payload: dict, request: Request):
     phone = (payload.get("phone") or "").strip()
     if not name or "@" not in email:
         return Response(status_code=422)
+    os_pref = (payload.get("os") or "").strip().lower()
     row_id = waitlist.add(
         name, email,
         (payload.get("role") or "").strip(),
         (payload.get("org") or "").strip(),
         (payload.get("message") or "").strip(),
-        phone,
+        phone, os_pref,
     )
     logger.info("waitlist signup: %s <%s> (%s)", name, email, payload.get("role"))
     import telegram_notify
@@ -519,11 +520,12 @@ async def api_waitlist_add(payload: dict, request: Request):
     await telegram_notify.send(
         f"{kind}\n{name} &lt;{email}&gt;"
         + (f"\n📱 {phone}" if phone else "")
+        + (f"\n{'🤖 Android — add to tester group!' if os_pref == 'android' else '🍎 iPhone' if os_pref == 'iphone' else ''}" if os_pref else "")
         + (f"\n💬 {msg[:400]}" if msg else ""))
     # auto welcome email (no-op until RESEND_API_KEY is configured)
     if payload.get("role") != "support":
         import emailer
-        subject, html = emailer.waitlist_welcome(name)
+        subject, html = emailer.waitlist_welcome(name, os_pref)
         if await emailer.send(email, subject, html):
             waitlist.mark_emailed(row_id)
     return {"ok": True}
@@ -545,7 +547,7 @@ async def api_waitlist_email_pending(request: Request):
                 s["email"].endswith((".test", ".sunosathi")):
             skipped.append(s["email"])
             continue
-        subject, html = emailer.waitlist_welcome(s["name"])
+        subject, html = emailer.waitlist_welcome(s["name"], s.get("os") or "")
         if await emailer.send(s["email"], subject, html):
             waitlist.mark_emailed(s["id"])
             sent.append(s["email"])
