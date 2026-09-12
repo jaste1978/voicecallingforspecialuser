@@ -9,7 +9,7 @@ inbox (Cloudflare routes it to Gmail).
 
 | Platform | @sunosathi | @sunosathiapp | Notes |
 |---|---|---|---|
-| Instagram | TAKEN (account with 13 followers, no posts visible) | free | Is @sunosathi ours? If not, use `sunosathi.app` or `sunosathiapp` (both free). Threads uses the same handle. |
+| Instagram | — | **DONE 12 Sep 2026: @sunosathiapp** | https://www.instagram.com/sunosathiapp/ — name "SunoSathi सुनोसाथी", bio, avatar set; first post = 9-card how-to carousel (`brand/social/instagram/howto-*.jpg`). Website link can only be added from the mobile app (Edit profile → Links). Threads shares this login. |
 | X (Twitter) | **free** | free | take `@sunosathi` |
 | Facebook Page | taken by a personal profile "Suno Sathi" (4 friends) | free | create a Page (not a profile), username `sunosathiapp` if `sunosathi` is refused |
 | YouTube | TAKEN ("Mera Suno Sathi", music channel) | TAKEN ("SunoSathi", 17 videos, 2 subscribers) | @SunoSathiApp looks like ours (demo videos?) — confirm |
@@ -59,7 +59,7 @@ SunoSathi (सुनोसाथी) is a captioned phone line for deaf, hard of
 ## Per-platform setup (2 minutes each)
 
 1. **WhatsApp Channel** — WhatsApp → Updates → "+" → New channel → name, bio (short), avatar-orange. Share the channel link on the website footer.
-2. **Instagram** — instagram.com/accounts/emailsignup → username → switch to Professional account → Category "App page" → add website + bio → upload avatar. Create Threads from the same login.
+2. **Instagram** — DONE (@sunosathiapp). Remaining, mobile app only: add website link sunosathi.com (Edit profile → Links), switch to Professional account (Settings → Account type) for insights, pin the how-to carousel, add a Story highlight "How to use" from the same cards. Create Threads from this login.
 3. **YouTube** — if @SunoSathiApp is ours, just add banner + description; else create a Brand Account from the Google account and claim `@sunosathi_app`.
 4. **Facebook Page** — facebook.com/pages/create → name "SunoSathi सुनोसाथी" → category "App page" → username → avatar + cover.
 5. **LinkedIn Page** — DONE. Next: follow it from your profile, add it as current employer on your profile (Experience → SunoSathi), repost the announcement from the Page, invite connections (Admin → Invite to follow, 250 credits/month).
