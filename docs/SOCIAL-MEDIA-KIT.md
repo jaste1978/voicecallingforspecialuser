@@ -13,7 +13,7 @@ inbox (Cloudflare routes it to Gmail).
 | X (Twitter) | **free** | free | take `@sunosathi` |
 | Facebook Page | taken by a personal profile "Suno Sathi" (4 friends) | free | create a Page (not a profile), username `sunosathiapp` if `sunosathi` is refused |
 | YouTube | TAKEN ("Mera Suno Sathi", music channel) | TAKEN ("SunoSathi", 17 videos, 2 subscribers) | @SunoSathiApp looks like ours (demo videos?) — confirm |
-| LinkedIn Page | **free** | free | create Company Page, slug `sunosathi` |
+| LinkedIn Page | **DONE 12 Sep 2026** | — | https://www.linkedin.com/company/sunosathi/ (id 145004029). Logo, cover, tagline, About, Mumbai location, "Sign up" button → sunosathi.com/#pilot. Note: LinkedIn's first save after each page load fails with "another admin is editing" — reload and save again. Cover must be JPG, 2256×382 worked. |
 | Telegram | taken (a user @sunosathi exists) | taken | our bot is @sunosathibot. Create a public **channel** `t.me/sunosathi_news` or similar for announcements |
 | Reddit | **free** | — | `u/sunosathi`; post in r/india, r/deaf, r/accessibility |
 | Pinterest | appears taken | appears taken | low priority |
@@ -62,7 +62,7 @@ SunoSathi (सुनोसाथी) is a captioned phone line for deaf, hard of
 2. **Instagram** — instagram.com/accounts/emailsignup → username → switch to Professional account → Category "App page" → add website + bio → upload avatar. Create Threads from the same login.
 3. **YouTube** — if @SunoSathiApp is ours, just add banner + description; else create a Brand Account from the Google account and claim `@sunosathi_app`.
 4. **Facebook Page** — facebook.com/pages/create → name "SunoSathi सुनोसाथी" → category "App page" → username → avatar + cover.
-5. **LinkedIn Page** — linkedin.com/company/setup/new → name, slug `sunosathi`, website, industry "Software Development", size 2-10, tagline → logo + cover. Then repost the announcement from the Page.
+5. **LinkedIn Page** — DONE. Next: follow it from your profile, add it as current employer on your profile (Experience → SunoSathi), repost the announcement from the Page, invite connections (Admin → Invite to follow, 250 credits/month).
 6. **X** — x.com/i/flow/signup with namaste@sunosathi.com → handle `sunosathi` → avatar + header + bio + website.
 7. **Telegram channel** — Telegram → New Channel → public → link `sunosathi_news` (or `sunosathi_app`) → avatar.
 8. **Reddit** — reddit.com/register → `sunosathi` → profile avatar; needs some karma before posting in big subs.
