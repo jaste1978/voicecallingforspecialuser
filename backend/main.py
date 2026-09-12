@@ -624,6 +624,19 @@ async def api_contacts_add(payload: dict, request: Request):
     import contacts
     name = (payload.get("name") or "").strip()
     number = (payload.get("number") or "").strip()
+    # numbers pasted from WhatsApp/iOS carry invisible bidi marks and
+    # formatting — store dial-ready digits (Sathi @handles pass through)
+    if not number.startswith("@"):
+        digits = "".join(c for c in number if c.isdigit())
+        if len(digits) == 12 and digits.startswith("91"):
+            digits = digits[2:]
+        elif len(digits) == 11 and digits.startswith("0"):
+            digits = digits[1:]
+        if len(digits) != 10:
+            return JSONResponse(
+                {"error": "a 10-digit mobile number is needed"},
+                status_code=422)
+        number = digits
     if not name or not number:
         return Response(status_code=422)
     return contacts.add_contact(name, number, user_id=user["id"])
