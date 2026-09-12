@@ -20,6 +20,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // Workbox's default directoryIndex ("index.html") makes the precache
+        // answer "/" with the app shell BEFORE the navigation denylist is
+        // consulted — which hid sunosathi.com's marketing page behind /start
+        directoryIndex: null,
         // marketing site + backend endpoints must never be hijacked by the
         // app shell's navigation fallback
         navigateFallbackDenylist: [
