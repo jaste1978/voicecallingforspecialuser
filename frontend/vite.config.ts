@@ -22,7 +22,13 @@ export default defineConfig({
       workbox: {
         // marketing site + backend endpoints must never be hijacked by the
         // app shell's navigation fallback
-        navigateFallbackDenylist: [/^\/welcome/, /^\/site/, /^\/about/, /^\/api/, /^\/vobiz/, /^\/ws/, /^\/ios/, /^\/guide/],
+        navigateFallbackDenylist: [
+          // bare root: sunosathi.com/ is the marketing site (served by the
+          // backend per host) — the SW must not swap in the app shell there
+          /^\/(\?|$)/,
+          /^\/welcome/, /^\/site/, /^\/about/, /^\/api/, /^\/vobiz/, /^\/ws/, /^\/ios/, /^\/guide/,
+          /^\/privacy/, /^\/llms\.txt/, /^\/sitemap\.xml/, /^\/robots\.txt/,
+        ],
       },
       manifest: {
         name: 'SunoSathi — Hearing Helper',
