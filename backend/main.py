@@ -564,6 +564,51 @@ async def api_waitlist_list(request: Request):
     return {"signups": waitlist.list_all()}
 
 
+# ---- contribute.sunosathi.com bridge ---------------------------------------
+# The ISL contribution platform is its own service with its own accounts.
+# These proxies let the app's admin approve contributor signups from the
+# same admin area as everything else, authenticated service-to-service via
+# CONTRIB_ADMIN_KEY (= the contribute service's ADMIN_KEY).
+
+CONTRIB_URL = os.environ.get("CONTRIB_URL", "https://contribute.sunosathi.com")
+
+
+async def _contrib_proxy(method: str, path: str, payload: dict | None = None):
+    key = os.environ.get("CONTRIB_ADMIN_KEY", "")
+    if not key:
+        return JSONResponse({"error": "CONTRIB_ADMIN_KEY not set"}, status_code=503)
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.request(method, f"{CONTRIB_URL}{path}",
+                                     headers={"x-admin-key": key},
+                                     json=payload)
+        body = r.json() if r.content else {}
+        return JSONResponse(body, status_code=r.status_code)
+    except Exception:
+        logger.exception("contribute proxy error: %s %s", method, path)
+        return JSONResponse({"error": "contribute service unreachable"},
+                            status_code=502)
+
+
+@app.get("/api/contrib/users")
+async def api_contrib_users(request: Request):
+    if not _is_admin_req(request):
+        return Response(status_code=403)
+    return await _contrib_proxy("GET", "/api/admin/users")
+
+
+@app.post("/api/contrib/users/{uid}/status")
+async def api_contrib_set_status(uid: str, payload: dict, request: Request):
+    if not _is_admin_req(request):
+        return Response(status_code=403)
+    status = str(payload.get("status") or "")
+    if status not in ("approved", "rejected", "suspended", "pending"):
+        return JSONResponse({"error": "bad status"}, status_code=422)
+    return await _contrib_proxy("POST", f"/api/admin/users/{uid}/status",
+                                {"status": status})
+
+
 @app.get("/api/monitor")
 async def api_monitor(request: Request):
     _require_admin(request)

@@ -276,6 +276,13 @@ export default function SettingsTab() {
               <small>Signups from sunosathi.com</small>
             </span>
           </button>
+          <button className="home-btn" onClick={() => navigate('/contribute')}>
+            <span className="emoji icon">🤟</span>
+            <span>
+              ISL Contributors
+              <small>Approve signups from contribute.sunosathi.com</small>
+            </span>
+          </button>
         </>
       )}
       {!pwOpen ? (

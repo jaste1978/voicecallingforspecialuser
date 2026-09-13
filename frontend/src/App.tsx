@@ -16,6 +16,7 @@ import SettingsTab from './pages/AdminPage'
 import RingtonePage from './pages/RingtonePage'
 import MonitorPage from './pages/MonitorPage'
 import WaitlistPage from './pages/WaitlistPage'
+import ContributePage from './pages/ContributePage'
 import UsersPage from './pages/UsersPage'
 import CostsPage from './pages/CostsPage'
 import StartPage from './pages/StartPage'
@@ -135,6 +136,7 @@ export default function App() {
           <Route path="/ringtone" element={<RingtonePage />} />
           <Route path="/monitor" element={<MonitorPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
+          <Route path="/contribute" element={<ContributePage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/costs" element={<CostsPage />} />
         </Routes>
