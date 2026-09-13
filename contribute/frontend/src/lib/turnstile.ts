@@ -46,11 +46,22 @@ function loadScript(): Promise<void> {
   return scriptPromise
 }
 
+let mountedIn: HTMLElement | null = null
+
 export async function mount(host: HTMLElement): Promise<void> {
-  if (!sitekey || widgetId) return
+  if (!sitekey) return
+  if (widgetId && mountedIn === host && host.isConnected) return
   await loadScript()
   const api = window.turnstile
   if (!api) return
+  // One widget at a time: moving screens (auth form ↔ app root) re-renders
+  // it in the new host, so a visible challenge always sits where the person
+  // is actually looking.
+  if (widgetId) {
+    try { api.remove(widgetId) } catch { /* its DOM may already be gone */ }
+    widgetId = null
+  }
+  mountedIn = host
   widgetId = api.render(host, {
     sitekey,
     appearance: 'interaction-only',
@@ -71,6 +82,7 @@ export async function mount(host: HTMLElement): Promise<void> {
  */
 export function token(timeoutMs = 8000): Promise<string> {
   if (!sitekey || !widgetId || !window.turnstile) return Promise.resolve('')
+  if (!mountedIn?.isConnected) return Promise.resolve('') // widget's DOM is gone
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       pending = null

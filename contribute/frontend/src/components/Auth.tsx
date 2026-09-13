@@ -4,7 +4,7 @@
 // who records. Kept to the four fields an admin actually needs to make that
 // decision — a name, a way to reach you, a password, and who you are.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { login, register } from '../lib/api'
 import * as turnstile from '../lib/turnstile'
 import type { Auth as AuthResult } from '../lib/api'
@@ -68,6 +68,16 @@ export default function Auth({ lang, startOn = 'join', onDone, onBack }: Props) 
   const [reveal, setReveal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const challengeHost = useRef<HTMLDivElement>(null)
+
+  // The widget lives inside the form here: if Cloudflare decides to show a
+  // human check, it must appear next to the button being pressed, not in a
+  // corner of the page.
+  useEffect(() => {
+    if (turnstile.enabled() && challengeHost.current) {
+      turnstile.mount(challengeHost.current).catch(() => {})
+    }
+  }, [])
 
   const joining = mode === 'join'
   const ready = identifier.trim().length > 2 && password.length >= 8
@@ -79,7 +89,8 @@ export default function Auth({ lang, startOn = 'join', onDone, onBack }: Props) 
     setBusy(true)
     setError('')
     try {
-      const token = joining ? await turnstile.token() : ''
+      // Generous wait: this is where a person may have to click a checkbox.
+      const token = joining ? await turnstile.token(45000) : ''
       onDone(joining
         ? await register({ name: name.trim(), identifier: identifier.trim(), password,
                            note: note.trim(), ...(token ? { turnstile: token } : {}) })
@@ -135,6 +146,8 @@ export default function Auth({ lang, startOn = 'join', onDone, onBack }: Props) 
         )}
 
         {error && <p className="err">{error}</p>}
+
+        <div ref={challengeHost} className="challenge-slot" />
 
         <div className="controls">
           <button type="button" className="btn ghost" onClick={onBack} disabled={busy}>
