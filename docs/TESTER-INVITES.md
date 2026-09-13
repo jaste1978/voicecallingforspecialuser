@@ -130,7 +130,8 @@ background ringing is Phase 2).
 ## FINAL combined invite (31 Aug 2026) — the one to send
 
 Both platforms, fully self-serve:
-- iOS: TestFlight public link https://testflight.apple.com/join/jhavv6fG
+- iOS: **LIVE on the App Store** (13 Sep 2026) — https://apps.apple.com/in/app/suno-sathi/id6805283616
+  (TestFlight link https://testflight.apple.com/join/jhavv6fG still works for pre-release builds)
   (live once Apple beta review approves; up to 1000 testers)
 - Android: Google Group https://groups.google.com/g/sunosathi-testers
   ("Ask to join" -> Tejas approves in Groups -> then opt-in link

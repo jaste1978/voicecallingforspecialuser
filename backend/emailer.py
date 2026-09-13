@@ -61,12 +61,11 @@ def waitlist_welcome(name: str, os_pref: str = "") -> tuple[str, str]:
         app_block = """
   <p style="background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
             padding:14px 16px">
-     <b>🍎 iPhone app अभी try कीजिए (TestFlight):</b><br/>
-     1️⃣ App Store से <b>TestFlight</b> app install कीजिए<br/>
-     2️⃣ फिर iPhone पर यह link खोलिए:
-        <a href="https://testflight.apple.com/join/jhavv6fG"
-           style="color:#C2410C">SunoSathi on TestFlight</a><br/>
-     3️⃣ Accept → Install — app आपके phone पर आ जाएगा</p>"""
+     <b>🍎 SunoSathi अब App Store पर live है!</b><br/>
+     अभी install कीजिए:
+     <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616"
+        style="color:#C2410C"><b>Download Suno Sathi</b></a><br/>
+     Account details हम आपको जल्द ही भेजेंगे — फिर बस login कीजिए।</p>"""
     else:
         app_block = ""
     html = f"""

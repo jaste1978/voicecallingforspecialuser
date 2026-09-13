@@ -12,6 +12,7 @@
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="apple-itunes-app" content="app-id=6805283616" />
 <title>SunoSathi — सुनोसाथी | Captioned phone calls on your own number, in every Indian language</title>
 <meta name="description" content="63 million deaf and hard-of-hearing Indians can't take a phone call. SunoSathi turns their own mobile number into a captioned phone: read the caller live in Hindi, Gujarati, English & Hinglish — reply with your voice, by typing, or by tapping pictures. Calls ring even with the screen off." />
 <link rel="canonical" href="https://sunosathi.com/" />
@@ -48,6 +49,8 @@
       "@type": "WebApplication",
       "name": "SunoSathi",
       "url": "https://app.sunosathi.com/",
+      "installUrl": "https://apps.apple.com/in/app/suno-sathi/id6805283616",
+      "sameAs": ["https://apps.apple.com/in/app/suno-sathi/id6805283616"],
       "applicationCategory": "CommunicationApplication",
       "operatingSystem": "Any (web, iOS, Android)",
       "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR", "description": "Free during pilot"},
@@ -170,10 +173,18 @@ nav{position:sticky;top:0;background:rgba(255,248,241,.94);backdrop-filter:blur(
 nav .wrap{display:flex;align-items:center;gap:14px;padding:14px 20px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
 .logo .mark{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px}
-nav .cta{margin-left:auto}
+nav .contrib{margin-left:auto;padding:9px 16px;font-size:14px}
+/* below 560px the contribute link drops out, so the pilot CTA takes back
+   the auto margin it had before — nav behaviour there is unchanged */
+@media(max-width:560px){nav .contrib{display:none}nav .cta{margin-left:auto}}
 .btn{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:13px 26px;border-radius:28px;border:none;font-size:16px;cursor:pointer}
 .btn.ghost{background:transparent;border:1.5px solid var(--divider);color:var(--text)}
 .btn:active{transform:scale(.98)}
+.appstore-badge{display:inline-flex;align-items:center;gap:10px;background:#000;color:#fff;border-radius:12px;padding:8px 18px 8px 15px;text-decoration:none;line-height:1.12;border:1px solid #000}
+.appstore-badge:active{transform:scale(.98)}
+.appstore-badge svg{width:21px;height:25px;flex:none}
+.appstore-badge small{display:block;font-size:10.5px;opacity:.85;font-weight:400;letter-spacing:.2px}
+.appstore-badge b{font-size:16.5px;font-weight:600}
 
 /* hero */
 .hero{padding:84px 0 60px}
@@ -285,6 +296,7 @@ footer .right{margin-left:auto}
 
 <nav><div class="wrap">
   <div class="logo"><span class="mark"><svg viewBox="0 0 144 118" width="20" height="17" fill="none" aria-hidden="true"><path d="M100 12 C120 19 131 37 131 57 C131 86 111 106 84 106 C64 106 51 95 46 79" stroke="#FFF8F1" stroke-width="11" stroke-linecap="round"/><path d="M46 79 C44 66 51 57 62 57 C73 57 80 66 78 77" stroke="#FFF8F1" stroke-width="11" stroke-linecap="round"/><rect x="6" y="24" width="38" height="10" rx="5" fill="#FFF3E7"/><rect x="14" y="44" width="30" height="10" rx="5" fill="#FFF3E7" opacity=".85"/><rect x="22" y="64" width="22" height="10" rx="5" fill="#FFF3E7" opacity=".65"/></svg></span> SunoSathi <span style="color:var(--dim);font-weight:400">सुनोसाथी</span></div>
+  <a class="btn ghost contrib" href="https://contribute.sunosathi.com">Contribute ISL</a>
   <a class="btn cta" href="#pilot">Join the pilot</a>
 </div></nav>
 
@@ -294,6 +306,10 @@ footer .right{margin-left:auto}
     <p class="lead">SunoSathi turns <b>your own mobile number</b> into a captioned phone. When someone calls, you <b>read live subtitles</b> of their words — in हिन्दी, ગુજરાતી, English or Hinglish, detected automatically (more Indian languages coming soon) — and reply <b>with your voice, by typing, or by tapping pictures</b> that speak for you. The caller just… calls. No app, no link, nothing special.</p>
     <div class="actions">
       <a class="btn" href="#pilot">Join the pilot — it's free</a>
+      <a class="appstore-badge" href="https://apps.apple.com/in/app/suno-sathi/id6805283616" aria-label="Download Suno Sathi on the App Store">
+        <svg viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+        <span><small>Download on the</small><b>App Store</b></span>
+      </a>
       <a class="btn ghost" href="/guide">Guide with real screens</a>
     </div>
     <div class="momentum">
@@ -452,6 +468,9 @@ footer .right{margin-left:auto}
 <section class="pilot" id="pilot"><div class="wrap">
   <h2>Join the pilot</h2>
   <p class="sub">We're onboarding early users, families, and NGOs now. It's free during the pilot — we want feedback, not money. Tell us who you are and we'll reach out personally.</p>
+  <p class="sub">🍎 iPhone user? The app is already live —
+     <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" style="color:var(--accent);font-weight:600">download Suno Sathi from the App Store</a>,
+     then sign up below and we'll create your account.</p>
   <form id="wl">
     <input name="name" placeholder="Your name" required maxlength="80" />
     <select name="os" id="wl-os" required>
@@ -484,6 +503,7 @@ footer .right{margin-left:auto}
 
 <footer><div class="wrap">
   <span>SunoSathi · सुनोसाथी — giving people back the phone call.</span>
+  <a href="https://contribute.sunosathi.com">Contribute ISL</a>
   <a href="/privacy">Privacy policy</a>
   <span class="right">Born at the GrowthX buildathon · Powered by Sarvam AI · <span class="credit">photos by Pexels photographers</span></span>
 </div></footer>
@@ -603,9 +623,13 @@ ts.async = true
 document.head.appendChild(ts)
 
 document.getElementById('wl-os').addEventListener('change', (e) => {
-  const android = e.target.value === 'android'
-  document.getElementById('wl-email-hint').style.display = android ? 'block' : 'none'
-  document.getElementById('wl-email').placeholder = android
+  const v = e.target.value
+  const hint = document.getElementById('wl-email-hint')
+  hint.style.display = (v === 'android' || v === 'iphone') ? 'block' : 'none'
+  hint.innerHTML = v === 'iphone'
+    ? '🍎 App अभी <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" style="color:var(--accent);font-weight:600">App Store से download</a> कर सकते हैं — account details हम email करेंगे।'
+    : '⚠️ वही Gmail लिखिए जो आपके phone के <b>Play Store</b> में है — app testing invite उसी पर आएगा।'
+  document.getElementById('wl-email').placeholder = v === 'android'
     ? 'Gmail (Play Store वाला)' : 'Email'
 })
 
