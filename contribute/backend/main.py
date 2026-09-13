@@ -52,6 +52,8 @@ from fastapi.staticfiles import StaticFiles
 import auth
 import consent
 import db
+import emailer
+import otp
 import storage
 import telegram
 
@@ -62,6 +64,7 @@ logger = logging.getLogger("contribute")
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     db.init()
+    otp.init()
     auth.ensure_admin()
     with db.conn() as c:
         n = c.execute("SELECT COUNT(*) FROM phrases").fetchone()[0]
@@ -166,11 +169,33 @@ def api_auth_me(request: Request):
     return {"user": _public_user(u), "access_mode": db.ACCESS_MODE}
 
 
-@app.post("/api/auth/register")
-async def api_register(payload: dict, request: Request):
+@app.post("/api/auth/otp")
+async def api_send_otp(payload: dict, request: Request):
+    """Step 1 of registration: email a 6-digit code. Turnstile lives here —
+    this is the endpoint that could be abused to spam inboxes."""
     if not await _turnstile_ok(payload, request):
         return JSONResponse({"error": "verification failed"}, status_code=403)
+    email = auth.normalise_identifier(str(payload.get("identifier") or ""))
+    if "@" not in email or not auth.identifier_ok(email):
+        return JSONResponse({"error": "enter a valid email address"},
+                            status_code=422)
+    with db.conn() as c:
+        if c.execute("SELECT 1 FROM users WHERE identifier = ?", (email,)).fetchone():
+            return JSONResponse({"error": "an account with this already exists"},
+                                status_code=409)
+    if not emailer.configured():
+        return JSONResponse({"error": "email not configured"}, status_code=503)
+    code = otp.issue(email)
+    if code is None:
+        return {"ok": True, "resent": False}  # too soon; the last code stands
+    subject, html = emailer.otp_message(code)
+    if not await emailer.send(email, subject, html):
+        return JSONResponse({"error": "could not send the code"}, status_code=502)
+    return {"ok": True, "resent": True}
 
+
+@app.post("/api/auth/register")
+async def api_register(payload: dict, request: Request):
     name = str(payload.get("name") or "").strip()[:80]
     raw = str(payload.get("identifier") or "")
     password = str(payload.get("password") or "")
@@ -179,13 +204,18 @@ async def api_register(payload: dict, request: Request):
     if len(name) < 2:
         return JSONResponse({"error": "name required"}, status_code=422)
     identifier = auth.normalise_identifier(raw)
-    if not auth.identifier_ok(identifier):
-        return JSONResponse({"error": "enter a valid email or phone number"},
+    # Email only: the account's identifier is also where approval news and
+    # dataset credit land, so it has to be a real, verified inbox.
+    if "@" not in identifier or not auth.identifier_ok(identifier):
+        return JSONResponse({"error": "enter a valid email address"},
                             status_code=422)
     if len(password) < auth.MIN_PASSWORD:
         return JSONResponse(
             {"error": f"password must be at least {auth.MIN_PASSWORD} characters"},
             status_code=422)
+    # The OTP is the gate: a verified inbox proves more than a bot check.
+    if not otp.check(identifier, str(payload.get("otp") or "")):
+        return JSONResponse({"error": "wrong or expired code"}, status_code=403)
 
     # Open mode is how this becomes a public platform again once the pilot is
     # over: same code path, no waiting room.
@@ -669,8 +699,8 @@ def api_admin_users(request: Request, status: str = "",
 
 
 @app.post("/api/admin/users/{uid}/status")
-def api_admin_set_status(uid: str, payload: dict, request: Request,
-                         x_admin_key: str | None = Header(None)):
+async def api_admin_set_status(uid: str, payload: dict, request: Request,
+                               x_admin_key: str | None = Header(None)):
     """Approve, reject or suspend an account, and set its role while you are
     there — approving an NGO partner as a reviewer is one action, not two."""
     if not _is_admin(request, x_admin_key):
@@ -685,7 +715,8 @@ def api_admin_set_status(uid: str, payload: dict, request: Request,
 
     actor = current_user(request)
     with db.conn() as c:
-        row = c.execute("SELECT id, role FROM users WHERE id = ?", (uid,)).fetchone()
+        row = c.execute("SELECT id, role, status FROM users WHERE id = ?",
+                        (uid,)).fetchone()
         if not row:
             return JSONResponse({"error": "unknown user"}, status_code=404)
         # Locking yourself out of the only admin account on a box with no
@@ -712,6 +743,17 @@ def api_admin_set_status(uid: str, payload: dict, request: Request,
     # out thirty days from now.
     if status in ("rejected", "suspended"):
         auth.end_all_sessions(uid)
+
+    # Approval news goes to the inbox the person registered with. Newly
+    # approved only — flipping a role on an already-approved account should
+    # not email them again.
+    if status == "approved" and row["status"] != "approved":
+        with db.conn() as c:
+            u = c.execute("SELECT identifier, display_name FROM users WHERE id = ?",
+                          (uid,)).fetchone()
+        if u and "@" in (u["identifier"] or ""):
+            subject, html = emailer.account_approved(u["display_name"] or "")
+            await emailer.send(u["identifier"], subject, html)
     return {"ok": True, "id": uid, "status": status}
 
 

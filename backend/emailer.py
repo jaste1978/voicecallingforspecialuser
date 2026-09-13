@@ -39,6 +39,53 @@ async def send(to: str, subject: str, html: str) -> bool:
         return False
 
 
+def otp_message(code: str) -> tuple[str, str]:
+    """Subject + HTML for the registration verification code."""
+    subject = f"{code} — आपका SunoSathi code"
+    html = f"""
+<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;
+            color:#241B12;line-height:1.6">
+  <h2 style="color:#C2410C">SunoSathi verification code</h2>
+  <p>यह code registration form में लिखिए · enter this code in the form:</p>
+  <p style="font-size:34px;font-weight:800;letter-spacing:6px;
+            background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
+            padding:14px 16px;text-align:center">{code}</p>
+  <p style="color:#8a7460">Valid for 10 minutes. अगर आपने यह नहीं माँगा,
+     इस email को ignore कीजिए।</p>
+</div>"""
+    return subject, html
+
+
+def account_approved(name: str) -> tuple[str, str]:
+    """Subject + HTML sent when the admin approves a SunoSathi account."""
+    first = (name or "").split(" ")[0] or "दोस्त"
+    subject = "🎉 आपका SunoSathi खाता तैयार है · your account is approved"
+    html = f"""
+<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;
+            color:#241B12;line-height:1.6">
+  <h2 style="color:#C2410C">Namaste {first}! आपका खाता चालू हो गया 🎉</h2>
+  <p>Your SunoSathi account is <b>approved</b>. Sign in with this email
+     and your password:</p>
+  <p>👉 <a href="https://app.sunosathi.com" style="color:#C2410C">
+     <b>app.sunosathi.com</b></a></p>
+  <p style="background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
+            padding:14px 16px">
+     <b>🍎 iPhone:</b>
+     <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616"
+        style="color:#C2410C">App Store से install कीजिए</a><br/>
+     <b>📱 Android:</b> अभी testing में है — हम आपको link भेजेंगे।
+     Browser में app.sunosathi.com भी पूरा काम करता है।</p>
+  <p>Setup guide with pictures:
+     <a href="https://sunosathi.com/guide" style="color:#C2410C">
+     sunosathi.com/guide</a>. We will also message you on WhatsApp to help
+     with call forwarding.</p>
+  <p>Questions? Reply to this email or WhatsApp <b>+91 98190 95969</b>.</p>
+  <p style="color:#8a7460">— Tejas, SunoSathi<br/>
+     <i>Your phone number. Their voice, your eyes.</i></p>
+</div>"""
+    return subject, html
+
+
 def waitlist_welcome(name: str, os_pref: str = "") -> tuple[str, str]:
     """Subject + HTML for the waitlist auto-reply, with OS-specific
     app-testing steps so signups flow straight into the tester pipeline."""

@@ -127,20 +127,47 @@ async def api_login(payload: dict):
     return {"token": token, "name": user["name"], "role": user["role"], "email": user["email"]}
 
 
-@app.post("/api/register")
-async def api_register(payload: dict, request: Request):
-    import telegram_notify
+@app.post("/api/register/otp")
+async def api_register_otp(payload: dict, request: Request):
+    """Step 1 of registration: email a 6-digit code. Turnstile lives here —
+    this is the endpoint that can be abused to spam inboxes."""
+    import emailer
+    import otp
 
     if not await _turnstile_ok(payload, request):
         return JSONResponse({"error": "verification failed"}, status_code=403)
+    email = (payload.get("email") or "").strip().lower()
+    if "@" not in email or len(email) > 120:
+        return JSONResponse({"error": "invalid email"}, status_code=422)
+    if auth.user_by_email(email):
+        return JSONResponse({"error": "exists"}, status_code=409)
+    if not emailer.configured():
+        return JSONResponse({"error": "email not configured"}, status_code=503)
+    code = otp.issue(email)
+    if code is None:
+        return {"ok": True, "resent": False}  # too soon; the last code stands
+    subject, html = emailer.otp_message(code)
+    if not await emailer.send(email, subject, html):
+        return JSONResponse({"error": "could not send the code"}, status_code=502)
+    return {"ok": True, "resent": True}
+
+
+@app.post("/api/register")
+async def api_register(payload: dict, request: Request):
+    import otp
+    import telegram_notify
+
     name = (payload.get("name") or "").strip()
-    email = (payload.get("email") or "").strip()
+    email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
     number = "".join(c for c in (payload.get("number") or "") if c.isdigit())
     if len(number) == 12 and number.startswith("91"):
         number = number[2:]
     if not name or "@" not in email or len(password) < 8 or len(number) != 10:
         return JSONResponse({"error": "invalid"}, status_code=422)
+    # The OTP is the gate: a verified inbox proves more than a bot check.
+    if not otp.check(email, str(payload.get("otp") or "")):
+        return JSONResponse({"error": "wrong or expired code"}, status_code=403)
     try:
         uid = auth.register(email, password, name, number)
     except Exception:
@@ -188,6 +215,10 @@ async def api_user_approve(user_id: int, request: Request):
         except Exception:
             pass  # already registered
     logger.info("user %s approved", user_id)
+    if user.get("email") and "@" in user["email"]:
+        import emailer
+        subject, html = emailer.account_approved(user.get("name") or "")
+        await emailer.send(user["email"], subject, html)
     return {"ok": True}
 
 

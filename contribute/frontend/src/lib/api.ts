@@ -109,9 +109,12 @@ export interface ServerConfig {
 
 export const getConfig = () => json<ServerConfig>('/api/health')
 
+export const sendOtp = (body: { identifier: string; turnstile?: string }) =>
+  json<{ ok: boolean }>('/api/auth/otp', { method: 'POST', body: JSON.stringify(body) })
+
 export const register = (body: {
   name: string; identifier: string; password: string; note: string
-  turnstile?: string
+  otp: string
 }) => json<Auth>('/api/auth/register', { method: 'POST', body: JSON.stringify(body) })
 
 export const login = (body: { identifier: string; password: string }) =>

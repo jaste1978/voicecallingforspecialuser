@@ -161,6 +161,14 @@ def user_count() -> int:
         return conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
 
 
+def user_by_email(email: str) -> dict | None:
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM users WHERE email = ?", (email.strip().lower(),)
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def verify(email: str, password: str) -> dict | None:
     with _conn() as conn:
         row = conn.execute(
