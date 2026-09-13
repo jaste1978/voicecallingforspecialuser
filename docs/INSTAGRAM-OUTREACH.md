@@ -71,10 +71,10 @@ Progress: 25 Tier-1 accounts followed on 13 Sep 2026 (account now follows 27). D
 
 Also worth a separate, personal note from Tejas (not a template): Sukanya Bhan (NGO, met in person, commented on LinkedIn), Atulyakala / Smriti Nagpal (ISL interpreter, founder).
 
-## DM templates (rotate; Hindi for community pages, English for orgs and brands)
+## DM templates (all English; rotate A/B/C so they do not read as spam)
 
-**A. Community page / creator (Hinglish)**
-Namaste. Main Tejas hoon, SunoSathi ka founder. Humne deaf aur hard of hearing logon ke liye ek app banaya hai: apne hi mobile number par aaya call live text mein padhiye, aur awaaz, typing ya picture se jawab dijiye. Hindi, Gujarati, English. Abhi free pilot chal raha hai. Aapki community ke liye useful ho sakta hai. Ek baar dekh kar bataiye kya sochte hain? Follow karenge to bahut madad hogi.
+**A. Community page / creator (English)**
+Namaste. I am Tejas, founder of SunoSathi. We have built an app for deaf and hard of hearing people in India. A call to your own mobile number arrives as live text on the screen, and you reply with your voice, by typing, or by tapping a picture. Hindi, Gujarati and English work today. It is free during the pilot. I think it can help your community. Would you take a look and tell me what you think? A follow from you would help us reach the people who need it.
 
 **B. NGO / association (English)**
 Namaste. I am Tejas, founder of SunoSathi. We built a captioned phone for deaf and hard of hearing people in India: calls to their own number arrive as live text, and they reply by voice, typing or picture tiles. Hindi, Gujarati and English today. It is free during the pilot. Would your members like to try it? I would value your feedback, and a follow or a share would help us reach the people who need it.
