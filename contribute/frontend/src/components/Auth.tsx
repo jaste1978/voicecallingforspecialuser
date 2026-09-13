@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { login, register } from '../lib/api'
+import * as turnstile from '../lib/turnstile'
 import type { Auth as AuthResult } from '../lib/api'
 import type { Lang } from '../lib/device'
 
@@ -78,9 +79,10 @@ export default function Auth({ lang, startOn = 'join', onDone, onBack }: Props) 
     setBusy(true)
     setError('')
     try {
+      const token = joining ? await turnstile.token() : ''
       onDone(joining
         ? await register({ name: name.trim(), identifier: identifier.trim(), password,
-                           note: note.trim() })
+                           note: note.trim(), ...(token ? { turnstile: token } : {}) })
         : await login({ identifier: identifier.trim(), password }))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))

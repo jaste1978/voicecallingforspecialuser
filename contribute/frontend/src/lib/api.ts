@@ -111,6 +111,7 @@ export const getConfig = () => json<ServerConfig>('/api/health')
 
 export const register = (body: {
   name: string; identifier: string; password: string; note: string
+  turnstile?: string
 }) => json<Auth>('/api/auth/register', { method: 'POST', body: JSON.stringify(body) })
 
 export const login = (body: { identifier: string; password: string }) =>

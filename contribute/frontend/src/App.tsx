@@ -87,7 +87,14 @@ export default function App() {
   // Resume wherever this browser left off — a contributor who recorded
   // yesterday should land on a phrase, not on a sign-in form.
   useEffect(() => {
-    getConfig().then((c) => turnstile.configure(c.turnstile_sitekey)).catch(() => {})
+    getConfig().then((c) => {
+      turnstile.configure(c.turnstile_sitekey)
+      // Mount right away: register and sign-in need a token before the
+      // record screen ever shows, and the host div is always in the tree.
+      if (turnstile.enabled() && turnstileHost.current) {
+        turnstile.mount(turnstileHost.current).catch(() => {})
+      }
+    }).catch(() => {})
     getMe()
       .then(async ({ user: u }) => {
         setUser(u)
