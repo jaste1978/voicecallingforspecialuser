@@ -12,9 +12,9 @@ export type Lang = 'hi' | 'en'
 
 export function loadLang(): Lang {
   try {
-    return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'hi'
+    return localStorage.getItem(LANG_KEY) === 'hi' ? 'hi' : 'en'
   } catch {
-    return 'hi' // private mode, or storage blocked; a default is fine here
+    return 'en' // private mode, or storage blocked; a default is fine here
   }
 }
 
