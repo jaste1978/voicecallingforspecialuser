@@ -5,34 +5,36 @@ from each profile on 13 Sep 2026. Account is new (2 followers), so: follow 25/da
 DM 10/day, vary the wording, never paste links in the first message to strangers
 (Instagram filters them). Track status in the last column.
 
+Progress: 25 Tier-1 accounts followed on 13 Sep 2026 (account now follows 27). DMs not yet sent.
+
 ## Tier 1 — large reach (follow + DM first)
 | # | Handle | Followers | What they are | Status |
 |---|---|---|---|---|
-| 1 | @ishnews | 158K | ISH News, sign-language news channel (India Signing Hands) | |
-| 2 | @deafenabledfoundation | 79K | Deaf Enabled Foundation, Hyderabad NGO | |
-| 3 | @kiran_deaf_007 | 69K | Deaf creator, India | |
-| 4 | @noida_deaf_society | 36K | Noida Deaf Society, training and jobs | |
-| 5 | @indiasigninghands | 32K | India Signing Hands, ISL org | |
-| 6 | @youleanmeup | 31K | India Morse, deaf fitness creator | |
-| 7 | @india_deaf_matrimonial | 24K | Deaf matrimonial community | |
-| 8 | @islrtcofficial | 18K | ISLRTC, govt ISL research and training centre | |
-| 9 | @mahima_deaf_011 | 15K | ISL creator | |
-| 10 | @aifdeaf | 15K | All India Federation of the Deaf | |
-| 11 | @deaf_talks | 15K | Deaf Talks, community page | |
-| 12 | @deaf_dyrea | 10K | Deaf creator | |
-| 13 | @signassistive.app | 8.9K | SignAssistive, ISL translator app (peer, possible partner) | |
-| 14 | @deaf_india_tourism | 7.7K | Deaf India Tourism | |
-| 15 | @yadeaf | 7.5K | Yuva Association of the Deaf | |
-| 16 | @delhidsad | 7.3K | Deaf Sports Delhi | |
-| 17 | @deaftv | 5.7K | Deaf TV Show, ISL entertainment | |
-| 18 | @indian_sign_language | 5.6K | ISL learning page | |
-| 19 | @aifdys | 5.1K | All India Federation of the Deaf, youth | |
-| 20 | @deafjobsindia | 4.8K | Deaf Jobs India | |
-| 21 | @aiscd1965 | 4.1K | All India Sports Council of the Deaf | |
-| 22 | @kdyfdeaf | 3.7K | Kerala Deaf Youth Forum | |
-| 23 | @deafmumbai | 2.2K | Deaf Mumbai community | |
-| 24 | @indiansignlanguage__ | 1.8K | ISL page | |
-| 25 | @dfdwdelhi | 1.8K | Delhi Foundation of Deaf Women | |
+| 1 | @ishnews | 158K | ISH News, sign-language news channel (India Signing Hands) | Followed 13 Sep |
+| 2 | @deafenabledfoundation | 79K | Deaf Enabled Foundation, Hyderabad NGO | Followed 13 Sep |
+| 3 | @kiran_deaf_007 | 69K | Deaf creator, India | Followed 13 Sep |
+| 4 | @noida_deaf_society | 36K | Noida Deaf Society, training and jobs | Followed 13 Sep |
+| 5 | @indiasigninghands | 32K | India Signing Hands, ISL org | Followed 13 Sep |
+| 6 | @youleanmeup | 31K | India Morse, deaf fitness creator | Followed 13 Sep |
+| 7 | @india_deaf_matrimonial | 24K | Deaf matrimonial community | Followed 13 Sep |
+| 8 | @islrtcofficial | 18K | ISLRTC, govt ISL research and training centre | Followed 13 Sep |
+| 9 | @mahima_deaf_011 | 15K | ISL creator | Followed 13 Sep |
+| 10 | @aifdeaf | 15K | All India Federation of the Deaf | Followed 13 Sep |
+| 11 | @deaf_talks | 15K | Deaf Talks, community page | Followed 13 Sep |
+| 12 | @deaf_dyrea | 10K | Deaf creator | Followed 13 Sep |
+| 13 | @signassistive.app | 8.9K | SignAssistive, ISL translator app (peer, possible partner) | Followed 13 Sep |
+| 14 | @deaf_india_tourism | 7.7K | Deaf India Tourism | Followed 13 Sep |
+| 15 | @yadeaf | 7.5K | Yuva Association of the Deaf | Followed 13 Sep |
+| 16 | @delhidsad | 7.3K | Deaf Sports Delhi | Followed 13 Sep |
+| 17 | @deaftv | 5.7K | Deaf TV Show, ISL entertainment | Followed 13 Sep |
+| 18 | @indian_sign_language | 5.6K | ISL learning page | Followed 13 Sep |
+| 19 | @aifdys | 5.1K | All India Federation of the Deaf, youth | Followed 13 Sep |
+| 20 | @deafjobsindia | 4.8K | Deaf Jobs India | Followed 13 Sep |
+| 21 | @aiscd1965 | 4.1K | All India Sports Council of the Deaf | Followed 13 Sep |
+| 22 | @kdyfdeaf | 3.7K | Kerala Deaf Youth Forum | Followed 13 Sep |
+| 23 | @deafmumbai | 2.2K | Deaf Mumbai community | Followed 13 Sep |
+| 24 | @indiansignlanguage__ | 1.8K | ISL page | Followed 13 Sep |
+| 25 | @dfdwdelhi | 1.8K | Delhi Foundation of Deaf Women | Followed 13 Sep |
 
 ## Tier 2 — regional and niche
 | # | Handle | Followers | What they are | Status |
