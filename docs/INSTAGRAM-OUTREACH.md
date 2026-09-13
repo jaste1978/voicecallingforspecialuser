@@ -5,13 +5,27 @@ from each profile on 13 Sep 2026. Account is new (2 followers), so: follow 25/da
 DM 10/day, vary the wording, never paste links in the first message to strangers
 (Instagram filters them). Track status in the last column.
 
-Progress: 25 Tier-1 accounts followed on 13 Sep 2026 (account now follows 27). DMs not yet sent.
+Progress: 25 Tier-1 accounts followed on 13 Sep 2026 (account now follows 27).
+
+DM status 13 Sep: only the FIRST DM (to @ishnews) was delivered. The second
+(@deafenabledfoundation) shows Instagram's red "failed to send" mark; later ones
+never left the composer. This is Instagram's new-account protection: a fresh
+account with 2 followers cannot message accounts that do not follow it back
+beyond the first one or two. Do NOT keep retrying from @sunosathiapp; it leads to
+an action block.
+
+Plan B (recommended): send the DMs from Tejas's personal Instagram, which has age
+and followers, using templates A/B/C and mentioning @sunosathiapp. Plan C: wait
+1-2 weeks while @sunosathiapp posts daily and gains followers, then resume 5/day.
+Meanwhile use email/LinkedIn for the organisations: ISLRTC, AIFD, Noida Deaf
+Society, Deaf Enabled Foundation and India Signing Hands all publish contact
+emails on their sites.
 
 ## Tier 1 — large reach (follow + DM first)
 | # | Handle | Followers | What they are | Status |
 |---|---|---|---|---|
-| 1 | @ishnews | 158K | ISH News, sign-language news channel (India Signing Hands) | Followed 13 Sep |
-| 2 | @deafenabledfoundation | 79K | Deaf Enabled Foundation, Hyderabad NGO | Followed 13 Sep |
+| 1 | @ishnews | 158K | ISH News, sign-language news channel (India Signing Hands) | Followed + DM sent 13 Sep |
+| 2 | @deafenabledfoundation | 79K | Deaf Enabled Foundation, Hyderabad NGO | Followed 13 Sep; DM FAILED (blocked) |
 | 3 | @kiran_deaf_007 | 69K | Deaf creator, India | Followed 13 Sep |
 | 4 | @noida_deaf_society | 36K | Noida Deaf Society, training and jobs | Followed 13 Sep |
 | 5 | @indiasigninghands | 32K | India Signing Hands, ISL org | Followed 13 Sep |
