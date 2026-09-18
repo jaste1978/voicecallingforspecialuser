@@ -32,22 +32,20 @@ export default function SettingsTab() {
   }, [])
 
   const [tgCode, setTgCode] = useState('')
+  const [tgUrl, setTgUrl] = useState('')
   const [tgCopied, setTgCopied] = useState(false)
+  const [tgChecking, setTgChecking] = useState(false)
 
   async function openTelegramLink() {
     try {
       const d = await (await authFetch('/api/telegram/link')).json()
       if (!d.url) return
-      // show the always-works manual path; old app shells can't reliably
-      // hand https://t.me over to the Telegram app
-      const code = new URL(d.url).searchParams.get('start') || ''
-      setTgCode(code)
-      // still try the direct route — works in browsers and new shells
-      const w = window.open(d.url, '_blank')
-      if (!w && !navigator.userAgent.includes('wv')) {
-        // plain browser with popups blocked
-        window.location.href = d.url
-      }
+      // Reveal the tappable deep link + copy-paste fallback. The <a> in the
+      // panel is the reliable handoff (browsers + native shells intercept
+      // t.me links); window.open is a silent no-op inside a WebView, so we
+      // do NOT rely on it here.
+      setTgUrl(d.url)
+      setTgCode(new URL(d.url).searchParams.get('start') || '')
     } catch { /* ignore */ }
   }
 
@@ -55,6 +53,18 @@ export default function SettingsTab() {
     void navigator.clipboard?.writeText(`/start ${tgCode}`)
     setTgCopied(true)
     setTimeout(() => setTgCopied(false), 2500)
+  }
+
+  // After the user taps the bot's Start, let them confirm here without a
+  // full reload — re-checks the server for the fresh linked state.
+  async function recheckTgLinked() {
+    setTgChecking(true)
+    try {
+      const d = await (await authFetch('/api/telegram/link')).json()
+      if (d.linked) { setTgLinked(true); setTgCode(''); setTgUrl('') }
+    } catch { /* ignore */ } finally {
+      setTgChecking(false)
+    }
   }
 
   useEffect(() => {
@@ -205,6 +215,16 @@ export default function SettingsTab() {
         <div className="setting-block">
           <h3>Telegram से जोड़िए · Link Telegram</h3>
           <p className="idle-hint" style={{ textAlign: 'left' }}>
+            सबसे आसान तरीका · Easiest way — tap the button, then tap
+            <strong> Start</strong> in Telegram:
+          </p>
+          <a className="bigbtn start" href={tgUrl} target="_blank" rel="noreferrer"
+            style={{ display: 'flex', justifyContent: 'center', marginTop: 10,
+              textDecoration: 'none' }}>
+            ✈️ Open Telegram &amp; link
+          </a>
+          <p className="idle-hint" style={{ textAlign: 'left', marginTop: 14 }}>
+            काम नहीं किया? · Didn't open? Do it by hand:<br />
             1️⃣ <strong>Telegram</strong> app खोलिए<br />
             2️⃣ Search: <strong>@sunosathibot</strong><br />
             3️⃣ यह message भेजिए · send this message:
@@ -219,9 +239,15 @@ export default function SettingsTab() {
               {tgCopied ? '✓ Copied' : 'Copy'}
             </button>
           </div>
-          <p className="idle-hint" style={{ textAlign: 'left', marginTop: 8 }}>
-            Bot का ✅ reply आते ही missed calls की सूचना Telegram पर मिलेगी।
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
+            <button className="promptbtn" style={{ flex: '0 0 auto' }}
+              onClick={() => void recheckTgLinked()} disabled={tgChecking}>
+              {tgChecking ? 'Checking…' : "I've done it — check"}
+            </button>
+            <span className="idle-hint" style={{ margin: 0 }}>
+              Bot का ✅ reply आते ही हो जाएगा।
+            </span>
+          </div>
         </div>
       )}
       <button className="home-btn" onClick={() => navigate('/help')}>
