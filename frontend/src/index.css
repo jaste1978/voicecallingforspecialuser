@@ -32,6 +32,11 @@ body,
     'Noto Sans Devanagari', 'Noto Sans Gujarati', sans-serif;
   font-size: 16px;
   line-height: 1.4;
+  /* Native-app feel: allow single-finger scroll/tap, disable pinch-zoom and
+     double-tap-zoom. Pairs with the gesture guards in index.html. */
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 a {
