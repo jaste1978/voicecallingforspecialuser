@@ -22,6 +22,7 @@ import CostsPage from './pages/CostsPage'
 import StartPage from './pages/StartPage'
 import HomePage from './pages/HomePage'
 import HelpPage from './pages/HelpPage'
+import SetupPage from './pages/SetupPage'
 import SupportPage from './pages/SupportPage'
 import TabBar from './components/TabBar'
 
@@ -30,6 +31,7 @@ const TITLES: Record<string, string> = {
   '/calls': 'Calls',
   '/call': 'Calls',
   '/help': 'Help & FAQ',
+  '/setup': 'Set up your calls',
   '/support': 'Contact us',
   '/contacts': 'Contacts',
   '/settings': 'Settings',
@@ -127,6 +129,7 @@ export default function App() {
           <Route path="/calls" element={<CallPage />} />
           <Route path="/call" element={<CallPage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route path="/setup" element={<SetupPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/settings" element={<SettingsTab />} />
