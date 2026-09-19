@@ -139,4 +139,46 @@ async def ring_push(user_id: int, caller: str, call_uuid: str = "",
     return sent
 
 
+async def notify(user_id: int, title: str, body: str, kind: str = "info") -> int:
+    """A plain (non-ring) alert to every iOS device of this user — used for
+    things like 'someone called you back'. Returns pushes accepted."""
+    if not configured():
+        logger.info("apns not configured — would notify user %s: %s", user_id, title)
+        return 0
+    tokens = tokens_for(user_id)
+    if not tokens:
+        return 0
+    payload = {
+        "aps": {
+            "alert": {"title": title, "body": body},
+            "sound": "default",
+            "interruption-level": "active",
+        },
+        "kind": kind,
+    }
+    sent = 0
+    async with httpx.AsyncClient(http2=True, timeout=10) as client:
+        for token in tokens:
+            try:
+                headers = {
+                    "authorization": f"bearer {_bearer()}",
+                    "apns-topic": TOPIC,
+                    "apns-push-type": "alert",
+                    "apns-priority": "10",
+                }
+                r = await client.post(
+                    f"{HOST}/3/device/{token}", json=payload, headers=headers,
+                )
+                if r.status_code == 200:
+                    sent += 1
+                elif r.status_code == 410 or "BadDeviceToken" in r.text:
+                    _drop(token)
+                else:
+                    logger.warning("apns notify %s: %s %s",
+                                   token[:12], r.status_code, r.text[:120])
+            except Exception:
+                logger.exception("apns notify error")
+    return sent
+
+
 init()

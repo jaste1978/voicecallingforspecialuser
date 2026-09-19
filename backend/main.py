@@ -60,6 +60,7 @@ app.include_router(vobiz_router)
 # (calls/contacts with no user_id) to the first admin.
 import contacts as _contacts  # noqa: E402,F401  (creates table on import)
 import number_map as _number_map  # noqa: E402,F401  (creates table on import)
+import callbacks as _callbacks  # noqa: E402,F401  (creates table on import)
 import history as _history  # noqa: E402
 
 _admin_id = auth.first_admin_id()
@@ -78,9 +79,20 @@ _version_file = Path(__file__).resolve().parent.parent / "VERSION"
 APP_VERSION = _version_file.read_text().strip() if _version_file.is_file() else "dev"
 
 
+def _min_shell() -> dict:
+    """Oldest native app version still allowed in, per platform. Anything
+    older gets the blocking "Update required" screen. Unset = no forcing.
+    RAISE ONLY AFTER the new build is live in that store — otherwise users
+    are locked out with nothing to update to."""
+    return {
+        "ios": os.environ.get("MIN_SHELL_IOS", "").strip(),
+        "android": os.environ.get("MIN_SHELL_ANDROID", "").strip(),
+    }
+
+
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "version": APP_VERSION}
+    return {"ok": True, "version": APP_VERSION, "min_shell": _min_shell()}
 
 
 @app.on_event("startup")
@@ -379,6 +391,24 @@ async def api_telegram_webhook(payload: dict, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/callbacks")
+async def api_callbacks(request: Request):
+    """People who dialed the shared number back, so the app can show a
+    'someone called you back' card — the channel that reaches everyone."""
+    import callbacks
+    user = _require_user(request)
+    return {"callbacks": callbacks.list_for(user["id"]),
+            "unseen": callbacks.unseen_count(user["id"])}
+
+
+@app.post("/api/callbacks/seen")
+async def api_callbacks_seen(payload: dict, request: Request):
+    import callbacks
+    user = _require_user(request)
+    callbacks.mark_seen(user["id"], payload.get("id"))
+    return {"ok": True}
+
+
 @app.post("/api/push/register")
 async def api_push_register(payload: dict, request: Request):
     """The native shell registers its APNs/FCM device token so calls can
@@ -559,6 +589,58 @@ async def api_waitlist_add(payload: dict, request: Request):
         subject, html = emailer.waitlist_welcome(name, os_pref)
         if await emailer.send(email, subject, html):
             waitlist.mark_emailed(row_id)
+    return {"ok": True}
+
+
+@app.post("/api/presence")
+async def api_presence(payload: dict, request: Request):
+    """Which of these Sathi IDs would ring right now. Online = the app is
+    open OR the native background ring service is connected."""
+    _require_user(request)
+    from call_session import manager
+
+    out: dict[str, str] = {}
+    for raw in (payload.get("handles") or [])[:50]:
+        handle = str(raw).lstrip("@").strip().lower()[:40]
+        user = auth.by_handle(handle) if handle else None
+        if user is None:
+            continue
+        line = manager.lines.get(user["id"])
+        if line is None or not (line.browser_sockets or line.ring_sockets):
+            out[handle] = "offline"
+        elif line.call and line.call.state != "ended":
+            out[handle] = "busy"
+        else:
+            out[handle] = "online"
+    return {"presence": out}
+
+
+@app.post("/api/support")
+async def api_support(payload: dict, request: Request):
+    """In-app support message or call feedback from a signed-in user.
+    Login is the human check (no Turnstile), and the alert carries the
+    user's real email / number / Sathi ID so we can actually reply."""
+    user = _require_user(request)
+    import html, number_map, telegram_notify, waitlist
+
+    msg = (payload.get("message") or "").strip()
+    kind = "feedback" if payload.get("kind") == "feedback" else "support"
+    rating = payload.get("rating") if payload.get("rating") in ("up", "down") else ""
+    if not msg and not rating:
+        return Response(status_code=422)
+    own = number_map.number_for_user(user["id"])
+    phone = _fmt_number(own) if own else ""
+    handle = auth.ensure_handle(user["id"])
+    name = user.get("name") or "App user"
+    stored = (f"[{'👍' if rating == 'up' else '👎'}] " if rating else "") + msg
+    waitlist.add(name, user["email"], kind, f"@{handle}", stored, phone)
+    logger.info("%s from user %s (%s)", kind, user["id"], rating or "-")
+    head = ("🆘 <b>Support message</b>" if kind == "support"
+            else f"{'👍' if rating == 'up' else '👎' if rating == 'down' else '💬'} <b>Call feedback</b>")
+    await telegram_notify.send(
+        f"{head}\n{html.escape(name)} &lt;{html.escape(user['email'])}&gt; · @{handle}"
+        + (f"\n📱 {phone}" if phone else "")
+        + (f"\n💬 {html.escape(msg[:600])}" if msg else ""))
     return {"ok": True}
 
 

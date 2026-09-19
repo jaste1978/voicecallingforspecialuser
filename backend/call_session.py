@@ -224,6 +224,9 @@ class Call:
         # Sathi-to-Sathi: the other participant's line. When set, audio and
         # text route in-process to the peer instead of over Vobiz telephony.
         self.peer_line: Optional["UserLine"] = None
+        # Announcement-only calls (someone dialing the shared number back):
+        # play this prompt to the caller, then hang up. No user is rung.
+        self.announce: Optional[str] = None
         self.trace.event("incoming_call_webhook", caller=from_number)
 
 
@@ -515,6 +518,9 @@ class UserLine:
     async def vobiz_hangup_event(self, reason: str) -> None:
         call = self.call
         if call and call.state != "ended":
+            if call.announce:
+                await self._end_announce(call)
+                return
             await self.end_call(reason or "call ended")
 
     # ---------- vobiz side ----------
@@ -625,17 +631,64 @@ class UserLine:
         fmt = start.get("mediaFormat", {})
         call.trace.event("vobiz_stream_started", format=str(fmt))
         logger.info("vobiz stream %s started for call %s (%s)", stream_id, call_id, fmt)
+        if call.announce:
+            await self._play_announcement(call)
+            return
         if call.direction == "out" and call.state in ("dialing", "pending"):
             # user initiated this call; no accept step needed
             await self._activate(call)
         elif call.state == "pending":
             await self._ring(call)
 
+    async def _play_announcement(self, call: Call) -> None:
+        """Speak the callback message to the caller, then hang up. No history,
+        no missed-call alert — the user was already notified at detection."""
+        import tts_prompts
+        call.state = "active"  # so a duplicate stream/hangup no-ops
+        try:
+            pcm = await tts_prompts.get_prompt_pcm(call.announce or "")
+            if pcm and call.vobiz_ws and call.stream_id:
+                chunk = 3200  # 100ms of 16kHz 16-bit mono
+                for i in range(0, len(pcm), chunk):
+                    if not (call.vobiz_ws and call.stream_id):
+                        break
+                    payload = base64.b64encode(pcm[i:i + chunk]).decode("ascii")
+                    try:
+                        await call.vobiz_ws.send_text(json.dumps({
+                            "event": "playAudio",
+                            "streamId": call.stream_id,
+                            "media": {"contentType": "audio/x-l16",
+                                      "sampleRate": 16000, "payload": payload},
+                        }))
+                    except Exception:
+                        break
+                    await asyncio.sleep(0.1)
+            await asyncio.sleep(0.4)  # let the last frames drain
+        except Exception:
+            logger.exception("announcement playback failed")
+        await self._end_announce(call)
+
+    async def _end_announce(self, call: Call) -> None:
+        if call.state == "ended":
+            return
+        call.state = "ended"
+        self.registry.mark_ended(call.call_uuid)
+        if call.vobiz_ws:
+            try:
+                if call.stream_id:
+                    await call.vobiz_ws.send_text(json.dumps({
+                        "event": "stop", "streamId": call.stream_id}))
+                await call.vobiz_ws.close()
+            except Exception:
+                pass
+        self.call = None
+        logger.info("callback announcement finished for %s", call.call_uuid)
+
     async def vobiz_media(self, payload_b64: str) -> None:
         """Caller audio frame."""
         call = self.call
-        if call is None or call.state != "active":
-            return  # ignore audio while ringing
+        if call is None or call.state != "active" or call.announce:
+            return  # ignore audio while ringing / during an announcement
         pcm = base64.b64decode(payload_b64)
         call.recorder.write("caller", pcm)
         if call.gate is not None:
@@ -878,6 +931,7 @@ class CallManager:
     single-tenant behaviour is preserved."""
 
     ENDED_TTL_S = 600
+    ANNOUNCE_UID = -1  # reserved: throwaway lines that only greet a callback
 
     def __init__(self) -> None:
         self.lines: dict[int, UserLine] = {}
@@ -923,14 +977,56 @@ class CallManager:
             line = self.line(user_id)
             logger.info("call %s routed to user %s (fwd=%s)",
                         call_uuid, user_id, forwarded_from or "-")
+            await line.register_pending(call_uuid, from_number, to_number)
+            return
+        # Unmatched: nobody's number matched. This is almost always someone
+        # calling the shared number back after seeing it as a missed call
+        # (all outbound shows the shared DID as caller ID). Greet them and
+        # notify whichever user recently called them — never ring the admin.
+        await self.handle_callback(call_uuid, from_number, to_number)
+
+    async def handle_callback(
+        self, call_uuid: str, from_number: str, to_number: str,
+    ) -> None:
+        import callbacks
+        cb_user = callbacks.who_called(from_number)
+        prompt = "callback_known" if cb_user else "callback_unknown"
+        if cb_user:
+            callbacks.record(cb_user, from_number)
+            asyncio.ensure_future(self._notify_callback(cb_user, from_number))
+            logger.info("callback on shared number from %s -> notify user %s",
+                        from_number, cb_user)
         else:
-            line = self.default_line()
-            if line is None:
-                logger.warning("call %s: no user to route to — dropping", call_uuid)
-                return
-            logger.info("call %s unmatched (fwd=%s to=%s) — default line user %s",
-                        call_uuid, forwarded_from or "-", to_number, line.user_id)
-        await line.register_pending(call_uuid, from_number, to_number)
+            logger.info("callback on shared number from unknown %s", from_number)
+        # A throwaway line just to play the message and hang up. Not added to
+        # self.lines, so it never collides with a real user's calls.
+        line = UserLine(self.ANNOUNCE_UID, self)
+        line.call = Call(call_uuid, from_number, to_number)
+        line.call.announce = prompt
+        self.bind_uuid(call_uuid, line)
+
+    async def _notify_callback(self, user_id: int, caller_number: str) -> None:
+        """Tell the user, on every channel, that someone returned their call."""
+        pretty = caller_number if caller_number.startswith("+") else caller_number
+        try:
+            import telegram_link
+            import telegram_notify
+            chat = telegram_link.chat_for(user_id)
+            if chat:
+                await telegram_notify.send(
+                    f"📞 <b>Someone called you back</b>\n{pretty} tried to reach "
+                    f"you on SunoSathi — call them back from the app.",
+                    chat_id=chat)
+        except Exception:
+            logger.exception("callback telegram notify failed")
+        try:
+            import apns
+            await apns.notify(
+                user_id, "📞 Someone called you back",
+                f"{pretty} tried to reach you — tap to call back.",
+                kind="callback")
+        except Exception:
+            logger.exception("callback push failed")
 
     async def start_sathi_call(self, caller_line: "UserLine", handle: str) -> None:
         """App-to-app call addressed by Sathi ID — no phone number, no
