@@ -990,7 +990,7 @@ class CallManager:
     ) -> None:
         import callbacks
         cb_user = callbacks.who_called(from_number)
-        prompt = "callback_known" if cb_user else "callback_unknown"
+        prompt = "callback"  # one message for everyone, known or stranger
         if cb_user:
             callbacks.record(cb_user, from_number)
             asyncio.ensure_future(self._notify_callback(cb_user, from_number))
