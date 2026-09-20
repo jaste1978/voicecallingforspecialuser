@@ -2,13 +2,26 @@
 
 Synthesized via the active TTS provider (see providers.py), cached per
 provider as raw 16kHz pcm_s16le ready for Vobiz playAudio frames.
+
+Some prompts ship as a fixed pre-rendered file instead of runtime TTS —
+the callback greeting is voiced by Shreya (a premium voice) and never
+changes, so a bundled 16kHz mono pcm_s16le asset guarantees the exact
+delivery with no per-call cost or TTS dependency.
 """
 
 import logging
+import os
 
 import providers
 
 logger = logging.getLogger("tts_prompts")
+
+_ASSET_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
+# name -> bundled raw pcm_s16le @16kHz mono. Preferred over runtime TTS.
+PROMPT_AUDIO_FILES = {
+    "callback": os.path.join(_ASSET_DIR, "callback_hi.pcm"),
+}
 
 PROMPTS = {
     "slow_down": "कृपया थोड़ा धीरे बोलिए, ताकि मैं आपकी बात अच्छे से समझ सकूँ। धन्यवाद।",
@@ -21,15 +34,28 @@ PROMPTS = {
                 "वे आपसे संपर्क करेंगे।",
 }
 
-# Per-prompt voice override; falls back to the TTS default when absent.
-PROMPT_SPEAKERS = {
-    "callback": "rahul",
-}
+# Per-prompt voice override for runtime TTS; falls back to the default.
+PROMPT_SPEAKERS: dict[str, str] = {}
 
 _cache: dict[str, bytes] = {}
 
 
 async def get_prompt_pcm(name: str) -> bytes | None:
+    # A bundled audio file wins — used for the fixed callback greeting.
+    path = PROMPT_AUDIO_FILES.get(name)
+    if path:
+        if name not in _cache:
+            try:
+                with open(path, "rb") as f:
+                    _cache[name] = f.read()
+                logger.info("prompt '%s' loaded from asset (%d bytes)",
+                            name, len(_cache[name]))
+            except OSError:
+                logger.warning("prompt asset missing for '%s' (%s) — TTS fallback",
+                               name, path)
+        if name in _cache:
+            return _cache[name]
+
     if name not in PROMPTS:
         return None
     tts = providers.get_tts()
