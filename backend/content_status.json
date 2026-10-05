@@ -1,0 +1,169 @@
+{
+  "generated": "2026-09-24",
+  "site": "https://sunosathi.com",
+  "reviewer": "Tejas Langalia",
+  "summary": {
+    "published": 1,
+    "drafts": 0,
+    "queued": 8,
+    "tripwires": 5,
+    "open_items": 3
+  },
+  "posts": [
+    {
+      "slug": "how-deaf-people-can-make-phone-calls-in-india",
+      "title": "How Deaf and Hard-of-Hearing People Can Make Phone Calls in India (2026)",
+      "url": "https://sunosathi.com/blog/how-deaf-people-can-make-phone-calls-in-india",
+      "state": "published",
+      "publish_date": "2026-09-23",
+      "word_count": 1905,
+      "primary_keyword": "how can a deaf person answer a phone call in India",
+      "meta_title": "Deaf Phone Calls in India: Every Option Compared",
+      "meta_title_len": 48,
+      "meta_description_len": 159,
+      "sources": 8,
+      "internal_links": 5,
+      "images": [
+        {
+          "file": "deaf-phone-call-options-india-comparison.png",
+          "role": "featured",
+          "alt": "Comparison of seven ways deaf and hard-of-hearing people in India can make phone calls, scored on keeping your own number, privacy, and round-the-clock availability",
+          "type": "status table graphic"
+        },
+        {
+          "file": "captioned-call-own-number-how-it-works.png",
+          "role": "inline",
+          "alt": "Diagram showing a caller dialling a normal mobile number, the call forwarding into a captioning app, and the deaf user replying by voice, typing or picture tiles",
+          "type": "process diagram"
+        },
+        {
+          "file": "deaf-employment-india-census-2011.png",
+          "role": "inline",
+          "alt": "Chart showing that of 13.4 million working-age Indians with a hearing disability, only 26.1 percent were in non-marginal employment per Census 2011",
+          "type": "hero number with single divided bar"
+        }
+      ],
+      "research": [
+        "competitors.md",
+        "content-brief.md",
+        "geo-analysis.md",
+        "keyword-clusters.md",
+        "page-rylo.md"
+      ],
+      "checks_passed": 42,
+      "checks_open": 3,
+      "open_items": [
+        "Published — files are installed in the repo and awaiting Tejas's review; live only once the PR is merged and Railway rebuilds",
+        "Baseline AI-citation check not run — no connector to ChatGPT/Gemini/ Perplexity in this session. Six verbatim prompts are written out in research/geo-analysis.md; run them manually before and after publishing.",
+        "Zero third-party mentions of SunoSathi exist. Content cannot manufacture corroboration; this is an outreach task, not a writing task."
+      ]
+    }
+  ],
+  "queue": [
+    {
+      "n": "1",
+      "topic": "How deaf & hard-of-hearing people can make phone calls in India (2026) — every option compared",
+      "intent": "Informational, comparison",
+      "audience": "User + family",
+      "why": "Head query, zero adequate Indian page, table-shaped = AEO/GEO magnet",
+      "risk": "—",
+      "state": "written"
+    },
+    {
+      "n": "2",
+      "topic": "ISLRTC Video Relay Service: what it is, how to use it, and where it stops",
+      "intent": "Informational",
+      "audience": "User + NGO",
+      "why": "Official service with poor documentation; earns trust by being fair to it",
+      "risk": "—",
+      "state": "planned"
+    },
+    {
+      "n": "3",
+      "topic": "Keeping your own number: what `**21*…#` call forwarding actually does",
+      "intent": "Technical how-to",
+      "audience": "Family installer",
+      "why": "Unique mechanism, near-zero competition",
+      "risk": "⚠ `/guide`",
+      "state": "planned"
+    },
+    {
+      "n": "4",
+      "topic": "Deaf employment in India and the phone call nobody mentions",
+      "intent": "Thought leadership",
+      "audience": "NGO, employers, media",
+      "why": "Census 2011: 13.4M with hearing disability aged 15–59, only 26.1% employed",
+      "risk": "—",
+      "state": "planned"
+    },
+    {
+      "n": "5",
+      "topic": "Live Transcribe vs Live Caption vs captioned calling — for Indian languages",
+      "intent": "Comparison",
+      "audience": "User + family",
+      "why": "Corrects a genuine, widespread misconception",
+      "risk": "—",
+      "state": "planned"
+    },
+    {
+      "n": "6",
+      "topic": "बहरे लोग फ़ोन पर बात कैसे करें — पूरी गाइड (Hindi original, not a translation)",
+      "intent": "Informational",
+      "audience": "User",
+      "why": "Hindi SERP is empty; brand is already bilingual",
+      "risk": "⚠ `/guide`",
+      "state": "planned"
+    },
+    {
+      "n": "7",
+      "topic": "For families: how to set up a captioned phone for your parent",
+      "intent": "Task",
+      "audience": "Family",
+      "why": "Family is often the actual installer and decision-maker",
+      "risk": "⚠ `/guide`",
+      "state": "planned"
+    },
+    {
+      "n": "8",
+      "topic": "Indian Sign Language: why a captioned phone is not a replacement for ISL",
+      "intent": "Positioning",
+      "audience": "NGO, interpreters",
+      "why": "Pre-empts the strongest community objection; credibility play",
+      "risk": "—",
+      "state": "planned"
+    }
+  ],
+  "tripwires": [
+    {
+      "id": "islrtc-vrs-hours",
+      "fact": "ISLRTC VRS is Mon–Fri 9am–5pm",
+      "breaks": "Any post stating VRS availability"
+    },
+    {
+      "id": "sunosathi-pilot-free",
+      "fact": "Free *during pilot*",
+      "breaks": "Every post; becomes wrong the day pricing launches"
+    },
+    {
+      "id": "sunosathi-languages-4",
+      "fact": "Hindi, Gujarati, English, Hinglish",
+      "breaks": "Any post listing supported languages"
+    },
+    {
+      "id": "india-no-ipcts",
+      "fact": "India has no FCC-style funded captioned-telephone scheme",
+      "breaks": "The comparison table's core claim"
+    },
+    {
+      "id": "live-transcribe-no-calls",
+      "fact": "Google Live Transcribe cannot caption phone calls",
+      "breaks": "Post #1 and #5"
+    }
+  ],
+  "geo_citations": [],
+  "notes": [
+    "No keyword-volume tool is connected — priorities are reasoned from SERP composition, not measured demand.",
+    "No ChatGPT/Gemini/Perplexity connector — GEO citation checks must be run manually.",
+    "sunosathi.com has no CMS. Publishing means committing HTML and rebuilding."
+  ]
+}

@@ -39,7 +39,8 @@
 ## Pages
 - https://sunosathi.com/ : product story, how it works, pilot signup
 - https://app.sunosathi.com/ : the app itself (for pilot users)
-- https://sunosathi.com/ios : iPhone testing instructions (Expo Go)
+- https://sunosathi.com/ios : iPhone install instructions (live on the App Store)
+- https://sunosathi.com/blog : articles on deaf access to phone calls in India
 
 ## Contact
 Pilot signups via the form at https://sunosathi.com/#pilot
