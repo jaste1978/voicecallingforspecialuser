@@ -40,6 +40,8 @@ def init() -> None:
             "ALTER TABLE users ADD COLUMN requested_number TEXT",
             # Sathi ID: app-to-app calling address, no phone number needed
             "ALTER TABLE users ADD COLUMN handle TEXT",
+            # phone OS captured at registration — flags Android testers
+            "ALTER TABLE users ADD COLUMN os TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -61,14 +63,16 @@ def create_user(email: str, password: str, name: str = "", role: str = "user") -
         return cur.lastrowid
 
 
-def register(email: str, password: str, name: str, number: str) -> int:
+def register(email: str, password: str, name: str, number: str,
+             os_pref: str = "") -> int:
     """Self sign-up: account exists but stays 'pending' until approved."""
     salt = secrets.token_bytes(16)
     with _conn() as conn:
         cur = conn.execute(
             "INSERT INTO users (email, name, role, status, requested_number,"
-            " pw_salt, pw_hash) VALUES (?, ?, 'user', 'pending', ?, ?, ?)",
-            (email.strip().lower(), name, number, salt, _hash(password, salt)),
+            " os, pw_salt, pw_hash) VALUES (?, ?, 'user', 'pending', ?, ?, ?, ?)",
+            (email.strip().lower(), name, number, os_pref[:12], salt,
+             _hash(password, salt)),
         )
         return cur.lastrowid
 
@@ -233,7 +237,7 @@ def list_users() -> list[dict]:
     with _conn() as conn:
         rows = conn.execute(
             "SELECT id, email, name, role, created_at,"
-            " COALESCE(status, 'active') AS status, requested_number"
+            " COALESCE(status, 'active') AS status, requested_number, os"
             " FROM users ORDER BY id"
         ).fetchall()
     return [dict(r) for r in rows]

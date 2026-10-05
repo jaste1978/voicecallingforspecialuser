@@ -173,6 +173,7 @@ async def api_register(payload: dict, request: Request):
     email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
     number = "".join(c for c in (payload.get("number") or "") if c.isdigit())
+    os_pref = (payload.get("os") or "").strip().lower()
     if len(number) == 12 and number.startswith("91"):
         number = number[2:]
     if not name or "@" not in email or len(password) < 8 or len(number) != 10:
@@ -181,13 +182,16 @@ async def api_register(payload: dict, request: Request):
     if not otp.check(email, str(payload.get("otp") or "")):
         return JSONResponse({"error": "wrong or expired code"}, status_code=403)
     try:
-        uid = auth.register(email, password, name, number)
+        uid = auth.register(email, password, name, number, os_pref)
     except Exception:
         return JSONResponse({"error": "exists"}, status_code=409)
-    logger.info("registration: %s <%s> number=%s (pending approval)", name, email, number)
+    logger.info("registration: %s <%s> number=%s os=%s (pending approval)",
+                name, email, number, os_pref or "-")
+    os_line = ("\n🤖 Android — add to tester group!" if os_pref == "android"
+               else "\n🍎 iPhone" if os_pref == "iphone" else "")
     await telegram_notify.send(
         f"🆕 <b>New SunoSathi registration</b>\n{name} &lt;{email}&gt;\n"
-        f"Number: {number}\nApprove in Settings → Users &amp; Numbers."
+        f"Number: {number}{os_line}\nApprove in Settings → Users &amp; Numbers."
     )
     return {"ok": True, "id": uid}
 
