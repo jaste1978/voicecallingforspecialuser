@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch, authName, clearAuth, isAdmin } from '../lib/auth'
 import { pictureCaptionsEnabled, setPictureCaptions } from '../lib/pictureCaptions'
-import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, InboxIcon, PhoneIncomingIcon, MicIcon, RupeeIcon } from '../components/icons'
+import { BellIcon, BotIcon, CaptionsIcon, ChartIcon, DocIcon, InboxIcon, PhoneIncomingIcon, MicIcon, RupeeIcon } from '../components/icons'
 
 // Bulbul v3 speakers: the voice callers hear when you type-to-speak
 // (old v2 ids users saved — anushka, manisha… — are mapped server-side)
@@ -307,6 +307,13 @@ export default function SettingsTab() {
             <span>
               ISL Contributors
               <small>Approve signups from contribute.sunosathi.com</small>
+            </span>
+          </button>
+          <button className="home-btn" onClick={() => navigate('/content')}>
+            <span className="emoji icon"><DocIcon size={28} /></span>
+            <span>
+              Content &amp; SEO
+              <small>Blog posts, calendar &amp; content health</small>
             </span>
           </button>
         </>

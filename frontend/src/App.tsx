@@ -24,6 +24,7 @@ import HomePage from './pages/HomePage'
 import HelpPage from './pages/HelpPage'
 import SetupPage from './pages/SetupPage'
 import SupportPage from './pages/SupportPage'
+import ContentPage from './pages/ContentPage'
 import TabBar from './components/TabBar'
 
 const TITLES: Record<string, string> = {
@@ -43,6 +44,7 @@ const TITLES: Record<string, string> = {
   '/waitlist': 'Pilot Waitlist',
   '/users': 'Users & Numbers',
   '/costs': 'Costs',
+  '/content': 'Content & SEO',
 }
 
 // main tab roots — no back button, tab bar visible
@@ -50,6 +52,7 @@ const TAB_ROOTS = new Set(['/', '/calls', '/call', '/contacts', '/settings'])
 // sub-pages that belong to the Settings tab
 const SETTINGS_CHILDREN = new Set([
   '/captions', '/history', '/models', '/ringtone', '/monitor', '/waitlist', '/users', '/costs',
+  '/content',
 ])
 
 export default function App() {
@@ -142,6 +145,7 @@ export default function App() {
           <Route path="/contribute" element={<ContributePage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/costs" element={<CostsPage />} />
+          <Route path="/content" element={<ContentPage />} />
         </Routes>
       </div>
       <TabBar />
