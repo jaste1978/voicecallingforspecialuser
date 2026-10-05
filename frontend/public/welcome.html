@@ -467,38 +467,15 @@ footer .right{margin-left:auto}
 
 <section class="pilot" id="pilot"><div class="wrap">
   <h2>Join the pilot</h2>
-  <p class="sub">We're onboarding early users, families, and NGOs now. It's free during the pilot — we want feedback, not money. Tell us who you are and we'll reach out personally.</p>
-  <p class="sub">🍎 iPhone user? The app is already live —
-     <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" style="color:var(--accent);font-weight:600">download Suno Sathi from the App Store</a>,
-     then sign up below and we'll create your account.</p>
-  <form id="wl">
-    <input name="name" placeholder="Your name" required maxlength="80" />
-    <select name="os" id="wl-os" required>
-      <option value="" disabled selected>आपका phone? · Your phone…</option>
-      <option value="android">📱 Android</option>
-      <option value="iphone">🍎 iPhone</option>
-      <option value="other">Other / no smartphone</option>
-    </select>
-    <input name="email" id="wl-email" type="email" placeholder="Email" required maxlength="120" />
-    <p id="wl-email-hint" style="display:none;margin:-6px 0 0;font-size:14px;color:var(--dim)">
-      ⚠️ वही Gmail लिखिए जो आपके phone के <b>Play Store</b> में है — app testing invite उसी पर आएगा।
-    </p>
-    <input name="phone" type="tel" placeholder="Mobile / WhatsApp number · मोबाइल नंबर" required maxlength="20" pattern="[0-9+\s\-]{10,20}" />
-    <select name="role" required>
-      <option value="" disabled selected>I am…</option>
-      <option>Deaf / hard-of-hearing</option>
-      <option>Family member or friend</option>
-      <option>NGO / deaf association</option>
-      <option>Interpreter / educator</option>
-      <option>Developer / curious</option>
-    </select>
-    <input name="org" placeholder="Organisation (optional)" maxlength="120" />
-    <textarea name="message" rows="3" placeholder="Anything you'd like to tell us (optional)" maxlength="1000"></textarea>
-    <div class="cf-turnstile" data-sitekey="0x4AAAAAAEqa3x_MLNDKWW_D" data-theme="light"></div>
-    <button class="btn" type="submit">Request access</button>
-    <div class="err-msg" id="err">Something went wrong — please try again.</div>
-  </form>
-  <div class="ok-msg" id="ok">🙏 Thank you! You're on the list — we'll write to you personally, usually within a day.</div>
+  <p class="sub">We're onboarding early users, families, and NGOs now. It's free during the pilot — we want feedback, not money. Create your account and we approve every one <b>personally</b>, usually within a day.</p>
+  <p class="sub">🍎 iPhone? The app is already live —
+     <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" style="color:var(--accent);font-weight:600">download Suno Sathi from the App Store</a>.
+     📱 Android &amp; web: create your account below and we'll set you up.</p>
+  <div class="actions" style="justify-content:center;margin-top:8px">
+    <a class="btn" href="https://app.sunosathi.com/register">Create your account — it's free</a>
+  </div>
+  <p class="sub" style="margin-top:16px">You'll verify your email, then we review and activate your account by hand so the pilot stays smooth.
+     Already have an account? <a href="https://app.sunosathi.com/login" style="color:var(--accent);font-weight:600">Sign in</a>.</p>
 </div></section>
 
 <footer><div class="wrap">
@@ -616,40 +593,6 @@ async function scene() {
   }
 }
 if (chat) scene()
-
-const ts = document.createElement('script')
-ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-ts.async = true
-document.head.appendChild(ts)
-
-document.getElementById('wl-os').addEventListener('change', (e) => {
-  const v = e.target.value
-  const hint = document.getElementById('wl-email-hint')
-  hint.style.display = (v === 'android' || v === 'iphone') ? 'block' : 'none'
-  hint.innerHTML = v === 'iphone'
-    ? '🍎 App अभी <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" style="color:var(--accent);font-weight:600">App Store से download</a> कर सकते हैं — account details हम email करेंगे।'
-    : '⚠️ वही Gmail लिखिए जो आपके phone के <b>Play Store</b> में है — app testing invite उसी पर आएगा।'
-  document.getElementById('wl-email').placeholder = v === 'android'
-    ? 'Gmail (Play Store वाला)' : 'Email'
-})
-
-document.getElementById('wl').addEventListener('submit', async (e) => {
-  e.preventDefault()
-  const f = e.target
-  const data = Object.fromEntries(new FormData(f).entries())
-  try {
-    const r = await fetch('/api/waitlist', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data),
-    })
-    if (!r.ok) throw new Error()
-    f.style.display = 'none'
-    document.getElementById('ok').style.display = 'block'
-  } catch {
-    document.getElementById('err').style.display = 'block'
-  }
-})
 </script>
 </body>
 </html>
