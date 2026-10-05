@@ -686,6 +686,64 @@ async def api_waitlist_list(request: Request):
     return {"signups": waitlist.list_all()}
 
 
+def _register_invite_recipients() -> list[dict]:
+    """Waitlist signups eligible for the 'registration is open' invite:
+    deduped by email (newest row wins), excluding support/feedback rows,
+    internal .test/.sunosathi addresses, anyone already invited, and anyone
+    who already has an account (they don't need to register)."""
+    import waitlist
+
+    by_email: dict[str, dict] = {}
+    for s in waitlist.list_all():  # newest first
+        email = (s.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            continue
+        by_email.setdefault(email, s)  # keep the newest row per email
+    out = []
+    for email, s in by_email.items():
+        if s.get("role") in ("support", "feedback"):
+            continue
+        if email.endswith((".test", ".sunosathi")):
+            continue
+        if s.get("invited_at"):
+            continue
+        if auth.user_by_email(email):  # already registered → skip
+            continue
+        out.append(s)
+    return out
+
+
+@app.post("/api/waitlist/invite-register")
+async def api_waitlist_invite_register(payload: dict, request: Request):
+    """Admin: invite waitlist signups to self-register now that signup is open.
+    Defaults to a dry run that returns the recipient list without sending;
+    pass {"dry_run": false} to actually send and mark each row invited."""
+    import emailer
+    import waitlist
+
+    if not _is_admin_req(request):
+        return Response(status_code=403)
+    recipients = _register_invite_recipients()
+    if payload.get("dry_run", True):
+        return {"dry_run": True, "count": len(recipients),
+                "recipients": [{"id": s["id"], "name": s.get("name"),
+                                "email": s["email"], "os": s.get("os") or ""}
+                               for s in recipients]}
+    if not emailer.configured():
+        return JSONResponse({"error": "email not configured"}, status_code=503)
+    sent, failed = [], []
+    for s in recipients:
+        subject, html = emailer.registration_open(s.get("name") or "",
+                                                   s.get("os") or "")
+        if await emailer.send(s["email"], subject, html):
+            waitlist.mark_invited(s["id"])
+            sent.append(s["email"])
+        else:
+            failed.append(s["email"])
+    logger.info("register invites: %s sent, %s failed", len(sent), len(failed))
+    return {"count": len(sent), "sent": sent, "failed": failed}
+
+
 # ---- contribute.sunosathi.com bridge ---------------------------------------
 # The ISL contribution platform is its own service with its own accounts.
 # These proxies let the app's admin approve contributor signups from the

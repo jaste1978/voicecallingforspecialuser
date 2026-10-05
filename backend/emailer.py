@@ -86,6 +86,52 @@ def account_approved(name: str) -> tuple[str, str]:
     return subject, html
 
 
+def registration_open(name: str, os_pref: str = "") -> tuple[str, str]:
+    """Subject + HTML for the one-time 'signup is now open' invite sent to
+    waitlist signups. Points them at self-registration; OS-specific app line."""
+    first = (name or "").split(" ")[0] or "दोस्त"
+    subject = "🎉 SunoSathi अब open है — अभी अपना खाता बनाइए · registration is open"
+    if os_pref == "iphone":
+        app_line = ("""<b>🍎 iPhone:</b> """
+                    """<a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" """
+                    """style="color:#C2410C">App Store से install कीजिए</a>""")
+    elif os_pref == "android":
+        app_line = ("""<b>📱 Android:</b> native app testing में है — """
+                    """तब तक browser में <b>app.sunosathi.com</b> पूरा काम करता है।""")
+    else:
+        app_line = ("""<b>🍎 iPhone:</b> """
+                    """<a href="https://apps.apple.com/in/app/suno-sathi/id6805283616" """
+                    """style="color:#C2410C">App Store</a> &nbsp;·&nbsp; """
+                    """<b>📱 Android / कोई भी phone:</b> browser में """
+                    """<b>app.sunosathi.com</b> पूरा काम करता है।""")
+    html = f"""
+<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;
+            color:#241B12;line-height:1.6">
+  <h2 style="color:#C2410C">Namaste {first}! 🙏</h2>
+  <p>अच्छी खबर — <b>SunoSathi (सुनोसाथी) अब सबके लिए open है।</b>
+     You no longer have to wait for us to set you up. You can
+     <b>create your own account</b> right now:</p>
+  <p style="text-align:center">
+     <a href="https://app.sunosathi.com/register"
+        style="display:inline-block;background:#C2410C;color:#fff;
+               text-decoration:none;font-weight:700;border-radius:12px;
+               padding:14px 28px">अभी खाता बनाइए · Create your account</a></p>
+  <p>बस 1 मिनट: email डालिए → हम code भेजेंगे → अपना नंबर डालिए।
+     We approve every account personally (usually within a day), फिर आप
+     sign in करके calls को live captions में देख सकते हैं।</p>
+  <p style="background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
+            padding:14px 16px">{app_line}</p>
+  <p>Setup guide with pictures:
+     <a href="https://sunosathi.com/guide" style="color:#C2410C">
+     sunosathi.com/guide</a></p>
+  <p>Questions? Just reply to this email or WhatsApp us at
+     <b>+91 98190 95969</b>.</p>
+  <p style="color:#8a7460">— Tejas, SunoSathi<br/>
+     <i>Your phone number. Their voice, your eyes.</i></p>
+</div>"""
+    return subject, html
+
+
 def waitlist_welcome(name: str, os_pref: str = "") -> tuple[str, str]:
     """Subject + HTML for the waitlist auto-reply, with OS-specific
     app-testing steps so signups flow straight into the tester pipeline."""
