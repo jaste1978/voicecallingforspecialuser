@@ -46,6 +46,11 @@ def _require_admin(request: Request) -> dict:
     return user
 
 
+def _dist_dir() -> Path:
+    """Where the built frontend lives. Defined early so API routes can use it."""
+    return Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+
 def _is_admin_req(request: Request) -> bool:
     admin_key = os.environ.get("ADMIN_KEY")
     if admin_key and request.headers.get("x-admin-key") == admin_key:
@@ -810,6 +815,47 @@ async def api_contacts_delete(contact_id: int, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/content")
+async def api_content(request: Request):
+    """Content pipeline state for the admin Content screen.
+
+    Reads backend/content_status.json, which the SEO AUTOMATION pipeline
+    regenerates (scripts/build_content_status.py). The pipeline lives outside
+    this repo and is not deployed, so the file is committed rather than read
+    live. `state` is re-derived here from what is actually on disk, so a post
+    is never reported as published unless its HTML really shipped.
+    """
+    _require_admin(request)
+    status_file = Path(__file__).resolve().parent / "content_status.json"
+    if not status_file.is_file():
+        return {
+            "available": False,
+            "reason": "content_status.json has not been generated yet",
+            "posts": [], "queue": [], "tripwires": [], "geo_citations": [],
+        }
+    try:
+        data = json.loads(status_file.read_text(encoding="utf-8"))
+    except Exception:
+        logger.exception("content_status.json is not readable")
+        return {
+            "available": False,
+            "reason": "content_status.json is present but could not be parsed",
+            "posts": [], "queue": [], "tripwires": [], "geo_citations": [],
+        }
+
+    # Trust the filesystem over the file for what is actually live.
+    blog_dir = _dist_dir() / "blog"
+    live = {p.stem for p in blog_dir.glob("*.html")} if blog_dir.is_dir() else set()
+    for post in data.get("posts", []):
+        post["state"] = "published" if post.get("slug") in live else "draft"
+    summary = data.setdefault("summary", {})
+    summary["published"] = sum(1 for p in data.get("posts", []) if p["state"] == "published")
+    summary["drafts"] = sum(1 for p in data.get("posts", []) if p["state"] == "draft")
+
+    data["available"] = True
+    return data
+
+
 @app.get("/api/costs")
 async def api_costs(request: Request):
     _require_admin(request)
@@ -982,15 +1028,29 @@ if _dist.is_dir():
 
     app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
 
+    MARKETING_HOSTS = ("sunosathi.com", "www.sunosathi.com")
+
+    # Client-side routes defined in frontend/src/App.tsx. On the marketing host
+    # these must still render the SPA shell; anything NOT in this set is a real
+    # 404 there, so search engines stop indexing typos as duplicate homepages.
+    # Keep in sync with App.tsx when routes are added.
+    SPA_ROUTES = {
+        "", "start", "login", "register", "calls", "call", "help", "setup",
+        "support", "contacts", "settings", "captions", "history", "models",
+        "ringtone", "monitor", "waitlist", "contribute", "users", "costs",
+        "content", "admin",
+    }
+
     @app.get("/{path:path}")
     async def spa(path: str, request: Request):
         host = (request.headers.get("x-forwarded-host")
                 or request.headers.get("host", "")).split(":")[0]
+        marketing = host in MARKETING_HOSTS
         # marketing site at the root of the main domain; the app lives on
         # app.sunosathi.com (and the railway URL) unchanged
-        if path == "" and host in ("sunosathi.com", "www.sunosathi.com"):
+        if path == "" and marketing:
             return FileResponse(_dist / "welcome.html")
-        if path == "robots.txt" and host not in ("sunosathi.com", "www.sunosathi.com"):
+        if path == "robots.txt" and not marketing:
             # the app host (and railway URL) should not be crawled at all
             return Response("User-agent: *\nDisallow: /\n", media_type="text/plain")
         if path in ("welcome", "site", "about"):
@@ -1001,9 +1061,23 @@ if _dist.is_dir():
             return FileResponse(_dist / "guide.html")
         if path == "privacy":
             return FileResponse(_dist / "privacy.html")
+        if path == "blog":
+            return FileResponse(_dist / "blog.html")
+        if path.startswith("blog/") and ".." not in path:
+            post = _dist / "blog" / f"{path[len('blog/'):].strip('/')}.html"
+            if post.is_file():
+                return FileResponse(post)
         candidate = _dist / path
         if path and ".." not in path and candidate.is_file():
             return FileResponse(candidate)
+        # Unknown path. The app host keeps the SPA fallback so deep links
+        # survive a reload; the marketing host returns a real 404 unless the
+        # path is a known client-side route.
+        if marketing and path.strip("/") not in SPA_ROUTES:
+            notfound = _dist / "404.html"
+            if notfound.is_file():
+                return FileResponse(notfound, status_code=404)
+            return Response("Not found", status_code=404, media_type="text/plain")
         return FileResponse(_dist / "index.html")
 
 
