@@ -1121,6 +1121,8 @@ if _dist.is_dir():
             return FileResponse(_dist / "ios.html")
         if path == "guide":
             return FileResponse(_dist / "guide.html")
+        if path == "signs":
+            return FileResponse(_dist / "signs.html")
         if path == "privacy":
             return FileResponse(_dist / "privacy.html")
         if path == "blog":
