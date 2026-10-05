@@ -17,6 +17,7 @@ interface User {
   role: string
   status?: string
   requested_number?: string | null
+  os?: string | null
   numbers: MappedNumber[]
 }
 
@@ -171,9 +172,12 @@ export default function UsersPage() {
             <div className="configured-row" key={u.id}>
               <span>
                 <strong>{u.name || u.email}</strong>
+                {u.os === 'android' && ' 🤖'}
+                {u.os === 'iphone' && ' 🍎'}
                 <small>
                   {u.email}
                   {u.requested_number ? ` · ${fmtNumber(u.requested_number)}` : ''}
+                  {u.os === 'android' ? ' · Android — add to tester group' : ''}
                 </small>
               </span>
               <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

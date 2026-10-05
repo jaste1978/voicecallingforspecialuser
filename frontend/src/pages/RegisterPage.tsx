@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [number, setNumber] = useState('')
+  const [os, setOs] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState<'form' | 'otp'>('form')
   const [busy, setBusy] = useState(false)
@@ -71,7 +72,7 @@ export default function RegisterPage() {
       const resp = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, number, otp }),
+        body: JSON.stringify({ name, email, password, number, os, otp }),
       })
       if (resp.status === 403) {
         setError('Wrong or expired code — check the email or send a new code. Code ग़लत या पुराना है।')
@@ -220,13 +221,24 @@ export default function RegisterPage() {
             This is the number your callers already dial — after approval you
             forward it to SunoSathi with one code.
           </p>
+          <select
+            className="dialinput"
+            value={os}
+            onChange={(e) => setOs(e.target.value)}
+            required
+          >
+            <option value="" disabled>आपका phone? · Your phone…</option>
+            <option value="android">📱 Android</option>
+            <option value="iphone">🍎 iPhone</option>
+            <option value="other">Other / no smartphone</option>
+          </select>
           <div className="cf-turnstile" data-sitekey={TURNSTILE_SITEKEY}
             data-theme="light" />
           {error && <p className="status-line error">{error}</p>}
           <button
             className="bigbtn start"
             type="submit"
-            disabled={busy || !name.trim() || !email || password.length < 8 || !numberOk}
+            disabled={busy || !name.trim() || !email || password.length < 8 || !numberOk || !os}
           >
             {busy ? 'Sending…' : 'Email me a code · code भेजिए'}
           </button>
