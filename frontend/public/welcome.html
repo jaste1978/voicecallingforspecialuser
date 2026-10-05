@@ -174,9 +174,25 @@ nav .wrap{display:flex;align-items:center;gap:14px;padding:14px 20px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
 .logo .mark{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px}
 nav .contrib{margin-left:auto;padding:9px 16px;font-size:14px}
-/* below 560px the contribute link drops out, so the pilot CTA takes back
-   the auto margin it had before — nav behaviour there is unchanged */
-@media(max-width:560px){nav .contrib{display:none}nav .cta{margin-left:auto}}
+/* on phones the Contribute ISL link stays visible, but compact: hide the
+   सुनोसाथी subtitle and shrink both buttons so logo + both links fit one row */
+.btn.cta .short{display:none}
+@media(max-width:560px){
+  nav .wrap{padding:12px 14px;gap:10px}
+  .logo{font-size:16px}
+  .logo .mark{width:30px;height:30px}
+  .logo span:not(.mark){display:none}
+  nav .contrib{padding:8px 13px;font-size:13px}
+  nav .cta{padding:8px 15px;font-size:13px}
+  nav .contrib,nav .cta{white-space:nowrap}
+  .btn.cta .full{display:none}
+  .btn.cta .short{display:inline}
+}
+/* tiny phones (old iPhone SE ~320px): drop the ghost-button chrome so the
+   Contribute ISL link still fits as compact text next to the Join button */
+@media(max-width:340px){
+  nav .btn.contrib{border:none;background:transparent;padding:6px 2px}
+}
 .btn{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:13px 26px;border-radius:28px;border:none;font-size:16px;cursor:pointer}
 .btn.ghost{background:transparent;border:1.5px solid var(--divider);color:var(--text)}
 .btn:active{transform:scale(.98)}
@@ -297,7 +313,7 @@ footer .right{margin-left:auto}
 <nav><div class="wrap">
   <div class="logo"><span class="mark"><svg viewBox="0 0 144 118" width="20" height="17" fill="none" aria-hidden="true"><path d="M100 12 C120 19 131 37 131 57 C131 86 111 106 84 106 C64 106 51 95 46 79" stroke="#FFF8F1" stroke-width="11" stroke-linecap="round"/><path d="M46 79 C44 66 51 57 62 57 C73 57 80 66 78 77" stroke="#FFF8F1" stroke-width="11" stroke-linecap="round"/><rect x="6" y="24" width="38" height="10" rx="5" fill="#FFF3E7"/><rect x="14" y="44" width="30" height="10" rx="5" fill="#FFF3E7" opacity=".85"/><rect x="22" y="64" width="22" height="10" rx="5" fill="#FFF3E7" opacity=".65"/></svg></span> SunoSathi <span style="color:var(--dim);font-weight:400">सुनोसाथी</span></div>
   <a class="btn ghost contrib" href="/signs">Contribute ISL</a>
-  <a class="btn cta" href="#pilot">Join the pilot</a>
+  <a class="btn cta" href="#pilot"><span class="full">Join the pilot</span><span class="short">Join</span></a>
 </div></nav>
 
 <header class="hero"><div class="wrap">
