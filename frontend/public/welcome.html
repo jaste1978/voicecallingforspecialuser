@@ -644,6 +644,9 @@ document.getElementById('wl').addEventListener('submit', async (e) => {
       body: JSON.stringify(data),
     })
     if (!r.ok) throw new Error()
+    // GA conversion: a lead captured from the marketing site. No PII — only
+    // the OS preference (android/iphone/other), never name/email/phone.
+    try { gtag('event', 'generate_lead', { method: 'waitlist', os: (data.os || 'unknown') }) } catch (_) {}
     f.style.display = 'none'
     document.getElementById('ok').style.display = 'block'
   } catch {
