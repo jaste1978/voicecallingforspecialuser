@@ -29,6 +29,11 @@ def init() -> None:
             conn.execute("ALTER TABLE waitlist ADD COLUMN emailed_at REAL")
         except Exception:
             pass
+        # "registration is open" invite: when it was sent (NULL = not yet)
+        try:
+            conn.execute("ALTER TABLE waitlist ADD COLUMN invited_at REAL")
+        except Exception:
+            pass
 
 
 def add(name: str, email: str, role: str, org: str, message: str,
@@ -46,6 +51,12 @@ def add(name: str, email: str, role: str, org: str, message: str,
 def mark_emailed(row_id: int) -> None:
     with _conn() as conn:
         conn.execute("UPDATE waitlist SET emailed_at = unixepoch('now')"
+                     " WHERE id = ?", (row_id,))
+
+
+def mark_invited(row_id: int) -> None:
+    with _conn() as conn:
+        conn.execute("UPDATE waitlist SET invited_at = unixepoch('now')"
                      " WHERE id = ?", (row_id,))
 
 
