@@ -42,6 +42,8 @@ def init() -> None:
             "ALTER TABLE users ADD COLUMN handle TEXT",
             # phone OS captured at registration — flags Android testers
             "ALTER TABLE users ADD COLUMN os TEXT",
+            # one-time product announcements already sent to this user
+            "ALTER TABLE users ADD COLUMN play_announced_at REAL",
         ):
             try:
                 conn.execute(ddl)
@@ -237,7 +239,14 @@ def list_users() -> list[dict]:
     with _conn() as conn:
         rows = conn.execute(
             "SELECT id, email, name, role, created_at,"
-            " COALESCE(status, 'active') AS status, requested_number, os"
+            " COALESCE(status, 'active') AS status, requested_number, os,"
+            " play_announced_at"
             " FROM users ORDER BY id"
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def mark_play_announced(user_id: int) -> None:
+    with _conn() as conn:
+        conn.execute("UPDATE users SET play_announced_at = unixepoch('now')"
+                     " WHERE id = ?", (user_id,))

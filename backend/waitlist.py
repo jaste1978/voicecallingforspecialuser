@@ -34,6 +34,11 @@ def init() -> None:
             conn.execute("ALTER TABLE waitlist ADD COLUMN invited_at REAL")
         except Exception:
             pass
+        # "now on Google Play" launch announcement (NULL = not yet)
+        try:
+            conn.execute("ALTER TABLE waitlist ADD COLUMN play_announced_at REAL")
+        except Exception:
+            pass
 
 
 def add(name: str, email: str, role: str, org: str, message: str,
@@ -57,6 +62,12 @@ def mark_emailed(row_id: int) -> None:
 def mark_invited(row_id: int) -> None:
     with _conn() as conn:
         conn.execute("UPDATE waitlist SET invited_at = unixepoch('now')"
+                     " WHERE id = ?", (row_id,))
+
+
+def mark_play_announced(row_id: int) -> None:
+    with _conn() as conn:
+        conn.execute("UPDATE waitlist SET play_announced_at = unixepoch('now')"
                      " WHERE id = ?", (row_id,))
 
 

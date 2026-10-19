@@ -744,6 +744,78 @@ async def api_waitlist_invite_register(payload: dict, request: Request):
     return {"count": len(sent), "sent": sent, "failed": failed}
 
 
+def _play_launch_recipients() -> list[dict]:
+    """Everyone to tell that the app is now on Google Play: registered users
+    plus waitlist signups, deduped by email. Excludes rejected users,
+    support/feedback rows, internal .test/.sunosathi addresses, and anyone
+    already sent this announcement."""
+    import waitlist
+
+    out: dict[str, dict] = {}
+    for u in auth.list_users():  # users are authoritative
+        email = (u.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            continue
+        if email.endswith((".test", ".sunosathi")):
+            continue
+        if u.get("status") == "rejected":
+            continue
+        if u.get("play_announced_at"):
+            continue
+        out.setdefault(email, {"email": email, "name": u.get("name"),
+                               "src": "user", "uid": u["id"]})
+    for s in waitlist.list_all():
+        email = (s.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            continue
+        if s.get("role") in ("support", "feedback"):
+            continue
+        if email.endswith((".test", ".sunosathi")):
+            continue
+        if s.get("play_announced_at") or email in out:
+            continue
+        if auth.user_by_email(email):  # already covered via users (or announced)
+            continue
+        out.setdefault(email, {"email": email, "name": s.get("name"),
+                               "src": "wait", "wid": s["id"]})
+    return list(out.values())
+
+
+@app.post("/api/announce/play-launch")
+async def api_announce_play_launch(payload: dict, request: Request):
+    """Admin: one-time 'now on Google Play' email to users + waitlist.
+    Dry run by default; pass {"dry_run": false} to send and mark each
+    recipient so no one is emailed twice."""
+    import emailer
+    import waitlist
+
+    if not _is_admin_req(request):
+        return Response(status_code=403)
+    recipients = _play_launch_recipients()
+    if payload.get("dry_run", True):
+        users = [r for r in recipients if r["src"] == "user"]
+        wait = [r for r in recipients if r["src"] == "wait"]
+        return {"dry_run": True, "count": len(recipients),
+                "from_users": len(users), "from_waitlist": len(wait),
+                "recipients": [{"name": r.get("name"), "email": r["email"],
+                                "source": r["src"]} for r in recipients]}
+    if not emailer.configured():
+        return JSONResponse({"error": "email not configured"}, status_code=503)
+    sent, failed = [], []
+    for r in recipients:
+        subject, html = emailer.play_launch(r.get("name") or "")
+        if await emailer.send(r["email"], subject, html):
+            if r["src"] == "user":
+                auth.mark_play_announced(r["uid"])
+            else:
+                waitlist.mark_play_announced(r["wid"])
+            sent.append(r["email"])
+        else:
+            failed.append(r["email"])
+    logger.info("play-launch announce: %s sent, %s failed", len(sent), len(failed))
+    return {"count": len(sent), "sent": sent, "failed": failed}
+
+
 # ---- contribute.sunosathi.com bridge ---------------------------------------
 # The ISL contribution platform is its own service with its own accounts.
 # These proxies let the app's admin approve contributor signups from the

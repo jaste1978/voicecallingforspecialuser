@@ -132,6 +132,44 @@ def registration_open(name: str, os_pref: str = "") -> tuple[str, str]:
     return subject, html
 
 
+def play_launch(name: str = "") -> tuple[str, str]:
+    """Subject + HTML for the one-time 'now on Google Play' announcement,
+    sent to existing users and waitlist signups. CTA points at sunosathi.com
+    (which carries both store badges)."""
+    first = (name or "").split(" ")[0] or "दोस्त"
+    subject = "📲 SunoSathi अब Google Play पर · now on Google Play"
+    html = f"""
+<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;
+            color:#241B12;line-height:1.6">
+  <h2 style="color:#C2410C">Namaste {first}! 🎉</h2>
+  <p>बड़ी खबर — <b>SunoSathi अब Google Play पर live है</b>, App Store के साथ।
+     Big news: SunoSathi is now on <b>Google Play</b> too.</p>
+  <p style="text-align:center">
+     <a href="https://sunosathi.com"
+        style="display:inline-block;background:#C2410C;color:#fff;
+               text-decoration:none;font-weight:700;border-radius:12px;
+               padding:14px 28px">ऐप पाइए · Get SunoSathi</a></p>
+  <p style="background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
+            padding:14px 16px">
+     <b>📱 Android:</b>
+     <a href="https://play.google.com/store/apps/details?id=com.sunosathi.app"
+        style="color:#C2410C">Google Play</a> &nbsp;·&nbsp;
+     <b>🍎 iPhone:</b>
+     <a href="https://apps.apple.com/in/app/suno-sathi/id6805283616"
+        style="color:#C2410C">App Store</a> &nbsp;·&nbsp;
+     <b>🌐 कोई भी phone:</b> browser में <b>app.sunosathi.com</b></p>
+  <p>पहले से account है? बस sign in कीजिए। नया है?
+     <a href="https://app.sunosathi.com/register" style="color:#C2410C">
+     app.sunosathi.com/register</a> पर खाता बनाइए — हम हर account खुद approve
+     करते हैं।</p>
+  <p>Questions? Reply to this email or WhatsApp <b>+91 98190 95969</b>.
+     Please share with anyone who could use it 🙏</p>
+  <p style="color:#8a7460">— Tejas, SunoSathi<br/>
+     <i>Your phone number. Their voice, your eyes.</i></p>
+</div>"""
+    return subject, html
+
+
 def waitlist_welcome(name: str, os_pref: str = "") -> tuple[str, str]:
     """Subject + HTML for the waitlist auto-reply, with OS-specific
     app-testing steps so signups flow straight into the tester pipeline."""
