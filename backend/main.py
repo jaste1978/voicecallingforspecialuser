@@ -744,35 +744,33 @@ async def api_waitlist_invite_register(payload: dict, request: Request):
     return {"count": len(sent), "sent": sent, "failed": failed}
 
 
-def _play_launch_recipients() -> list[dict]:
+def _play_launch_recipients(exclude: set[str] | None = None) -> list[dict]:
     """Everyone to tell that the app is now on Google Play: registered users
     plus waitlist signups, deduped by email. Excludes rejected users,
-    support/feedback rows, internal .test/.sunosathi addresses, and anyone
-    already sent this announcement."""
+    support/feedback rows, internal addresses (.test or @sunosathi.com),
+    anyone already sent this announcement, and any email in `exclude`."""
     import waitlist
+
+    skip = {e.strip().lower() for e in (exclude or [])}
+
+    def _internal(email: str) -> bool:
+        return (not email or "@" not in email
+                or email.endswith(".test")
+                or email.endswith("@sunosathi.com")
+                or email in skip)
 
     out: dict[str, dict] = {}
     for u in auth.list_users():  # users are authoritative
         email = (u.get("email") or "").strip().lower()
-        if not email or "@" not in email:
-            continue
-        if email.endswith((".test", ".sunosathi")):
-            continue
-        if u.get("status") == "rejected":
-            continue
-        if u.get("play_announced_at"):
+        if _internal(email) or u.get("status") == "rejected" \
+                or u.get("play_announced_at"):
             continue
         out.setdefault(email, {"email": email, "name": u.get("name"),
                                "src": "user", "uid": u["id"]})
     for s in waitlist.list_all():
         email = (s.get("email") or "").strip().lower()
-        if not email or "@" not in email:
-            continue
-        if s.get("role") in ("support", "feedback"):
-            continue
-        if email.endswith((".test", ".sunosathi")):
-            continue
-        if s.get("play_announced_at") or email in out:
+        if _internal(email) or s.get("role") in ("support", "feedback") \
+                or s.get("play_announced_at") or email in out:
             continue
         if auth.user_by_email(email):  # already covered via users (or announced)
             continue
@@ -791,7 +789,7 @@ async def api_announce_play_launch(payload: dict, request: Request):
 
     if not _is_admin_req(request):
         return Response(status_code=403)
-    recipients = _play_launch_recipients()
+    recipients = _play_launch_recipients(payload.get("exclude"))
     if payload.get("dry_run", True):
         users = [r for r in recipients if r["src"] == "user"]
         wait = [r for r in recipients if r["src"] == "wait"]
