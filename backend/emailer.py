@@ -80,6 +80,12 @@ def account_approved(name: str) -> tuple[str, str]:
      sunosathi.com/guide</a>. We will also message you on WhatsApp to help
      with call forwarding.</p>
   <p>Questions? Reply to this email or WhatsApp <b>+91 98190 95969</b>.</p>
+  <p style="background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
+            padding:14px 16px">
+     <b>💬 Join the SunoSathi family on WhatsApp</b> — updates, help, and a
+     place to share feedback:<br/>
+     <a href="https://chat.whatsapp.com/HxvaMuUiZtV9jz7ewJfSdT"
+        style="color:#C2410C"><b>chat.whatsapp.com/HxvaMuUiZtV9jz7ewJfSdT</b></a></p>
   <p style="color:#8a7460">— Tejas, SunoSathi<br/>
      <i>Your phone number. Their voice, your eyes.</i></p>
 </div>"""

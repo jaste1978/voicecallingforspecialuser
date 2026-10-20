@@ -112,7 +112,19 @@ export default function RegisterPage() {
           <p className="idle-hint">
             आपका खाता जल्द चालू होगा। तैयार होते ही हम आपको email और WhatsApp/SMS करेंगे।
           </p>
-          <button className="bigbtn start" style={{ marginTop: 14 }} onClick={() => navigate('/login')}>
+          <p className="idle-hint" style={{ marginTop: 14 }}>
+            💬 While you wait, join the SunoSathi family on WhatsApp for help and updates:
+          </p>
+          <a
+            className="bigbtn"
+            href="https://chat.whatsapp.com/HxvaMuUiZtV9jz7ewJfSdT"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ marginTop: 8, background: '#25D366', color: '#fff', textAlign: 'center' }}
+          >
+            Join WhatsApp community · WhatsApp समूह
+          </a>
+          <button className="bigbtn start" style={{ marginTop: 10 }} onClick={() => navigate('/login')}>
             Back to sign in
           </button>
         </section>
