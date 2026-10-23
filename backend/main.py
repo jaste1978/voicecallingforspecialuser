@@ -262,22 +262,48 @@ async def api_change_password(payload: dict, request: Request):
 
 
 @app.post("/api/forgot")
-async def api_forgot(payload: dict):
-    """Public 'forgot password': never reveals whether the account exists;
-    pings the admin on Telegram to do a reset + WhatsApp the user."""
-    import telegram_notify
+async def api_forgot(payload: dict, request: Request):
+    """Public 'forgot password', step 1: email a 6-digit reset code if the
+    account exists. Always returns ok so the response never reveals whether
+    an email is registered. Turnstile-guarded — like register/otp, this is a
+    public endpoint that can be abused to spam inboxes."""
+    import emailer
+    import otp
+
+    if not await _turnstile_ok(payload, request):
+        return JSONResponse({"error": "verification failed"}, status_code=403)
+    email = (payload.get("email") or "").strip().lower()
+    if "@" in email and len(email) <= 120 and auth.user_by_email(email):
+        if emailer.configured():
+            code = otp.issue(email)
+            if code is not None:  # None = resent too soon; the last code stands
+                subject, html = emailer.reset_message(code)
+                await emailer.send(email, subject, html)
+        logger.info("forgot-password code issued for %s", email)
+    else:
+        logger.info("forgot-password request for unknown/invalid email")
+    return {"ok": True}
+
+
+@app.post("/api/reset")
+async def api_reset(payload: dict):
+    """Public 'forgot password', step 2: a valid reset code sets a new
+    password and signs the account out everywhere. A wrong/expired code or an
+    unknown email both fail the same way, so neither reveals account state."""
+    import otp
 
     email = (payload.get("email") or "").strip().lower()
-    if "@" in email:
-        with _history._conn() as conn:
-            row = conn.execute("SELECT id, name FROM users WHERE email = ?",
-                               (email,)).fetchone()
-        if row:
-            await telegram_notify.send(
-                f"🔑 <b>Password reset requested</b>\n{row['name'] or '?'} "
-                f"&lt;{email}&gt;\nReset in Settings → Users &amp; Numbers, "
-                f"then WhatsApp them the temporary password.")
-        logger.info("forgot-password request for %s (exists=%s)", email, bool(row))
+    new = payload.get("password") or ""
+    if "@" not in email or len(new) < 8:
+        return JSONResponse({"error": "invalid"}, status_code=422)
+    if not otp.check(email, str(payload.get("otp") or "")):
+        return JSONResponse({"error": "wrong or expired code"}, status_code=403)
+    user = auth.user_by_email(email)
+    if user is None:  # code checked out but no account — nothing to do
+        return JSONResponse({"error": "wrong or expired code"}, status_code=403)
+    auth.set_password(user["id"], new)
+    auth.drop_sessions(user["id"])
+    logger.info("password reset via email code for user %s", user["id"])
     return {"ok": True}
 
 
