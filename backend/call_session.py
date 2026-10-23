@@ -552,7 +552,8 @@ class UserLine:
 
     async def _ring(self, call: Call) -> None:
         call.state = "ringing"
-        call.trace.event("ring_sent", screens=len(self.browser_sockets))
+        call.trace.event("ring_sent", screens=len(self.browser_sockets),
+                         ring_devices=len(self.ring_sockets))
         await self._to_browser({
             "type": "ring", "from": call.from_number, "callId": call.call_uuid,
         })
