@@ -590,43 +590,6 @@ async def _turnstile_ok(payload: dict, request: Request) -> bool:
         return True  # fail open: never lock out real users on CF outage
 
 
-@app.post("/api/waitlist")
-async def api_waitlist_add(payload: dict, request: Request):
-    import waitlist
-
-    if not await _turnstile_ok(payload, request):
-        return JSONResponse({"error": "verification failed"}, status_code=403)
-    name = (payload.get("name") or "").strip()
-    email = (payload.get("email") or "").strip()
-    phone = (payload.get("phone") or "").strip()
-    if not name or "@" not in email:
-        return Response(status_code=422)
-    os_pref = (payload.get("os") or "").strip().lower()
-    row_id = waitlist.add(
-        name, email,
-        (payload.get("role") or "").strip(),
-        (payload.get("org") or "").strip(),
-        (payload.get("message") or "").strip(),
-        phone, os_pref,
-    )
-    logger.info("waitlist signup: %s <%s> (%s)", name, email, payload.get("role"))
-    import telegram_notify
-    kind = "🆘 <b>Support message</b>" if payload.get("role") == "support" else "📥 <b>Waitlist signup</b>"
-    msg = (payload.get("message") or "").strip()
-    await telegram_notify.send(
-        f"{kind}\n{name} &lt;{email}&gt;"
-        + (f"\n📱 {phone}" if phone else "")
-        + (f"\n{'🤖 Android — add to tester group!' if os_pref == 'android' else '🍎 iPhone' if os_pref == 'iphone' else ''}" if os_pref else "")
-        + (f"\n💬 {msg[:400]}" if msg else ""))
-    # auto welcome email (no-op until RESEND_API_KEY is configured)
-    if payload.get("role") != "support":
-        import emailer
-        subject, html = emailer.waitlist_welcome(name, os_pref)
-        if await emailer.send(email, subject, html):
-            waitlist.mark_emailed(row_id)
-    return {"ok": True}
-
-
 @app.post("/api/presence")
 async def api_presence(payload: dict, request: Request):
     """Which of these Sathi IDs would ring right now. Online = the app is
@@ -677,30 +640,6 @@ async def api_support(payload: dict, request: Request):
         + (f"\n📱 {phone}" if phone else "")
         + (f"\n💬 {html.escape(msg[:600])}" if msg else ""))
     return {"ok": True}
-
-
-@app.post("/api/waitlist/email-pending")
-async def api_waitlist_email_pending(request: Request):
-    """Admin: send the welcome email to signups that never got one."""
-    import emailer
-    import waitlist
-
-    if not _is_admin_req(request):
-        return Response(status_code=403)
-    if not emailer.configured():
-        return JSONResponse({"error": "email not configured"}, status_code=503)
-    sent, skipped = [], []
-    for s in waitlist.list_all():
-        if s.get("emailed_at") or s.get("role") == "support" or \
-                s["email"].endswith((".test", ".sunosathi")):
-            skipped.append(s["email"])
-            continue
-        subject, html = emailer.waitlist_welcome(s["name"], s.get("os") or "")
-        if await emailer.send(s["email"], subject, html):
-            waitlist.mark_emailed(s["id"])
-            sent.append(s["email"])
-    logger.info("waitlist backfill emails: %s sent", len(sent))
-    return {"sent": sent, "skipped": skipped}
 
 
 @app.get("/api/waitlist")
