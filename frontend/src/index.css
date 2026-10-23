@@ -912,6 +912,10 @@ select.lang.wide {
   background: var(--danger);
 }
 
+.verdict-muted {
+  background: var(--dim);
+}
+
 .monitor-main {
   flex: 1;
 }

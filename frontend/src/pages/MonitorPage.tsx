@@ -17,7 +17,7 @@ interface CallReport {
   duration_s: number
   answered: boolean
   reason: string
-  verdict: 'ok' | 'degraded' | 'failed'
+  verdict: 'ok' | 'degraded' | 'failed' | 'no_answer'
   verdict_note: string
   captions: number
   caption_latency_median_ms: number | null
@@ -52,6 +52,7 @@ const VERDICT_STYLE: Record<string, string> = {
   ok: 'verdict-ok',
   degraded: 'verdict-warn',
   failed: 'verdict-bad',
+  no_answer: 'verdict-muted',
 }
 
 function fmtWhen(ts: number): string {
