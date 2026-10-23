@@ -877,6 +877,10 @@ async def api_monitor(request: Request):
             "call_from": line.call.from_number if line.call else None,
         })
     active = next((l for l in lines if l["call_state"] not in ("none", "ended")), None)
+    try:
+        limit = max(1, min(int(request.query_params.get("limit", 30)), 500))
+    except (TypeError, ValueError):
+        limit = 30
     return {
         "live": {
             "screens_connected": screens_total,
@@ -884,7 +888,7 @@ async def api_monitor(request: Request):
             "call_from": active["call_from"] if active else None,
             "lines": lines,
         },
-        "calls": [observability.analyze(c) for c in history.list_calls(30)],
+        "calls": [observability.analyze(c) for c in history.list_calls(limit)],
     }
 
 
