@@ -119,14 +119,16 @@ def analyze(call: dict) -> dict:
         else:
             # normal: busy, declined, missed, or the caller gave up. Not a bug.
             verdict, verdict_note = "no_answer", _noanswer_note(reason)
-    elif stream is None:
+    elif len(call.get("transcript") or []):
+        # captions exist — the whole pipeline (audio -> STT -> captioning)
+        # demonstrably worked, regardless of which telemetry events logged.
+        verdict, verdict_note = "ok", ""
+    elif stream is None and stt is None:
         verdict, verdict_note = "failed", "no audio after the call was answered"
     elif stt is None:
         verdict, verdict_note = "failed", "STT never connected"
-    elif cap is None:
-        verdict, verdict_note = "degraded", "answered but zero captions"
     else:
-        verdict, verdict_note = "ok", ""
+        verdict, verdict_note = "degraded", "answered but no captions (caller may have stayed silent)"
 
     caption_latencies = [
         e["after_speech_end_ms"] for e in tl
