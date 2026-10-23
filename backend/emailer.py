@@ -56,6 +56,24 @@ def otp_message(code: str) -> tuple[str, str]:
     return subject, html
 
 
+def reset_message(code: str) -> tuple[str, str]:
+    """Subject + HTML for the forgot-password reset code."""
+    subject = f"{code} — SunoSathi password reset code"
+    html = f"""
+<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;
+            color:#241B12;line-height:1.6">
+  <h2 style="color:#C2410C">Password reset code · पासवर्ड reset code</h2>
+  <p>किसी ने इस email के लिए नया password माँगा है। यह code reset form में
+     लिखिए · enter this code to set a new password:</p>
+  <p style="font-size:34px;font-weight:800;letter-spacing:6px;
+            background:#FFF3E8;border:1px solid #F0D9C0;border-radius:12px;
+            padding:14px 16px;text-align:center">{code}</p>
+  <p style="color:#8a7460">Valid for 10 minutes. अगर आपने यह नहीं माँगा, इस
+     email को ignore कीजिए — आपका password नहीं बदला है।</p>
+</div>"""
+    return subject, html
+
+
 def account_approved(name: str) -> tuple[str, str]:
     """Subject + HTML sent when the admin approves a SunoSathi account."""
     first = (name or "").split(" ")[0] or "दोस्त"
