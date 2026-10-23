@@ -298,8 +298,8 @@ export default function SettingsTab() {
           <button className="home-btn" onClick={() => navigate('/waitlist')}>
             <span className="emoji icon"><InboxIcon size={28} /></span>
             <span>
-              Pilot Waitlist
-              <small>Signups from sunosathi.com</small>
+              Messages & feedback
+              <small>Support messages &amp; call feedback</small>
             </span>
           </button>
           <button className="home-btn" onClick={() => navigate('/contribute')}>

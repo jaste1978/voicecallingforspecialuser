@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { authFetch, authName } from '../lib/auth'
+import { authFetch } from '../lib/auth'
 
 const WHATSAPP = 'https://wa.me/919819095969?text=' +
   encodeURIComponent('Namaste! मुझे SunoSathi में मदद चाहिए —')
@@ -14,15 +14,10 @@ export default function SupportPage() {
     setError('')
     if (!message.trim()) return
     try {
-      const resp = await authFetch('/api/waitlist', {
+      const resp = await authFetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: authName() || 'App user',
-          email: 'support@app.sunosathi.com',
-          role: 'support',
-          message: message.trim(),
-        }),
+        body: JSON.stringify({ kind: 'support', message: message.trim() }),
       })
       if (!resp.ok) throw new Error()
       setSent(true)

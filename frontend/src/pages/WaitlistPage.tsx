@@ -37,7 +37,7 @@ export default function WaitlistPage() {
   return (
     <main className="settings-page">
       <h3 className="monitor-heading">
-        {signups.length} signup{signups.length === 1 ? '' : 's'}
+        {signups.length} message{signups.length === 1 ? '' : 's'}
       </h3>
       {signups.map((s) => (
         <section className="setting-block" key={s.id}>
@@ -67,7 +67,7 @@ export default function WaitlistPage() {
         </section>
       ))}
       {signups.length === 0 && (
-        <p className="idle-hint">No signups yet — share sunosathi.com!</p>
+        <p className="idle-hint">No messages yet — support messages and call feedback land here.</p>
       )}
     </main>
   )

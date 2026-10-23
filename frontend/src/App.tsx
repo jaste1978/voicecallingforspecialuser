@@ -41,7 +41,7 @@ const TITLES: Record<string, string> = {
   '/models': 'AI Models',
   '/ringtone': 'Ring & Vibration',
   '/monitor': 'Call Monitor',
-  '/waitlist': 'Pilot Waitlist',
+  '/waitlist': 'Messages & feedback',
   '/users': 'Users & Numbers',
   '/costs': 'Costs',
   '/content': 'Content & SEO',
