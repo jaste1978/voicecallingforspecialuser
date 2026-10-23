@@ -68,7 +68,7 @@ export default function MonitorPage() {
   useEffect(() => {
     let alive = true
     const load = () =>
-      authFetch('/api/monitor')
+      authFetch('/api/monitor?limit=100')
         .then((r) => r.json())
         .then((d) => alive && setData(d))
         .catch(() => {})
@@ -83,6 +83,11 @@ export default function MonitorPage() {
   if (!data) return <main className="stub">Loading…</main>
 
   const screens = data.live.screens_connected
+  const okCount = data.calls.filter((c) => c.verdict === 'ok').length
+  const noAnsCount = data.calls.filter((c) => c.verdict === 'no_answer').length
+  const issueCount = data.calls.filter(
+    (c) => c.verdict === 'failed' || c.verdict === 'degraded').length
+  const chip = { display: 'inline-flex', alignItems: 'center', gap: 8 } as const
 
   return (
     <main className="settings-page">
@@ -97,7 +102,15 @@ export default function MonitorPage() {
         </p>
       </section>
 
-      <h3 className="monitor-heading">Last {data.calls.length} calls</h3>
+      <section className="setting-block">
+        <h3 style={{ marginBottom: 10 }}>Last {data.calls.length} calls</h3>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 15 }}>
+          <span style={chip}><span className="verdict-dot verdict-ok" /> <b>{okCount}</b> worked</span>
+          <span style={chip}><span className="verdict-dot verdict-muted" /> <b>{noAnsCount}</b> no answer</span>
+          <span style={chip}><span className="verdict-dot verdict-bad" /> <b>{issueCount}</b> need a look</span>
+        </div>
+      </section>
+
       {data.calls.map((c) => (
         <section className="setting-block" key={c.id}>
           <button
