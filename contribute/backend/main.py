@@ -827,7 +827,14 @@ if DIST.is_dir():
     def spa(path: str):
         if path.startswith("api/"):
             return Response(status_code=404)
-        candidate = DIST / path
-        if path and candidate.is_file():
-            return FileResponse(candidate)
+        # Files in frontend/public/ are served as they are, and the static
+        # pages among them also answer to a clean URL: /creators is
+        # creators.html. Resolve first so a crafted path cannot climb out.
+        for candidate in (DIST / path, DIST / f"{path.strip('/')}.html"):
+            try:
+                inside = candidate.resolve().is_relative_to(DIST.resolve())
+            except (OSError, RuntimeError):
+                inside = False
+            if path and inside and candidate.is_file():
+                return FileResponse(candidate)
         return FileResponse(DIST / "index.html")
