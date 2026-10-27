@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#FFF8F1" />
+<title>Teach AI to sign in ISL · SunoSathi</title>
+<meta name="description" content="Indian Sign Language has no AI because nobody collected the data. Record a few signs on your phone, or share this with your followers, and help build an open ISL dataset." />
+<link rel="canonical" href="https://contribute.sunosathi.com/creators" />
+<link rel="icon" href="https://sunosathi.com/favicon.svg" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="SunoSathi" />
+<meta property="og:title" content="Your signing can teach a phone to sign" />
+<meta property="og:description" content="Help build an open Indian Sign Language dataset. Ten minutes on your phone. Consent on every clip, delete anytime, credited by name if you want." />
+<meta property="og:url" content="https://contribute.sunosathi.com/creators" />
+<meta property="og:image" content="https://sunosathi.com/img/reader.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Your signing can teach a phone to sign" />
+<meta name="twitter:description" content="Help build an open Indian Sign Language dataset. Ten minutes on your phone." />
+<meta name="twitter:image" content="https://sunosathi.com/img/reader.jpg" />
+<style>
+  :root {
+    --bg: #FFF8F1; --panel: #FFFFFF; --surface: #FFEFE0; --text: #241B12; --dim: #8A7767;
+    --accent: #E4590A; --accent-ink: #C2410C; --divider: #F0E0D0; --ok: #1E9E5F;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', sans-serif;
+    font-size: 17px; line-height: 1.5; }
+  /* One language at a time. Both are always in the markup. */
+  html[data-lang="en"] [lang="hi"] { display: none; }
+  html[data-lang="hi"] [lang="en"] { display: none; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
+  .bar { display: flex; align-items: center; gap: 10px; padding: 12px 0; }
+  .bar .mark { width: 30px; height: 30px; }
+  .bar .brand { font-weight: 700; }
+  .bar .langs { margin-left: auto; display: flex; gap: 4px; }
+  .langs button { border: 1px solid var(--divider); background: transparent; color: var(--dim);
+    border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+  .langs button.on { background: var(--surface); border-color: var(--accent); color: var(--accent-ink); }
+  .kicker { color: var(--accent-ink); font-size: 13px; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; margin: 28px 0 8px; }
+  h1 { font-size: clamp(30px, 7vw, 40px); line-height: 1.12; margin: 0 0 14px; letter-spacing: -.01em; }
+  h2 { font-size: 22px; margin: 40px 0 12px; }
+  h3 { font-size: 17px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; }
+  .lead { font-size: 19px; }
+  .muted { color: var(--dim); }
+  .small { font-size: 14px; }
+  .stats { display: flex; gap: 10px; margin: 20px 0 6px; }
+  .stats[hidden] { display: none; }
+  .stat { flex: 1; background: var(--panel); border: 1px solid var(--divider); border-radius: 14px; padding: 12px 10px; text-align: center; }
+  .stat-n { display: block; font-size: 24px; font-weight: 700; }
+  .stat-label { display: block; color: var(--dim); font-size: 12px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; flex: 1 1 200px; font: inherit;
+    font-weight: 600; padding: 15px 18px; border-radius: 14px; border: 1px solid var(--divider); min-height: 52px;
+    background: var(--panel); color: var(--text); text-decoration: none; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.small { flex: none; font-size: 14px; padding: 8px 14px; min-height: 0; border-radius: 10px; }
+  .cards { display: grid; gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--divider); border-radius: 16px; padding: 16px; }
+  .card .n { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center; justify-content: center;
+    background: var(--surface); color: var(--accent-ink); font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  ol.steps { padding-left: 22px; margin: 0; }
+  ol.steps li { margin-bottom: 10px; }
+  ul.tips, ul.promises { list-style: none; padding: 0; margin: 0; }
+  ul.tips li, ul.promises li { padding: 10px 0 10px 30px; position: relative; border-bottom: 1px solid var(--divider); }
+  ul.tips li::before { content: ''; position: absolute; left: 4px; top: 18px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  ul.promises li::before { content: '✓'; position: absolute; left: 2px; top: 9px; color: var(--ok); font-weight: 700; }
+  .card.refer { margin-top: 12px; background: var(--surface); border-color: transparent; }
+  pre[hidden] { display: none; }
+  .copybox { background: var(--surface); border-radius: 14px; padding: 14px; margin: 10px 0 14px; }
+  .copybox pre { white-space: pre-wrap; word-break: break-word; margin: 0 0 10px; font: inherit; font-size: 15px; }
+  .frame { display: flex; gap: 16px; align-items: center; background: var(--panel); border: 1px solid var(--divider);
+    border-radius: 16px; padding: 14px; margin: 14px 0; }
+  .frame svg { flex: none; width: 96px; height: 128px; }
+  .contact a { color: var(--accent-ink); text-decoration: none; font-weight: 600; }
+  .contact li { margin-bottom: 6px; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--divider); color: var(--dim); font-size: 14px; }
+  footer a { color: inherit; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+    padding: 10px 18px; border-radius: 999px; font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256,256) scale(3.628) translate(-71.5,-73)"><path d="M100 26 C120 33 131 51 131 71 C131 100 111 120 84 120 C64 120 51 109 46 93" fill="none" stroke="#241B12" stroke-width="9" stroke-linecap="round"/><path d="M46 93 C44 80 51 71 62 71 C73 71 80 80 78 91" fill="none" stroke="#241B12" stroke-width="9" stroke-linecap="round"/><rect x="8" y="38" width="36" height="8" rx="4" fill="#E4590A"/><rect x="16" y="56" width="28" height="8" rx="4" fill="#E4590A" opacity=".85"/><rect x="24" y="74" width="20" height="8" rx="4" fill="#E4590A" opacity=".65"/></g></svg>
+    <span class="brand">सुनोसाथी</span>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-set="hi">हिं</button>
+      <button type="button" data-set="en" class="on">EN</button>
+    </div>
+  </header>
+
+  <p class="kicker"><span lang="en">SunoSathi · open ISL dataset</span><span lang="hi">सुनोसाथी · खुला ISL डेटासेट</span></p>
+  <h1><span lang="en">Your signing can teach a phone to sign.</span><span lang="hi">आपके साइन से फ़ोन साइन करना सीखेगा।</span></h1>
+  <p class="lead">
+    <span lang="en">SunoSathi is a free app that turns phone calls into live captions for deaf and hard-of-hearing people in India. Next, we want it to show the caller's words in Indian Sign Language. No AI can do that today, because nobody has the data. You can change that in ten minutes.</span>
+    <span lang="hi">सुनोसाथी एक मुफ़्त ऐप है जो भारत में बहरे और कम सुनने वाले लोगों के लिए फ़ोन कॉल को लाइव टेक्स्ट में बदलती है। अब हम चाहते हैं कि यह कॉल करने वाले की बात भारतीय सांकेतिक भाषा (ISL) में दिखाए। आज कोई AI यह नहीं कर सकता, क्योंकि किसी के पास डेटा नहीं है। आप दस मिनट में यह बदल सकते हैं।</span>
+  </p>
+
+  <div class="stats" id="stats" hidden>
+    <div class="stat"><span class="stat-n" id="s-clips">–</span><span class="stat-label"><span lang="en">recordings</span><span lang="hi">रिकॉर्डिंग</span></span></div>
+    <div class="stat"><span class="stat-n" id="s-people">–</span><span class="stat-label"><span lang="en">contributors</span><span lang="hi">योगदान देने वाले</span></span></div>
+    <div class="stat"><span class="stat-n" id="s-words">–</span><span class="stat-label"><span lang="en">words covered</span><span lang="hi">शब्द पूरे हुए</span></span></div>
+  </div>
+
+  <div class="cta">
+    <a class="btn primary" href="/"><span lang="en">Start recording</span><span lang="hi">रिकॉर्डिंग शुरू करें</span></a>
+    <a class="btn" href="#share"><span lang="en">Share with followers</span><span lang="hi">फ़ॉलोअर्स के साथ शेयर करें</span></a>
+  </div>
+
+  <h2><span lang="en">Why we are asking you</span><span lang="hi">हम आपसे क्यों कह रहे हैं</span></h2>
+  <div class="cards">
+    <div class="card">
+      <h3><span lang="en">You sign the way people really sign</span><span lang="hi">आप वैसे साइन करते हैं जैसे लोग सच में करते हैं</span></h3>
+      <p class="muted"><span lang="en">ISL dictionaries hold single words, signed slowly, by one person. A phone call is not like that. We need everyday signing, at natural speed, from many different signers, in every region's style.</span><span lang="hi">ISL शब्दकोशों में एक व्यक्ति के धीरे-धीरे किए गए अकेले शब्द हैं। फ़ोन कॉल वैसी नहीं होती। हमें रोज़मर्रा का साइन चाहिए, सामान्य गति से, कई अलग-अलग लोगों से, हर इलाके के अंदाज़ में।</span></p>
+    </div>
+    <div class="card">
+      <h3><span lang="en">Your followers trust you</span><span lang="hi">आपके फ़ॉलोअर्स आप पर भरोसा करते हैं</span></h3>
+      <p class="muted"><span lang="en">One story from you brings more signers than a month of our own posts. You do not have to promote an app. You are inviting your community to build something that will belong to it.</span><span lang="hi">आपकी एक स्टोरी हमारी महीने भर की पोस्ट से ज़्यादा लोग लाती है। आपको किसी ऐप का प्रचार नहीं करना है। आप अपने समुदाय को कुछ ऐसा बनाने के लिए बुला रहे हैं जो उसी का होगा।</span></p>
+    </div>
+    <div class="card">
+      <h3><span lang="en">It stays the community's</span><span lang="hi">यह समुदाय का ही रहेगा</span></h3>
+      <p class="muted"><span lang="en">Every clip carries the signer's consent. The dataset stays open for ISL research. Contributors are credited by name if they choose. Nothing is sold.</span><span lang="hi">हर क्लिप के साथ साइन करने वाले की सहमति जुड़ी रहती है। डेटासेट ISL रिसर्च के लिए खुला रहेगा। योगदान देने वालों का नाम, अगर वे चाहें, सूची में दिखेगा। कुछ भी बेचा नहीं जाएगा।</span></p>
+    </div>
+  </div>
+
+  <h2><span lang="en">Three ways to help</span><span lang="hi">मदद के तीन तरीके</span></h2>
+  <div class="cards">
+    <div class="card">
+      <span class="n">1</span>
+      <h3><span lang="en">Record 20 signs</span><span lang="hi">20 साइन रिकॉर्ड करें</span></h3>
+      <p class="muted"><span lang="en">Ten minutes, on your phone, wherever you are. A word appears, you sign it, you watch it back, you send it.</span><span lang="hi">दस मिनट, अपने फ़ोन पर, जहाँ भी हों। एक शब्द दिखेगा, आप उसे साइन करेंगे, देखेंगे, भेज देंगे।</span></p>
+      <a class="btn primary small" href="/"><span lang="en">Open the recorder</span><span lang="hi">रिकॉर्डर खोलें</span></a>
+    </div>
+    <div class="card" id="share">
+      <span class="n">2</span>
+      <h3><span lang="en">Tell your followers</span><span lang="hi">अपने फ़ॉलोअर्स को बताएँ</span></h3>
+      <p class="muted"><span lang="en">A story, a reel, or a post. Sign it in your own words. Here is a caption you can paste as it is or change.</span><span lang="hi">एक स्टोरी, रील या पोस्ट। अपने शब्दों में साइन करें। नीचे एक कैप्शन है, वैसे ही लगाएँ या बदल लें।</span></p>
+      <div class="copybox">
+        <pre id="caption-en" lang="en">Indian Sign Language has no AI, because nobody collected the data. @sunosathiapp is building an open ISL dataset so phone calls can one day be shown in signs. Takes 10 minutes on your phone. Consent on every clip, delete anytime, your name on the credits if you want.
+
+contribute.sunosathi.com
+
+#IndianSignLanguage #ISL #DeafIndia #SignLanguage #SunoSathi</pre>
+        <pre id="caption-hi" lang="hi">भारतीय सांकेतिक भाषा का कोई AI नहीं है, क्योंकि किसी ने डेटा इकट्ठा ही नहीं किया। @sunosathiapp एक खुला ISL डेटासेट बना रहा है, ताकि एक दिन फ़ोन कॉल साइन में दिखाई जा सकें। आपके फ़ोन पर 10 मिनट। हर क्लिप पर सहमति, कभी भी हटवा सकते हैं, चाहें तो नाम क्रेडिट में।
+
+contribute.sunosathi.com
+
+#IndianSignLanguage #ISL #DeafIndia #SignLanguage #SunoSathi</pre>
+        <button type="button" class="btn small" data-copy="caption"><span lang="en">Copy caption</span><span lang="hi">कैप्शन कॉपी करें</span></button>
+      </div>
+      <div class="copybox">
+        <pre id="story-en" lang="en">Teach AI to sign in ISL. 10 minutes on your phone. contribute.sunosathi.com</pre>
+        <pre id="story-hi" lang="hi">AI को ISL सिखाएँ। आपके फ़ोन पर 10 मिनट। contribute.sunosathi.com</pre>
+        <button type="button" class="btn small" data-copy="story"><span lang="en">Copy story line</span><span lang="hi">स्टोरी लाइन कॉपी करें</span></button>
+      </div>
+      <p class="muted small"><span lang="en">Tag @sunosathiapp and we will reshare. If you would rather we send you a short clip to post, write to us.</span><span lang="hi">@sunosathiapp को टैग करें, हम रीशेयर करेंगे। अगर आप चाहें कि हम आपको पोस्ट करने के लिए एक छोटी क्लिप भेजें, तो हमें लिखें।</span></p>
+    </div>
+    <div class="card">
+      <span class="n">3</span>
+      <h3><span lang="en">Review clips</span><span lang="hi">क्लिप जाँचें</span></h3>
+      <p class="muted"><span lang="en">Fluent signer or interpreter? Every recording is checked by two people before it enters the dataset. Reviewing takes a few seconds per clip, and regional variants are kept, not rejected.</span><span lang="hi">धाराप्रवाह साइन करते हैं या दुभाषिया हैं? हर रिकॉर्डिंग डेटासेट में जाने से पहले दो लोग जाँचते हैं। एक क्लिप जाँचने में कुछ सेकंड लगते हैं, और इलाके के अलग अंदाज़ रखे जाते हैं, हटाए नहीं जाते।</span></p>
+      <a class="btn small" href="mailto:namaste@sunosathi.com?subject=ISL%20reviewer"><span lang="en">Ask to be a reviewer</span><span lang="hi">रिव्यूअर बनने के लिए लिखें</span></a>
+    </div>
+  </div>
+
+  <div class="card refer">
+    <h3><span lang="en">Not a signer yourself? Send this to one.</span><span lang="hi">खुद साइन नहीं करते? किसी साइन करने वाले को यह भेजें।</span></h3>
+    <p class="muted"><span lang="en">A deaf friend, a family member, an interpreter, a teacher at a deaf school. One forward from you is how most signers will hear about this.</span><span lang="hi">कोई बहरा दोस्त, परिवार का सदस्य, दुभाषिया, बहरों के स्कूल का शिक्षक। आपका एक फ़ॉरवर्ड ही ज़्यादातर साइन करने वालों तक यह बात पहुँचाएगा।</span></p>
+    <div class="cta" style="margin-top:6px">
+      <a class="btn primary small" id="wa-share" href="https://wa.me/?text=" rel="noopener" target="_blank"><span lang="en">Send on WhatsApp</span><span lang="hi">WhatsApp पर भेजें</span></a>
+      <button type="button" class="btn small" data-copy="link"><span lang="en">Copy link</span><span lang="hi">लिंक कॉपी करें</span></button>
+    </div>
+    <pre id="link-en" lang="en" hidden>https://contribute.sunosathi.com/creators</pre>
+    <pre id="link-hi" lang="hi" hidden>https://contribute.sunosathi.com/creators</pre>
+    <pre id="wa-en" lang="en" hidden>Do you sign in ISL, or know someone who does? SunoSathi is building an open Indian Sign Language dataset so phone calls can one day be shown in signs. 10 minutes on a phone. Consent on every clip, delete anytime. https://contribute.sunosathi.com/creators</pre>
+    <pre id="wa-hi" lang="hi" hidden>क्या आप ISL में साइन करते हैं, या किसी ऐसे को जानते हैं? सुनोसाथी एक खुला भारतीय सांकेतिक भाषा डेटासेट बना रहा है, ताकि एक दिन फ़ोन कॉल साइन में दिखाई जा सकें। फ़ोन पर 10 मिनट। हर क्लिप पर सहमति, कभी भी हटवा सकते हैं। https://contribute.sunosathi.com/creators</pre>
+  </div>
+
+  <h2><span lang="en">How recording works</span><span lang="hi">रिकॉर्डिंग कैसे होती है</span></h2>
+  <ol class="steps">
+    <li><span lang="en">Open <b>contribute.sunosathi.com</b> on your phone and sign up with your phone number or email.</span><span lang="hi">अपने फ़ोन पर <b>contribute.sunosathi.com</b> खोलें और फ़ोन नंबर या ईमेल से साइन अप करें।</span></li>
+    <li><span lang="en">We approve your account, usually within a day. Mention your Instagram handle when you sign up and we will do it faster.</span><span lang="hi">हम आपका खाता मंज़ूर करते हैं, आमतौर पर एक दिन में। साइन अप करते समय अपना Instagram हैंडल लिखें, हम जल्दी कर देंगे।</span></li>
+    <li><span lang="en">Read the consent screen and tick it. Nothing is recorded before that.</span><span lang="hi">सहमति वाली स्क्रीन पढ़ें और टिक करें। उससे पहले कुछ भी रिकॉर्ड नहीं होता।</span></li>
+    <li><span lang="en">A word appears. Sign it once, three to five seconds. Watch it back, then send or redo. Skip any word you are not sure of.</span><span lang="hi">एक शब्द दिखेगा। उसे एक बार साइन करें, तीन से पाँच सेकंड। देखें, फिर भेजें या दोबारा करें। जिस शब्द पर पक्का न हो, उसे छोड़ दें।</span></li>
+  </ol>
+
+  <div class="frame" aria-hidden="true">
+    <svg viewBox="0 0 96 128"><rect x="4" y="4" width="88" height="120" rx="10" fill="#FFEFE0" stroke="#F0E0D0"/><circle cx="48" cy="34" r="12" fill="none" stroke="#241B12" stroke-width="3"/><path d="M26 112 C26 80 34 62 48 62 C62 62 70 80 70 112" fill="none" stroke="#241B12" stroke-width="3" stroke-linecap="round"/><path d="M20 90 L34 70" stroke="#E4590A" stroke-width="4" stroke-linecap="round"/><path d="M76 86 L62 70" stroke="#E4590A" stroke-width="4" stroke-linecap="round"/><line x1="12" y1="14" x2="84" y2="14" stroke="#E4590A" stroke-width="2" stroke-dasharray="3 3"/><line x1="12" y1="112" x2="84" y2="112" stroke="#E4590A" stroke-width="2" stroke-dasharray="3 3"/></svg>
+    <div>
+      <h3><span lang="en">Set up the shot</span><span lang="hi">फ़्रेम ऐसे रखें</span></h3>
+      <ul class="tips">
+        <li><span lang="en">Plain wall behind you, light on your face, no window at your back.</span><span lang="hi">पीछे सादी दीवार, चेहरे पर रोशनी, पीठ के पीछे खिड़की नहीं।</span></li>
+        <li><span lang="en">Phone at chest height. Frame from mid-thigh to a hand above your head. Hands that leave the frame are lost.</span><span lang="hi">फ़ोन छाती की ऊँचाई पर। फ़्रेम जाँघ के बीच से सिर के ऊपर एक हाथ तक। फ़्रेम से बाहर गया हाथ खो जाता है।</span></li>
+        <li><span lang="en">Keep your face clear. Eyebrows and mouth carry grammar, the AI learns from them too.</span><span lang="hi">चेहरा साफ़ दिखे। भौंहें और मुँह व्याकरण बताते हैं, AI उनसे भी सीखता है।</span></li>
+        <li><span lang="en">Sign at your natural speed, in your own regional style. Variants are wanted.</span><span lang="hi">अपनी सामान्य गति से, अपने इलाके के अंदाज़ में साइन करें। अलग अंदाज़ चाहिए।</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span lang="en">What we promise</span><span lang="hi">हमारा वादा</span></h2>
+  <ul class="promises">
+    <li><span lang="en">Every clip carries your consent, with the exact wording you agreed to.</span><span lang="hi">हर क्लिप के साथ आपकी सहमति जुड़ी रहती है, ठीक उन्हीं शब्दों में जिन पर आपने हाँ कहा।</span></li>
+    <li><span lang="en">Delete any time. One email to namaste@sunosathi.com and your recordings go.</span><span lang="hi">कभी भी हटवाएँ। namaste@sunosathi.com पर एक ईमेल, और आपकी रिकॉर्डिंग हट जाएँगी।</span></li>
+    <li><span lang="en">Your name appears on the contributors list only if you tick yes.</span><span lang="hi">आपका नाम योगदान देने वालों की सूची में तभी दिखेगा जब आप हाँ पर टिक करें।</span></li>
+    <li><span lang="en">The dataset stays open for ISL research. It is never sold.</span><span lang="hi">डेटासेट ISL रिसर्च के लिए खुला रहेगा। कभी बेचा नहीं जाएगा।</span></li>
+    <li><span lang="en">We never copy videos from ISL dictionaries or other creators. Every clip is recorded by a consenting person, here.</span><span lang="hi">हम ISL शब्दकोशों या दूसरे क्रिएटर्स के वीडियो कभी कॉपी नहीं करते। हर क्लिप यहीं, सहमति देने वाले व्यक्ति ने रिकॉर्ड की है।</span></li>
+  </ul>
+
+  <h2><span lang="en">Questions</span><span lang="hi">सवाल</span></h2>
+  <ul class="contact promises" style="list-style:none">
+    <li><span lang="en">Email</span><span lang="hi">ईमेल</span>: <a href="mailto:namaste@sunosathi.com">namaste@sunosathi.com</a></li>
+    <li>Instagram: <a href="https://www.instagram.com/sunosathiapp/" rel="noopener">@sunosathiapp</a></li>
+    <li>WhatsApp: <a href="https://chat.whatsapp.com/HxvaMuUiZtV9jz7ewJfSdT" rel="noopener"><span lang="en">SunoSathi community</span><span lang="hi">सुनोसाथी कम्युनिटी</span></a></li>
+  </ul>
+
+  <div class="cta">
+    <a class="btn primary" href="/"><span lang="en">Start recording</span><span lang="hi">रिकॉर्डिंग शुरू करें</span></a>
+  </div>
+
+  <footer>
+    <span lang="en">SunoSathi gives deaf and hard-of-hearing people in India the phone call, on their own number.</span><span lang="hi">सुनोसाथी भारत में बहरे और कम सुनने वाले लोगों को उनके अपने नंबर पर फ़ोन कॉल देती है।</span>
+    <a href="https://sunosathi.com">sunosathi.com</a>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var KEY = 'sunosathi.lang';
+  function setLang(l) {
+    root.setAttribute('data-lang', l);
+    root.setAttribute('lang', l);
+    document.querySelectorAll('.langs button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-set') === l);
+    });
+    try { localStorage.setItem(KEY, l); } catch (e) {}
+    var wa = document.getElementById('wa-share');
+    var waText = document.getElementById('wa-' + l);
+    if (wa && waText) wa.href = 'https://wa.me/?text=' + encodeURIComponent(waText.textContent);
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  setLang(saved === 'hi' ? 'hi' : 'en');
+  document.querySelectorAll('.langs button').forEach(function (b) {
+    b.addEventListener('click', function () { setLang(b.getAttribute('data-set')); });
+  });
+
+  var toast = document.getElementById('toast');
+  function say(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(say.t);
+    say.t = setTimeout(function () { toast.classList.remove('show'); }, 2000);
+  }
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var lang = root.getAttribute('data-lang');
+      var el = document.getElementById(b.getAttribute('data-copy') + '-' + lang);
+      var text = el ? el.textContent : '';
+      var done = function () { say(lang === 'hi' ? 'कॉपी हो गया' : 'Copied'); };
+      var fail = function () {
+        if (!el) return;
+        var r = document.createRange(); r.selectNodeContents(el);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        say(lang === 'hi' ? 'अब कॉपी करें' : 'Selected, now copy');
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fail);
+      } else { fail(); }
+    });
+  });
+
+  // Live numbers from the same service. The page is complete without them.
+  fetch('/api/stats').then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
+    if (!s) return;
+    document.getElementById('s-clips').textContent = s.clips;
+    document.getElementById('s-people').textContent = s.people;
+    document.getElementById('s-words').textContent = s.phrases_covered + '/' + s.phrases_total;
+    document.getElementById('stats').hidden = false;
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

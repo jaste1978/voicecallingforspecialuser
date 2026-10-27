@@ -97,3 +97,44 @@ Namaste. I am Tejas, founder of SunoSathi. We built a captioned phone for deaf a
 Hello. I am Tejas, founder of SunoSathi, a captioned phone line for deaf and hard of hearing people in India. Your students or clients may find it useful for phone calls with family, doctors and offices. Free pilot open. Would you take a look and tell me what works and what does not? A follow would help us a lot.
 
 Send the website only in the second message, after they reply.
+
+## Creator contribution ask (27 Oct 2026)
+
+A second, different ask for ISL creators and interpreters: not "try the app"
+but "help build the open ISL dataset". The explainer they get is
+**https://contribute.sunosathi.com/creators** (source:
+`contribute/frontend/public/creators.html`, Hindi + English, with a copyable
+caption and story line, the recording steps, and the consent promises).
+
+Send from Tejas's personal account (see Plan B above). Two messages, link
+only in the second:
+
+**D1. Creator / interpreter, first message (no link)**
+Namaste. I am Tejas, founder of SunoSathi, a free captioned-phone app for deaf
+people in India. We are now building the first open Indian Sign Language
+dataset so that calls can one day be shown in signs. There is no ISL AI today
+because nobody has the data. Signers like you can fix that in ten minutes on
+a phone. May I send you a short page that explains it?
+
+**D2. After they reply (with link)**
+Thank you. Here it is: contribute.sunosathi.com/creators — it has the steps,
+what we promise (consent on every clip, delete any time, your name on the
+credits if you want), and a caption you can paste if you feel like telling
+your followers. If you sign up, write your Instagram handle in the name and
+I will approve it the same day.
+
+**D3. Follow-up a week later, if they recorded**
+Your signs are in. [N] people have joined since your story. Would you like
+to review clips too? It takes a few seconds per clip, and we keep regional
+variants rather than rejecting them.
+
+Before the first DM goes out:
+- Accounts are gated (`ACCESS_MODE=approval`). Either approve pending
+  accounts at least twice a day while the push runs, or set
+  `ACCESS_MODE=open` on the contribute service for the campaign window.
+- The consent wording is still `v1-draft` (`contribute/backend/consent.py`).
+  Creators will read it closely; settle it first.
+
+The prioritised target list, read from the @sunosathiapp following list on
+27 Oct 2026, is in [ISL-CREATOR-OUTREACH.md](ISL-CREATOR-OUTREACH.md), with
+the tracking table.
