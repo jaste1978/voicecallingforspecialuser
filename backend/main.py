@@ -106,6 +106,13 @@ async def _start_sentinel():
     sentinel.start()
 
 
+@app.on_event("startup")
+async def _start_deletion_sweep():
+    import asyncio
+    import deletion
+    asyncio.create_task(deletion.sweep_loop())
+
+
 @app.post("/api/sentinel/nightwatch")
 async def api_sentinel_nightwatch(request: Request):
     """Run the synthetic end-to-end call test right now (admin)."""
@@ -334,15 +341,10 @@ async def api_user_delete(user_id: int, request: Request):
         return Response(status_code=404)
     if target["id"] == admin["id"] or target.get("role") == "admin":
         return JSONResponse({"error": "cannot delete an admin"}, status_code=400)
-    from history import _conn
-    with _conn() as conn:
-        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
-        conn.execute("DELETE FROM numbers WHERE user_id = ?", (user_id,))
-        conn.execute("DELETE FROM contacts WHERE user_id = ?", (user_id,))
-        conn.execute("DELETE FROM calls WHERE user_id = ?", (user_id,))
-        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    import deletion
+    counts = deletion.purge_user(user_id, target.get("email") or "")
     logger.info("user %s deleted by admin", user_id)
-    return {"ok": True}
+    return {"ok": True, "counts": counts}
 
 
 @app.delete("/api/me")
@@ -356,15 +358,98 @@ async def api_delete_me(payload: dict, request: Request):
         return JSONResponse({"error": "admins cannot self-delete"}, status_code=400)
     if not auth.verify(user["email"], payload.get("password") or ""):
         return JSONResponse({"error": "wrong password"}, status_code=403)
-    from history import _conn
-    with _conn() as conn:
-        for table in ("sessions", "numbers", "contacts", "calls"):
-            conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user["id"],))
-        conn.execute("DELETE FROM users WHERE id = ?", (user["id"],))
+    import deletion
+    deletion.purge_user(user["id"], user.get("email") or "")
     logger.info("user %s deleted their own account", user["id"])
     await telegram_notify.send(
         f"🗑 <b>Account deleted</b> (self-serve): {user.get('name') or '?'} "
         f"&lt;{user['email']}&gt;")
+    return {"ok": True}
+
+
+# ---- user-initiated deletion with a 12-hour grace window -------------------
+
+@app.get("/api/account/delete-status")
+async def api_delete_status(request: Request):
+    """Does the signed-in user have a pending deletion scheduled?"""
+    user = _require_user(request)
+    import deletion
+    p = deletion.pending_for(user["id"])
+    return {"pending": p is not None,
+            "delete_after": p["delete_after"] if p else None}
+
+
+@app.post("/api/account/delete-request")
+async def api_delete_request(payload: dict, request: Request):
+    """Schedule account+data deletion after a 12-hour grace window. The user
+    confirms with their password and can cancel any time before it runs."""
+    import deletion
+    import telegram_notify
+
+    user = _require_user(request)
+    if user.get("role") == "admin":
+        return JSONResponse({"error": "admins cannot schedule self-deletion"},
+                            status_code=400)
+    if not auth.verify(user["email"], payload.get("password") or ""):
+        return JSONResponse({"error": "wrong password"}, status_code=403)
+    r = deletion.request(user["id"], user["email"], user.get("name") or "")
+    await telegram_notify.send(
+        "🗑 <b>Deletion requested</b> (auto-deletes in 12h): "
+        f"{user.get('name') or '?'} &lt;{user['email']}&gt;")
+    return {"ok": True, "delete_after": r["delete_after"]}
+
+
+@app.post("/api/account/delete-cancel")
+async def api_delete_cancel(request: Request):
+    """Cancel a pending deletion while still inside the grace window."""
+    user = _require_user(request)
+    import deletion
+    return {"ok": deletion.cancel_for(user["id"])}
+
+
+@app.post("/api/account/clear-calls")
+async def api_clear_calls(payload: dict, request: Request):
+    """Delete only this user's call history (calls, transcripts, audio).
+    The account is kept."""
+    user = _require_user(request)
+    if not auth.verify(user["email"], payload.get("password") or ""):
+        return JSONResponse({"error": "wrong password"}, status_code=403)
+    import deletion
+    return {"ok": True, **deletion.purge_calls(user["id"])}
+
+
+@app.get("/api/deletions")
+async def api_deletions_list(request: Request):
+    """Admin: pending deletion requests with their auto-delete time."""
+    _require_admin(request)
+    import deletion
+    return {"requests": deletion.list_pending()}
+
+
+@app.post("/api/deletions/{req_id}/execute")
+async def api_deletions_execute(req_id: int, request: Request):
+    """Admin: run a pending deletion right now."""
+    import deletion
+    import telegram_notify
+
+    _require_admin(request)
+    req = deletion.get(req_id)
+    if req is None or req.get("status") != "pending":
+        return JSONResponse({"error": "no pending request"}, status_code=404)
+    counts = deletion.purge_user(req["user_id"], req.get("email") or "")
+    deletion.mark(req_id, "done")
+    await telegram_notify.send(
+        "🗑 <b>Account deleted</b> (admin expedited): "
+        f"{req.get('name') or '?'} &lt;{req.get('email') or '?'}&gt;\n{counts}")
+    return {"ok": True, "counts": counts}
+
+
+@app.post("/api/deletions/{req_id}/cancel")
+async def api_deletions_cancel(req_id: int, request: Request):
+    """Admin: cancel a pending deletion request."""
+    _require_admin(request)
+    import deletion
+    deletion.mark(req_id, "cancelled")
     return {"ok": True}
 
 
@@ -1162,6 +1247,8 @@ if _dist.is_dir():
             return FileResponse(_dist / "guide.html")
         if path == "signs":
             return FileResponse(_dist / "signs.html")
+        if path in ("delete-data", "delete-account", "data-deletion"):
+            return FileResponse(_dist / "delete-data.html")
         if path == "privacy":
             return FileResponse(_dist / "privacy.html")
         if path == "blog":
