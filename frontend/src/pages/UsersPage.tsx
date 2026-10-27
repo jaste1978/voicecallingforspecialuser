@@ -41,6 +41,10 @@ export default function UsersPage() {
   const [copiedFor, setCopiedFor] = useState<number | null>(null)
   // per-user add-number inputs
   const [numInputs, setNumInputs] = useState<Record<number, string>>({})
+  // pending account-deletion requests (12h grace)
+  const [dels, setDels] = useState<Array<{
+    id: number; user_id: number; email: string; name: string; delete_after: number
+  }>>([])
 
   function load() {
     authFetch('/api/users')
@@ -51,6 +55,22 @@ export default function UsersPage() {
       .then((r) => r.json())
       .then((d) => setMe({ did: d.did, forward_code: d.forward_code }))
       .catch(() => {})
+    authFetch('/api/deletions')
+      .then((r) => r.json())
+      .then((d) => setDels(d.requests ?? []))
+      .catch(() => {})
+  }
+
+  async function execDeletion(id: number) {
+    if (!confirm('Permanently delete this account and ALL its data now? This cannot be undone.')) return
+    const resp = await authFetch(`/api/deletions/${id}/execute`, { method: 'POST' })
+    if (!resp.ok) setError('Could not delete — try again')
+    load()
+  }
+
+  async function cancelDeletion(id: number) {
+    await authFetch(`/api/deletions/${id}/cancel`, { method: 'POST' })
+    load()
   }
 
   useEffect(load, [])
@@ -161,6 +181,35 @@ export default function UsersPage() {
 
   return (
     <main className="settings-page">
+      {dels.length > 0 && (
+        <section className="setting-block" style={{ borderColor: 'var(--danger)' }}>
+          <h3>🗑 Deletion requests ({dels.length})</h3>
+          <p className="idle-hint">
+            These accounts will be permanently deleted when their 12-hour window
+            elapses. Delete now to expedite, or cancel the request.
+          </p>
+          {dels.map((d) => (
+            <div className="configured-row" key={d.id}>
+              <span>
+                <strong>{d.name || d.email}</strong>
+                <small>
+                  {d.email} · auto-deletes {new Date(d.delete_after * 1000).toLocaleString()}
+                </small>
+              </span>
+              <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button className="promptbtn" onClick={() => void cancelDeletion(d.id)}>
+                  Cancel
+                </button>
+                <button className="bigbtn start" style={{ minHeight: 40, padding: '0 16px', flex: '0 0 auto', background: 'var(--danger)' }}
+                  onClick={() => void execDeletion(d.id)}>
+                  Delete now
+                </button>
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+
       {pending.length > 0 && (
         <section className="setting-block" style={{ borderColor: 'var(--accent)' }}>
           <h3>⏳ Waiting for approval ({pending.length})</h3>
