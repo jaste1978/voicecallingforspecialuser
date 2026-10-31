@@ -36,6 +36,9 @@ const CANDIDATES: Array<{ delegate: 'GPU' | 'CPU'; blendshapes: boolean }> = [
   { delegate: 'CPU', blendshapes: false },
 ]
 
+/** How long one backend may take to initialise before we try the next. */
+const CREATE_TIMEOUT_MS = 20_000
+
 /**
  * The first backend that actually runs a frame.
  *
@@ -43,9 +46,21 @@ const CANDIDATES: Array<{ delegate: 'GPU' | 'CPU'; blendshapes: boolean }> = [
  * NGO session will hand us, and "the camera page is broken on my phone"
  * would cost us contributors we cannot afford to lose. CPU is slower, and a
  * 10fps clip is still a usable clip, because frames carry real timestamps.
+ *
+ * Two phone realities the studio never met:
+ *  - The 14MB model is downloaded ONCE, here, with progress, and handed to
+ *    every candidate as a buffer. Letting each attempt fetch its own copy
+ *    meant a slow connection paid for the model up to four times, and the
+ *    contributor stared at "getting ready" with no idea why.
+ *  - Some GPU drivers hang inside initialisation rather than throwing, and a
+ *    probe that only falls through on throw would wait forever. Each attempt
+ *    gets a deadline; a landmarker that resolves late is closed, not used.
  */
-export async function createLandmarker(): Promise<LandmarkerHandle> {
+export async function createLandmarker(
+  onProgress?: (fraction: number) => void,
+): Promise<LandmarkerHandle> {
   const fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm')
+  const model = await fetchModel('/models/holistic_landmarker.task', onProgress)
   const probe = document.createElement('canvas')
   probe.width = 64
   probe.height = 64
@@ -55,15 +70,16 @@ export async function createLandmarker(): Promise<LandmarkerHandle> {
   for (const c of CANDIDATES) {
     let lm: HolisticLandmarker | null = null
     try {
-      lm = await HolisticLandmarker.createFromOptions(fileset, {
-        baseOptions: {
-          modelAssetPath: '/models/holistic_landmarker.task',
-          delegate: c.delegate,
-        },
-        runningMode: 'VIDEO',
-        outputFaceBlendshapes: c.blendshapes,
-        minHandLandmarksConfidence: 0.4,
-      })
+      lm = await withDeadline(
+        HolisticLandmarker.createFromOptions(fileset, {
+          baseOptions: { modelAssetBuffer: model, delegate: c.delegate },
+          runningMode: 'VIDEO',
+          outputFaceBlendshapes: c.blendshapes,
+          minHandLandmarksConfidence: 0.4,
+        }),
+        CREATE_TIMEOUT_MS,
+        `${c.delegate} init`,
+      )
       lm.detectForVideo(probe, performance.now())
       // Rejected candidates dump a wall of MediaPipe errors to the console
       // on the way here. Say so, or the next person to open devtools spends
@@ -79,6 +95,53 @@ export async function createLandmarker(): Promise<LandmarkerHandle> {
     }
   }
   throw new Error(`MediaPipe Holistic would not run.\n${failures.join('\n')}`)
+}
+
+/** The model file as bytes, reporting download progress as a 0–1 fraction. */
+async function fetchModel(url: string, onProgress?: (fraction: number) => void): Promise<Uint8Array> {
+  const res = await fetch(url)
+  if (!res.ok || !res.body) throw new Error(`model download failed (${res.status})`)
+  const total = Number(res.headers.get('content-length')) || 0
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let got = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    got += value.length
+    if (total) onProgress?.(Math.min(1, got / total))
+  }
+  const out = new Uint8Array(got)
+  let at = 0
+  for (const chunk of chunks) {
+    out.set(chunk, at)
+    at += chunk.length
+  }
+  onProgress?.(1)
+  return out
+}
+
+/**
+ * Reject when `work` has not settled within `ms`. If it settles afterwards
+ * the landmarker it produced is closed, so a hung GPU attempt that finally
+ * wakes up does not hold a WebGL context next to the backend we chose.
+ */
+function withDeadline(
+  work: Promise<HolisticLandmarker>, ms: number, what: string,
+): Promise<HolisticLandmarker> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      settled = true
+      reject(new Error(`${what} timed out after ${ms}ms`))
+      work.then((lm) => lm.close()).catch(() => {})
+    }, ms)
+    work.then(
+      (lm) => { clearTimeout(timer); if (settled) lm.close(); else { settled = true; resolve(lm) } },
+      (err) => { clearTimeout(timer); if (!settled) { settled = true; reject(err) } },
+    )
+  })
 }
 
 /** Longest edge we hand the detector, regardless of what the camera gives. */
