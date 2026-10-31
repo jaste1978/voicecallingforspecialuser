@@ -17,36 +17,68 @@ export type { Baseline, Extracted } from '@studio/holistic'
 export interface LandmarkerHandle {
   landmarker: HolisticLandmarker
   delegate: 'GPU' | 'CPU'
+  blendshapes: boolean
 }
 
+// Not every combination runs. On current MediaPipe builds the WebGL delegate
+// cannot execute the face-blendshapes subgraph ("No support of const"), and
+// it fails when the graph RUNS, not when the landmarker is created. Without
+// a probe, `createFromOptions` succeeds on the GPU and then every real frame
+// throws: the hand dots never light, no take ever sees a hand, and a second
+// later the recorder reports "camera tracking stopped". Same list and same
+// order as `sign-studio/src/lib/holistic.ts`, best first: blendshapes give
+// calibration-free facial grammar, which is the part of ISL we least want to
+// approximate; GPU is the difference between 25fps and 10fps on a phone.
+const CANDIDATES: Array<{ delegate: 'GPU' | 'CPU'; blendshapes: boolean }> = [
+  { delegate: 'GPU', blendshapes: true },
+  { delegate: 'CPU', blendshapes: true },
+  { delegate: 'GPU', blendshapes: false },
+  { delegate: 'CPU', blendshapes: false },
+]
+
 /**
- * GPU where we can get it, CPU where we cannot. A budget Android with a
- * blocklisted WebGL driver is exactly the phone an NGO session will hand us,
- * and "the camera page is broken on my phone" would cost us contributors we
- * cannot afford to lose. CPU is slower — 10fps rather than 25 — and a
+ * The first backend that actually runs a frame.
+ *
+ * A budget Android with a blocklisted WebGL driver is exactly the phone an
+ * NGO session will hand us, and "the camera page is broken on my phone"
+ * would cost us contributors we cannot afford to lose. CPU is slower, and a
  * 10fps clip is still a usable clip, because frames carry real timestamps.
  */
 export async function createLandmarker(): Promise<LandmarkerHandle> {
   const fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm')
-  const options = {
-    baseOptions: { modelAssetPath: '/models/holistic_landmarker.task' },
-    runningMode: 'VIDEO' as const,
-    outputFaceBlendshapes: true,
-    minHandLandmarksConfidence: 0.4,
+  const probe = document.createElement('canvas')
+  probe.width = 64
+  probe.height = 64
+  probe.getContext('2d')?.fillRect(0, 0, 64, 64)
+
+  const failures: string[] = []
+  for (const c of CANDIDATES) {
+    let lm: HolisticLandmarker | null = null
+    try {
+      lm = await HolisticLandmarker.createFromOptions(fileset, {
+        baseOptions: {
+          modelAssetPath: '/models/holistic_landmarker.task',
+          delegate: c.delegate,
+        },
+        runningMode: 'VIDEO',
+        outputFaceBlendshapes: c.blendshapes,
+        minHandLandmarksConfidence: 0.4,
+      })
+      lm.detectForVideo(probe, performance.now())
+      // Rejected candidates dump a wall of MediaPipe errors to the console
+      // on the way here. Say so, or the next person to open devtools spends
+      // an hour debugging a working recorder.
+      console.info(
+        `[contribute] using ${c.delegate}${c.blendshapes ? ' with blendshapes' : ' (geometric facial grammar)'}.`,
+        failures.length ? `Preceding MediaPipe errors are rejected probes: ${failures.length}.` : '',
+      )
+      return { landmarker: lm, ...c }
+    } catch (err) {
+      lm?.close()
+      failures.push(`${c.delegate}${c.blendshapes ? '+blendshapes' : ''}: ${err instanceof Error ? err.message.split('\n')[0] : err}`)
+    }
   }
-  try {
-    const landmarker = await HolisticLandmarker.createFromOptions(fileset, {
-      ...options,
-      baseOptions: { ...options.baseOptions, delegate: 'GPU' as const },
-    })
-    return { landmarker, delegate: 'GPU' }
-  } catch {
-    const landmarker = await HolisticLandmarker.createFromOptions(fileset, {
-      ...options,
-      baseOptions: { ...options.baseOptions, delegate: 'CPU' as const },
-    })
-    return { landmarker, delegate: 'CPU' }
-  }
+  throw new Error(`MediaPipe Holistic would not run.\n${failures.join('\n')}`)
 }
 
 /** Longest edge we hand the detector, regardless of what the camera gives. */
