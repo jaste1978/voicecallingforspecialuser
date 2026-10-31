@@ -837,4 +837,7 @@ if DIST.is_dir():
                 inside = False
             if path and inside and candidate.is_file():
                 return FileResponse(candidate)
-        return FileResponse(DIST / "index.html")
+        # The shell must revalidate on every load. Hashed /assets/ chunks are
+        # immutable, but a phone that keeps a stale index.html keeps loading
+        # the OLD hashed chunks it names, and a deploy never reaches it.
+        return FileResponse(DIST / "index.html", headers={"Cache-Control": "no-cache"})
