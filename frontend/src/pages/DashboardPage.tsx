@@ -37,6 +37,10 @@ interface Stats {
   contribute: { clips: number; people: number; phrases_covered: number; phrases_total: number } | null
 }
 
+// Caption-accuracy figures are hidden for now (too few scored calls to be
+// meaningful to an outside reader). Flip to true to show them everywhere.
+const SHOW_ACCURACY = false
+
 const LANG: Record<string, string> = {
   'hi-IN': 'Hindi', 'gu-IN': 'Gujarati', 'mr-IN': 'Marathi', 'en-IN': 'English',
   hi: 'Hindi', gu: 'Gujarati', mr: 'Marathi', en: 'English', unknown: 'Not detected',
@@ -109,10 +113,15 @@ export default function DashboardPage() {
       <h3 className="monitor-heading">All time</h3>
       <div className="kpi-grid">
         <Kpi label="Active users" value={n(data.users.active)} sub={`${n(data.users.pending)} pending · ${n(data.users.with_calls)} have taken a call`} />
-        <Kpi label="Calls" value={n(c.calls)} sub={`${n(c.answered)} answered · ${answerRate == null ? '—' : answerRate + '% answer rate'}`} />
+        <Kpi label="Calls" value={n(c.calls)} sub={`${n(c.answered)} answered · ${n(c.missed)} missed`} />
         <Kpi label="Talk minutes" value={n(Math.round(c.minutes))} sub={c.first_call ? `since ${c.first_call}` : 'no calls yet'} />
-        <Kpi label="Caption accuracy" value={pct(c.avg_quality)} tone={qualityTone(c.avg_quality)}
-          sub={c.scored ? `median ${pct(c.median_quality)} · range ${pct(c.min_quality)}–${pct(c.max_quality)} · ${n(c.scored)} scored` : 'no scored calls'} />
+        {SHOW_ACCURACY ? (
+          <Kpi label="Caption accuracy" value={pct(c.avg_quality)} tone={qualityTone(c.avg_quality)}
+            sub={c.scored ? `median ${pct(c.median_quality)} · range ${pct(c.min_quality)}–${pct(c.max_quality)} · ${n(c.scored)} scored` : 'no scored calls'} />
+        ) : (
+          <Kpi label="Answer rate" value={answerRate == null ? '—' : `${answerRate}%`} tone={answerRate == null ? undefined : answerRate >= 75 ? 'ok' : answerRate >= 50 ? 'warn' : 'bad'}
+            sub={`${n(c.missed)} missed of ${n(c.calls)}`} />
+        )}
         <Kpi label="Spend" value={rs(c.spend)} sub={c.minutes ? `≈ ₹${(c.spend / c.minutes).toFixed(2)} per minute` : ''} />
         <Kpi label="ISL clips" value={data.contribute ? n(data.contribute.clips) : '—'}
           sub={data.contribute ? `${n(data.contribute.people)} contributor${data.contribute.people === 1 ? '' : 's'} · ${n(data.contribute.phrases_covered)} of ${n(data.contribute.phrases_total)} phrases` : 'contribute.sunosathi.com unreachable'} />
@@ -127,7 +136,7 @@ export default function DashboardPage() {
             <tr><td>Answered</td><td>{n(w.today.answered)}</td><td>{n(w['7d'].answered)}</td><td>{n(w['30d'].answered)}</td></tr>
             <tr><td>Users calling</td><td>{n(w.today.users)}</td><td>{n(w['7d'].users)}</td><td>{n(w['30d'].users)}</td></tr>
             <tr><td>Minutes</td><td>{n(w.today.minutes)}</td><td>{n(w['7d'].minutes)}</td><td>{n(w['30d'].minutes)}</td></tr>
-            <tr><td>Accuracy</td><td>{pct(w.today.avg_quality)}</td><td>{pct(w['7d'].avg_quality)}</td><td>{pct(w['30d'].avg_quality)}</td></tr>
+            {SHOW_ACCURACY && <tr><td>Accuracy</td><td>{pct(w.today.avg_quality)}</td><td>{pct(w['7d'].avg_quality)}</td><td>{pct(w['30d'].avg_quality)}</td></tr>}
             <tr><td>Spend</td><td>{rs(w.today.spend)}</td><td>{rs(w['7d'].spend)}</td><td>{rs(w['30d'].spend)}</td></tr>
           </tbody>
         </table>
@@ -137,7 +146,7 @@ export default function DashboardPage() {
       <section className="setting-block">
         <div className="dash-bars" role="img" aria-label="Calls per day, last 14 days">
           {data.by_day.map((d) => (
-            <div className="dash-bar" key={d.day} title={`${d.day}: ${d.calls} calls, ${d.answered} answered${d.avg_quality != null ? `, ${d.avg_quality}% accurate` : ''}`}>
+            <div className="dash-bar" key={d.day} title={`${d.day}: ${d.calls} calls, ${d.answered} answered${SHOW_ACCURACY && d.avg_quality != null ? `, ${d.avg_quality}% accurate` : ''}`}>
               <i style={{ height: `${(d.calls / maxDay) * 100}%` }}>
                 <em style={{ height: d.calls ? `${(d.answered / d.calls) * 100}%` : 0 }} />
               </i>
@@ -152,12 +161,12 @@ export default function DashboardPage() {
       <h3 className="monitor-heading">By month</h3>
       <section className="setting-block dash-table">
         <table>
-          <thead><tr><th>Month</th><th>Calls</th><th>Answered</th><th>Users</th><th>Minutes</th><th>Accuracy</th></tr></thead>
+          <thead><tr><th>Month</th><th>Calls</th><th>Answered</th><th>Users</th><th>Minutes</th>{SHOW_ACCURACY && <th>Accuracy</th>}</tr></thead>
           <tbody>
             {data.by_month.map((m) => (
-              <tr key={m.month}><td>{monthName(m.month)}</td><td>{n(m.calls)}</td><td>{n(m.answered)}</td><td>{n(m.users)}</td><td>{n(m.minutes)}</td><td>{pct(m.avg_quality)}</td></tr>
+              <tr key={m.month}><td>{monthName(m.month)}</td><td>{n(m.calls)}</td><td>{n(m.answered)}</td><td>{n(m.users)}</td><td>{n(m.minutes)}</td>{SHOW_ACCURACY && <td>{pct(m.avg_quality)}</td>}</tr>
             ))}
-            {data.by_month.length === 0 && <tr><td colSpan={6}>No calls yet</td></tr>}
+            {data.by_month.length === 0 && <tr><td colSpan={SHOW_ACCURACY ? 6 : 5}>No calls yet</td></tr>}
           </tbody>
         </table>
       </section>
@@ -176,10 +185,10 @@ export default function DashboardPage() {
           <h3 className="monitor-heading">Most active users</h3>
           <section className="setting-block dash-table">
             <table>
-              <thead><tr><th>User</th><th>Calls</th><th>Minutes</th><th>Accuracy</th><th>Last call</th></tr></thead>
+              <thead><tr><th>User</th><th>Calls</th><th>Minutes</th>{SHOW_ACCURACY && <th>Accuracy</th>}<th>Last call</th></tr></thead>
               <tbody>
                 {data.top_users.map((u) => (
-                  <tr key={u.user_id}><td>{u.name || `#${u.user_id}`}</td><td>{n(u.calls)}</td><td>{n(u.minutes)}</td><td>{pct(u.avg_quality)}</td><td>{u.last ?? '—'}</td></tr>
+                  <tr key={u.user_id}><td>{u.name || `#${u.user_id}`}</td><td>{n(u.calls)}</td><td>{n(u.minutes)}</td>{SHOW_ACCURACY && <td>{pct(u.avg_quality)}</td>}<td>{u.last ?? '—'}</td></tr>
                 ))}
               </tbody>
             </table>
