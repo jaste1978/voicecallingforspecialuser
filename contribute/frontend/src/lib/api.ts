@@ -59,6 +59,7 @@ export interface User {
 
 export interface AdminUser extends Omit<User, 'credit_optin'> {
   note: string
+  trusted: boolean
   clips: number
   created_at: number
   approved_at: number | null
@@ -180,6 +181,11 @@ export const adminUsers = (status = '') =>
   json<{ users: AdminUser[] }>(
     `/api/admin/users${status ? `?status=${encodeURIComponent(status)}` : ''}`,
   ).then((r) => r.users)
+
+export const setUserTrusted = (id: string, trusted: boolean) =>
+  json<{ ok: boolean; trusted: boolean }>(`/api/admin/users/${id}/trusted`, {
+    method: 'POST', body: JSON.stringify({ trusted }),
+  })
 
 export const setUserStatus = (id: string, status: Status, role?: Role) =>
   json<{ ok: boolean }>(`/api/admin/users/${id}/status`, {

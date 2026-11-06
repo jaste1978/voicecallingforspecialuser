@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HolisticLandmarker } from '@mediapipe/tasks-vision'
 import type { SignFrame } from '@sign/poseFormat'
+import { drawFrame, fitCanvas } from '@sign/renderPose'
 import type { Coverage, Phrase } from '../lib/api'
 import {
   createLandmarker, DEFAULT_BASELINE, DetectionSurface, extractFrame, pickVideoMime,
@@ -22,6 +23,9 @@ interface Props {
   phrase: Phrase
   lang: Lang
   busy: boolean
+  /** Hands-free run through the list — see AUTO_KEEP_MS. */
+  session: boolean
+  onSessionChange: (on: boolean) => void
   onSubmit: (take: Take) => void
   onSkip: () => void
 }
@@ -29,6 +33,17 @@ interface Props {
 type Mode = 'boot' | 'ready' | 'countdown' | 'recording' | 'review'
 
 const COUNTDOWN_MS = 3000
+/**
+ * How long a finished take sits on screen before it is kept and the next
+ * phrase begins, in session mode.
+ *
+ * Working through 124 phrases a tap at a time is the reason a sitting with a
+ * fluent signer never happens. So the default is "keep", and a redo is the
+ * thing that costs a tap — the opposite of the one-off flow, because in a
+ * session most takes are fine and the signer is already in rhythm. Long
+ * enough to see the replay and react; short enough that nobody is waiting.
+ */
+const AUTO_KEEP_MS = 4000
 const MAX_RECORD_MS = 7000
 const MIN_RECORD_MS = 700
 /** Below this share of frames, the face was not really in shot. ISL grammar
@@ -48,6 +63,9 @@ const T = {
     noHands: 'हाथ दिखे ही नहीं। दोबारा कोशिश करें।',
     tooShort: 'बहुत छोटा। साइन पूरा करके रुकें।',
     stalled: 'कैमरा ट्रैकिंग रुक गई। पेज दोबारा खोलें।',
+    session: 'लगातार रिकॉर्डिंग',
+    sessionHint: 'एक के बाद एक शब्द अपने आप आते रहेंगे।',
+    keep: 'रखें', pause: 'रोकें', sessionOn: 'लगातार मोड चालू',
   },
   en: {
     record: 'Record', stop: 'Stop', again: 'Redo', submit: 'Send',
@@ -58,13 +76,19 @@ const T = {
     noHands: 'No hands were seen. Please try again.',
     tooShort: 'Too short. Finish the sign, then stop.',
     stalled: 'Camera tracking stopped. Please reload the page.',
+    session: 'Continuous session',
+    sessionHint: 'Phrases come one after another, hands-free.',
+    keep: 'Keep', pause: 'Pause', sessionOn: 'Session running',
   },
 } as const
 
-export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props) {
+export default function Recorder({
+  phrase, lang, busy, session, onSessionChange, onSubmit, onSkip,
+}: Props) {
   const t = T[lang]
 
   const videoRef = useRef<HTMLVideoElement>(null)
+  const figureRef = useRef<HTMLCanvasElement>(null)
   const replayRef = useRef<HTMLVideoElement>(null)
   const landmarkerRef = useRef<HolisticLandmarker | null>(null)
   const surfaceRef = useRef(new DetectionSurface())
@@ -90,6 +114,7 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
   const [take, setTake] = useState<Take | null>(null)
   const [replayUrl, setReplayUrl] = useState('')
   const [stalled, setStalled] = useState(false)
+  const [autoKeepLeft, setAutoKeepLeft] = useState(0)
 
   const setModeBoth = useCallback((m: Mode) => {
     modeRef.current = m
@@ -124,6 +149,7 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
             stalledRef.current = false
             setStalled(false)
           }
+          if (ex) drawLiveFigure(figureRef.current, ex.frame)
         } catch {
           failRef.current++
           if (failRef.current > FAIL_LIMIT && !stalledRef.current) {
@@ -216,6 +242,9 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
   useEffect(() => {
     setTake(null)
     setElapsed(0)
+    setAutoKeepLeft(0)
+    framesRef.current = []
+    seenRef.current = { body: 0, face: 0, handL: 0, handR: 0, n: 0 }
     if (modeRef.current === 'review') setModeBoth('ready')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phrase.id])
@@ -286,6 +315,15 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
     }
   }, [setModeBoth])
 
+  // In session mode the signer never presses Record: reaching 'ready' — on a
+  // fresh phrase or after a redo — is itself the cue to count down.
+  useEffect(() => {
+    if (!session || mode !== 'ready' || busy || stalled) return
+    const t = setTimeout(() => start(), 400)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, mode, busy, stalled, phrase.id])
+
   const start = () => {
     if (mode !== 'ready' || busy) return
     startedAtRef.current = performance.now()
@@ -315,6 +353,31 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
       : take.durationMs < MIN_RECORD_MS ? t.tooShort : ''
   )
   const warning = take && !problem && take.coverage.face < FACE_MIN ? t.noFace : ''
+
+  /**
+   * Session mode keeps a good take on a timer. A take with a real problem —
+   * no hands, too short — stops the clock instead: the one thing worse than
+   * a tap per phrase is a session that quietly files rubbish while the
+   * signer is looking at the next prompt.
+   */
+  useEffect(() => {
+    if (!session || mode !== 'review' || !take || problem || busy) {
+      setAutoKeepLeft(0)
+      return
+    }
+    let left = AUTO_KEEP_MS
+    setAutoKeepLeft(left)
+    const id = setInterval(() => {
+      left -= 250
+      setAutoKeepLeft(left)
+      if (left <= 0) {
+        clearInterval(id)
+        onSubmit(take)
+      }
+    }, 250)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, mode, take, problem, busy])
 
   if (error) {
     return (
@@ -348,6 +411,14 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
         )}
         {mode === 'review' && !replayUrl && (
           <div className="no-replay">{take?.frames.length ?? 0} frames</div>
+        )}
+
+        {/* What the dataset is actually getting, drawn from the same frame
+            we store. The tracking dots say a hand was seen; this says whether
+            what was seen looks like the sign — and it is the one honest
+            answer to "what are you keeping about me". */}
+        {mode !== 'review' && (
+          <canvas ref={figureRef} className="live-figure" aria-hidden="true" />
         )}
 
         {status && <div className="stage-status">{status}</div>}
@@ -388,7 +459,10 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
               disabled={busy || !!problem || !take}
               onClick={() => take && onSubmit(take)}
             >
-              {busy ? t.sending : t.submit}
+              {busy ? t.sending
+                : session && autoKeepLeft > 0
+                  ? `${t.keep} ${Math.ceil(autoKeepLeft / 1000)}`
+                  : session ? t.keep : t.submit}
             </button>
           </>
         ) : mode === 'recording' || mode === 'countdown' ? (
@@ -404,7 +478,21 @@ export default function Recorder({ phrase, lang, busy, onSubmit, onSkip }: Props
       </div>
 
       {stalled && <p className="hint stalled">{t.stalled}</p>}
-      {mode === 'ready' && !stalled && <p className="hint">{t.hold}</p>}
+      {mode === 'ready' && !stalled && !session && <p className="hint">{t.hold}</p>}
+
+      {session ? (
+        <button className="link session-pause" onClick={() => onSessionChange(false)}>
+          ⏸ {t.pause} · {t.sessionOn}
+        </button>
+      ) : mode === 'ready' ? (
+        <label className="session-toggle">
+          <input type="checkbox" checked={false} onChange={() => onSessionChange(true)} />
+          <span>
+            <span className="s-main">{t.session}</span>
+            <span className="s-alt">{t.sessionHint}</span>
+          </span>
+        </label>
+      ) : null}
     </div>
   )
 }
@@ -429,4 +517,19 @@ function trim(frames: SignFrame[]): SignFrame[] {
   b = Math.min(frames.length - 1, b + 2)
   const t0 = frames[a].t
   return frames.slice(a, b + 1).map((f) => ({ ...f, t: f.t - t0 }))
+}
+
+/**
+ * The live pose inset.
+ *
+ * Mirrored in CSS to match the camera preview beneath it. The stored frame is
+ * untouched — this is only so that a contributor raising their right hand
+ * sees it move on the same side in both views. Two views of the same person
+ * disagreeing about which hand moved reads as a bug, every time.
+ */
+function drawLiveFigure(canvas: HTMLCanvasElement | null, frame: SignFrame) {
+  if (!canvas) return
+  const surface = fitCanvas(canvas)
+  if (!surface) return
+  drawFrame(surface.ctx, surface.w, surface.h, frame, { fit: 0.82 })
 }

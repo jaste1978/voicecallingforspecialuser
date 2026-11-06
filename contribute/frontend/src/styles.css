@@ -485,3 +485,45 @@ main { flex: 1; display: flex; flex-direction: column; }
 .reasons { display: flex; flex-direction: column; gap: 8px; }
 .reasons .btn { flex: none; }
 .reasons .link { align-self: center; }
+
+/* Live pose inset — what the dataset is actually receiving, while you sign.
+   scaleX(-1) matches the mirrored camera preview underneath it; the stored
+   keypoints are never mirrored. */
+.live-figure {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 34%;
+  max-width: 150px;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid rgba(255, 248, 241, .55);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .35);
+  transform: scaleX(-1);
+}
+
+/* ---- continuous session ---- */
+.session-toggle {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 13px;
+  background: var(--surface);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.session-toggle input {
+  width: 20px; height: 20px; margin: 1px 0 0;
+  accent-color: var(--accent); flex: none;
+}
+.s-main { display: block; font-size: 15px; }
+.s-alt { display: block; font-size: 13px; color: var(--dim); margin-top: 1px; }
+
+.session-pause {
+  align-self: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+.pill.trusted { background: #EAF0FF; color: #2B4A9B; }
