@@ -267,6 +267,13 @@ export default function SettingsTab() {
       {admin && (
         <>
           <p className="settings-group">Admin</p>
+          <button className="home-btn" onClick={() => navigate('/dashboard')}>
+            <span className="emoji icon"><ChartIcon size={28} /></span>
+            <span>
+              Dashboard
+              <small>All numbers, all time: users, calls, accuracy, spend, ISL</small>
+            </span>
+          </button>
           <button className="home-btn" onClick={() => navigate('/users')}>
             <span className="emoji icon"><PhoneIncomingIcon size={28} /></span>
             <span>
