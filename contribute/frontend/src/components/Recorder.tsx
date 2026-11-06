@@ -213,7 +213,9 @@ export default function Recorder({
           await v.play()
         }
         setStatus(t.loading)
-        const { landmarker } = await createLandmarker()
+        const { landmarker } = await createLandmarker((fraction) => {
+          setStatus(`${t.loading} ${Math.round(fraction * 100)}%`)
+        })
         if (cancelled) {
           landmarker.close()
           return
