@@ -57,6 +57,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [progress, setProgress] = useState<Progress | null>(null)
   const [toast, setToast] = useState('')
+  const [session, setSession] = useState(false)
   const turnstileHost = useRef<HTMLDivElement>(null)
   const t = T[lang]
 
@@ -204,6 +205,7 @@ export default function App() {
       if (/sign in|not approved|consent/i.test(message)) {
         await recheck()
       }
+      setSession(false)
       setError(message)
     } finally {
       setBusy(false)
@@ -211,6 +213,7 @@ export default function App() {
   }
 
   const openAt = (path: string, next: Screen) => {
+    setSession(false)
     window.history.pushState(null, '', path)
     setScreen(next)
   }
@@ -280,11 +283,17 @@ export default function App() {
         {!booting && screen === 'record' && (
           queue.length > 0 ? (
             <Suspense fallback={<div className="pane"><p className="muted">{t.loading}</p></div>}>
+              {/* Deliberately NOT keyed on the phrase. A remount tears down the
+                  camera and rebuilds the MediaPipe graph, which is invisible
+                  when someone taps through one phrase at a time and ruinous
+                  in a continuous session — 124 phrases would mean 124 model
+                  loads. The Recorder resets itself on phrase.id instead. */}
               <Recorder
-                key={queue[0].id}
                 phrase={queue[0]}
                 lang={lang}
                 busy={busy}
+                session={session}
+                onSessionChange={setSession}
                 onSubmit={submit}
                 onSkip={advance}
               />

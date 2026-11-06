@@ -6,34 +6,36 @@ import type { Lang } from '../lib/device'
 
 const T = {
   hi: {
-    kicker: 'सुनोसाथी · खुला ISL डेटासेट',
+    kicker: 'सुनोसाथी · ISL रिकॉर्डिंग',
     title: 'भारतीय सांकेतिक भाषा, मिलकर सिखाएँ',
     lead: 'AI को साइन लैंग्वेज सिखाने के लिए असली साइन चाहिए — असली लोगों के। '
-      + 'आप एक-एक शब्द रिकॉर्ड करके यह डेटासेट बना सकते हैं।',
+      + 'आप एक-एक शब्द रिकॉर्ड करके यह सिखा सकते हैं।',
     how: 'कैसे काम करता है',
     steps: [
       'स्क्रीन पर एक शब्द दिखेगा',
       'उसे साइन में करके 3–5 सेकंड रिकॉर्ड करें',
       'देखकर भेजें, या फिर से करें',
     ],
-    why: 'यह डेटा बहरे लोगों के लिए बनी सुनोसाथी ऐप में साइन दिखाने के काम आएगा, '
-      + 'और ISL रिसर्च के लिए खुला रहेगा।',
+    why: 'यह रिकॉर्डिंग सुनोसाथी ऐप को साइन दिखाना सिखाएगी, ताकि बहरे लोग '
+      + 'फ़ोन पर बात समझ सकें। आपका वीडियो ऐप में किसी को नहीं दिखेगा — '
+      + 'सिर्फ़ आपकी हरकत से बनी आकृति।',
     start: 'शुरू करें',
     clips: 'रिकॉर्डिंग', people: 'योगदान देने वाले', covered: 'शब्द पूरे हुए',
   },
   en: {
-    kicker: 'SunoSathi · open ISL dataset',
+    kicker: 'SunoSathi · ISL recordings',
     title: 'Teach Indian Sign Language, together',
     lead: 'Teaching an AI to sign takes real signing, from real people. '
-      + 'You can build that dataset one word at a time.',
+      + 'You can teach it one word at a time.',
     how: 'How it works',
     steps: [
       'A word appears on your screen',
       'Sign it — a 3–5 second recording',
       'Watch it back, then send or redo',
     ],
-    why: 'This data will let the SunoSathi app show signs to deaf users, '
-      + 'and stays open for ISL research.',
+    why: 'Your recordings teach the SunoSathi app to show signs, so Deaf '
+      + 'people can follow a phone call. Your video is never shown to anyone '
+      + 'in the app — only a figure drawn from your movements.',
     start: 'Start contributing',
     clips: 'recordings', people: 'contributors', covered: 'words covered',
   },

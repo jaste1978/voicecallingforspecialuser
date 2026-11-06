@@ -54,7 +54,11 @@ CREATE TABLE IF NOT EXISTS users (
     note TEXT DEFAULT '',
     approved_at REAL,
     approved_by TEXT DEFAULT '',
-    last_seen_at REAL
+    last_seen_at REAL,
+    -- A contributor whose signing we take on credential rather than on peer
+    -- review: a working interpreter, a Deaf native signer vouched for by a
+    -- partner. Their clips land approved, and say so.
+    trusted INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_users_device ON users(device_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_identifier
@@ -120,6 +124,12 @@ CREATE TABLE IF NOT EXISTS contributions (
     video_status TEXT DEFAULT 'none',
     video_bytes INTEGER DEFAULT 0,
     review_status TEXT DEFAULT 'pending',
+    -- How a clip became approved: '' for peer review, 'trusted-contributor'
+    -- when it arrived from someone we trust by credential. Never collapse
+    -- the two — "two reviewers agreed" and "we trusted the source" are
+    -- different claims about the data, and only one of them survives being
+    -- asked about.
+    approved_via TEXT DEFAULT '',
     variant_tag TEXT DEFAULT '',
     client TEXT DEFAULT '',
     created_at REAL DEFAULT (unixepoch('now')),
@@ -164,6 +174,7 @@ def init(seed_path: str | None = None) -> None:
         _rename_legacy(c)
         c.executescript(SCHEMA)
         _add_missing_columns(c)
+        _add_contribution_columns(c)
         c.execute("DELETE FROM sessions WHERE expires_at < unixepoch('now')")
     seed_phrases(seed_path)
 
@@ -176,6 +187,12 @@ def _rename_legacy(c: sqlite3.Connection) -> None:
         "SELECT name FROM sqlite_master WHERE type = 'table'")}
     if "contributors" in tables and "users" not in tables:
         c.execute("ALTER TABLE contributors RENAME TO users")
+
+
+def _add_contribution_columns(c: sqlite3.Connection) -> None:
+    have = {r[1] for r in c.execute("PRAGMA table_info(contributions)")}
+    if "approved_via" not in have:
+        c.execute("ALTER TABLE contributions ADD COLUMN approved_via TEXT DEFAULT ''")
 
 
 def _add_missing_columns(c: sqlite3.Connection) -> None:
@@ -193,6 +210,7 @@ def _add_missing_columns(c: sqlite3.Connection) -> None:
         "approved_at": "REAL",
         "approved_by": "TEXT DEFAULT ''",
         "last_seen_at": "REAL",
+        "trusted": "INTEGER DEFAULT 0",
     }
     for name, decl in added.items():
         if name not in have:

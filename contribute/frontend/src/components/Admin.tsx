@@ -2,7 +2,7 @@
 // everything else is there so a decision can be made without leaving it.
 
 import { useCallback, useEffect, useState } from 'react'
-import { adminUsers, setUserStatus } from '../lib/api'
+import { adminUsers, setUserStatus, setUserTrusted } from '../lib/api'
 import type { AdminUser, Role, Status } from '../lib/api'
 
 const FILTERS: { key: string; label: string }[] = [
@@ -39,6 +39,19 @@ export default function Admin({ selfId, onLeave }: Props) {
   }, [])
 
   useEffect(() => { load(filter) }, [filter, load])
+
+  const trust = async (id: string, trusted: boolean) => {
+    setActing(id)
+    setError('')
+    try {
+      await setUserTrusted(id, trusted)
+      await load(filter)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setActing('')
+    }
+  }
 
   const act = async (id: string, status: Status, role?: Role) => {
     setActing(id)
@@ -84,6 +97,7 @@ export default function Admin({ selfId, onLeave }: Props) {
               <span className="user-name">{u.name}</span>
               <span className={`pill ${u.status}`}>{u.status}</span>
               {u.role !== 'contributor' && <span className="pill role">{u.role}</span>}
+              {u.trusted && <span className="pill trusted">trusted</span>}
             </div>
             <div className="user-id">{u.identifier}</div>
             {u.note && <p className="user-note">{u.note}</p>}
@@ -107,10 +121,16 @@ export default function Admin({ selfId, onLeave }: Props) {
                   </button>
                 </>
               ) : u.status === 'approved' ? (
-                u.id === selfId
-                  ? <span className="muted small">that's you</span>
-                  : <button className="btn small ghost" disabled={acting === u.id}
-                            onClick={() => act(u.id, 'suspended')}>Suspend</button>
+                <>
+                  <button className="btn small ghost" disabled={acting === u.id}
+                          onClick={() => trust(u.id, !u.trusted)}>
+                    {u.trusted ? 'Untrust' : 'Trust signing'}
+                  </button>
+                  {u.id === selfId
+                    ? <span className="muted small">that's you</span>
+                    : <button className="btn small ghost" disabled={acting === u.id}
+                              onClick={() => act(u.id, 'suspended')}>Suspend</button>}
+                </>
               ) : (
                 <button className="btn small" disabled={acting === u.id}
                         onClick={() => act(u.id, 'approved')}>Re-approve</button>

@@ -437,18 +437,26 @@ async def api_contribute(payload: dict, request: Request):
         if not upload_url:
             key = ""
 
+        # A trusted contributor's clip is approved on arrival and says how.
+        # It never enters the review queue, because asking two people to
+        # second-guess a working interpreter is how a queue stops being read.
+        trusted = bool(u["trusted"])
+        review_status = "approved" if trusted else "pending"
+        approved_via = "trusted-contributor" if trusted else ""
+
         c.execute(
             """INSERT INTO contributions
                    (id, phrase_id, contributor_id, consent_id, pose_format, fps,
                     duration_ms, frame_count, cov_body, cov_face, cov_hand_l,
                     cov_hand_r, keypoints, keypoints_bytes, video_key, video_mime,
-                    video_status, client)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    video_status, client, review_status, approved_via)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (cid, phrase_id, contributor_id, consent_id, POSE_FORMAT,
              float(payload.get("fps") or 0), duration_ms, len(frames),
              float(cov.get("body") or 0), float(cov.get("face") or 0),
              float(cov.get("handL") or 0), float(cov.get("handR") or 0),
-             blob, len(blob), key, mime, status, _client_note(request)),
+             blob, len(blob), key, mime, status, _client_note(request),
+             review_status, approved_via),
         )
 
     return {"id": cid, "upload_url": upload_url, "video_key": key,
@@ -693,6 +701,7 @@ def api_admin_users(request: Request, status: str = "",
     return {"users": [{
         "id": r["id"], "name": r["display_name"], "identifier": r["identifier"],
         "role": r["role"], "status": r["status"], "note": r["note"],
+        "trusted": bool(r["trusted"]),
         "clips": r["clips"], "created_at": r["created_at"],
         "approved_at": r["approved_at"], "last_seen_at": r["last_seen_at"],
     } for r in rows]}
@@ -757,6 +766,24 @@ async def api_admin_set_status(uid: str, payload: dict, request: Request,
     return {"ok": True, "id": uid, "status": status}
 
 
+@app.post("/api/admin/users/{uid}/trusted")
+def api_admin_set_trusted(uid: str, payload: dict, request: Request,
+                          x_admin_key: str | None = Header(None)):
+    """Take this contributor's signing on credential.
+
+    Only ever applies to clips recorded after the fact: flipping the flag does
+    not reach back and approve a pile of already-pending clips, because that
+    decision was made about a person, not about takes nobody has watched."""
+    if not _is_admin(request, x_admin_key):
+        return Response(status_code=401)
+    trusted = 1 if payload.get("trusted") else 0
+    with db.conn() as c:
+        if not c.execute("SELECT 1 FROM users WHERE id = ?", (uid,)).fetchone():
+            return JSONResponse({"error": "unknown user"}, status_code=404)
+        c.execute("UPDATE users SET trusted = ? WHERE id = ?", (trusted, uid))
+    return {"ok": True, "id": uid, "trusted": bool(trusted)}
+
+
 @app.get("/api/admin/export.jsonl")
 def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
                      review_status: str = "", limit: int = 5000):
@@ -784,6 +811,12 @@ def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
         with db.conn() as c:
             for r in c.execute(sql, args):
                 yield _json.dumps({
+                    # Stable identity for the clip, and when it was recorded.
+                    # A consumer needs both: one to name the artefact it
+                    # writes and to trace it back here, the other to break a
+                    # tie between two equally well tracked takes.
+                    "id": r["id"],
+                    "created_at": r["created_at"],
                     "phrase_id": r["phrase_id"],
                     "gloss": r["gloss"],
                     "kind": r["kind"],
@@ -793,6 +826,7 @@ def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
                     "contributor_id": r["contributor_id"],
                     "consent_id": r["consent_id"],
                     "review_status": r["review_status"],
+                    "approved_via": r["approved_via"] or "peer-review",
                     "variant_tag": r["variant_tag"],
                     "format": r["pose_format"],
                     "fps": r["fps"],
