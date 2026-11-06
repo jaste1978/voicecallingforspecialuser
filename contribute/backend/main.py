@@ -811,6 +811,12 @@ def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
         with db.conn() as c:
             for r in c.execute(sql, args):
                 yield _json.dumps({
+                    # Stable identity for the clip, and when it was recorded.
+                    # A consumer needs both: one to name the artefact it
+                    # writes and to trace it back here, the other to break a
+                    # tie between two equally well tracked takes.
+                    "id": r["id"],
+                    "created_at": r["created_at"],
                     "phrase_id": r["phrase_id"],
                     "gloss": r["gloss"],
                     "kind": r["kind"],
