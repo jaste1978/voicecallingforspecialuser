@@ -125,10 +125,10 @@ CREATE TABLE IF NOT EXISTS contributions (
     video_bytes INTEGER DEFAULT 0,
     review_status TEXT DEFAULT 'pending',
     -- How a clip became approved: '' for peer review, 'trusted-contributor'
-    -- when it arrived from someone we trust by credential. Never collapse
-    -- the two — "two reviewers agreed" and "we trusted the source" are
-    -- different claims about the data, and only one of them survives being
-    -- asked about.
+    -- when it arrived from someone we trust by credential, 'admin-override'
+    -- when an admin settled it by hand. Never collapse them: "two reviewers
+    -- agreed", "we trusted the source" and "an admin decided" are different
+    -- claims about the data, and only one of them survives being asked about.
     approved_via TEXT DEFAULT '',
     variant_tag TEXT DEFAULT '',
     client TEXT DEFAULT '',
@@ -261,6 +261,21 @@ def settle(contribution_id: str, c: sqlite3.Connection) -> str:
         "SELECT verdict, variant_tag FROM reviews WHERE contribution_id = ?",
         (contribution_id,),
     ).fetchall()
+
+    # An admin who settled this clip by hand outranks the vote count. Without
+    # this, a reviewer holding a stale queue can vote after the override and
+    # quietly undo it — one reject is not two, so the derived status would
+    # fall back to pending and the decision would vanish.
+    override = c.execute(
+        "SELECT approved_via, review_status FROM contributions WHERE id = ?",
+        (contribution_id,),
+    ).fetchone()
+    if override and override["approved_via"] == "admin-override":
+        tag = next((r["variant_tag"] for r in rows if r["variant_tag"]), "")
+        if tag:
+            c.execute("UPDATE contributions SET variant_tag = ? WHERE id = ?",
+                      (tag, contribution_id))
+        return override["review_status"]
     approve = sum(1 for r in rows if r["verdict"] == "approve")
     reject = sum(1 for r in rows if r["verdict"] == "reject")
 

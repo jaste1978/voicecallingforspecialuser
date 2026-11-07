@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import Admin from './components/Admin'
 import Auth from './components/Auth'
+import Clips from './components/Clips'
 import Consent from './components/Consent'
 import Landing from './components/Landing'
 import Pending from './components/Pending'
@@ -21,7 +22,8 @@ import * as turnstile from './lib/turnstile'
 // the model code downloads while they are reading.
 const Recorder = lazy(() => import('./components/Recorder'))
 
-type Screen = 'landing' | 'auth' | 'pending' | 'consent' | 'record' | 'admin' | 'review'
+type Screen = 'landing' | 'auth' | 'pending' | 'consent' | 'record' | 'admin'
+  | 'review' | 'clips'
 
 /** Refill the queue before it runs dry, so nobody watches a spinner between
  *  two signs. */
@@ -33,7 +35,8 @@ const T = {
     doneNote: 'अभी के लिए सारे शब्द रिकॉर्ड हो चुके हैं। बाद में और जुड़ेंगे।',
     loading: 'शब्द लाए जा रहे हैं…', retry: 'दोबारा कोशिश करें',
     videoLost: 'वीडियो नहीं भेजा जा सका, पर साइन का डेटा सुरक्षित है।',
-    signOut: 'साइन आउट', admin: 'एडमिन', review: 'जाँच', booting: 'खुल रहा है…',
+    signOut: 'साइन आउट', admin: 'एडमिन', review: 'जाँच', clips: 'क्लिप',
+    booting: 'खुल रहा है…',
   },
   en: {
     thanks: 'Thank you 🙏', signs: (n: number) => `sign${n === 1 ? '' : 's'} contributed`,
@@ -41,7 +44,8 @@ const T = {
     doneNote: 'Every word is recorded for now. More will be added.',
     loading: 'Loading words…', retry: 'Try again',
     videoLost: 'The video did not upload, but your sign data is saved.',
-    signOut: 'Sign out', admin: 'Admin', review: 'Review', booting: 'Starting…',
+    signOut: 'Sign out', admin: 'Admin', review: 'Review', clips: 'Clips',
+    booting: 'Starting…',
   },
 } as const
 
@@ -78,6 +82,7 @@ export default function App() {
     if (u.status !== 'approved') return 'pending'
     const path = window.location.pathname
     if (u.role === 'admin' && path === '/admin') return 'admin'
+    if (u.role === 'admin' && path === '/clips') return 'clips'
     if (path === '/review' && (u.role === 'reviewer' || u.role === 'admin')) return 'review'
     const current = await getCurrentConsent().catch(() => ({ consent_id: null }))
     if (!current.consent_id) return 'consent'
@@ -237,6 +242,9 @@ export default function App() {
               {t.review}
             </button>
           )}
+          {user?.role === 'admin' && screen !== 'clips' && (
+            <button className="link" onClick={() => openAt('/clips', 'clips')}>{t.clips}</button>
+          )}
           {user?.role === 'admin' && screen !== 'admin' && (
             <button className="link" onClick={() => openAt('/admin', 'admin')}>{t.admin}</button>
           )}
@@ -275,6 +283,8 @@ export default function App() {
         {!booting && screen === 'admin' && user && (
           <Admin selfId={user.id} onLeave={leaveSubScreen} />
         )}
+
+        {!booting && screen === 'clips' && <Clips onLeave={leaveSubScreen} />}
 
         {!booting && screen === 'review' && (
           <Review lang={lang} onLeave={leaveSubScreen} />
