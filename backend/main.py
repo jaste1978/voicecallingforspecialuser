@@ -178,6 +178,7 @@ async def api_register_otp(payload: dict, request: Request):
 
 @app.post("/api/register")
 async def api_register(payload: dict, request: Request):
+    import emailer
     import otp
     import telegram_notify
 
@@ -205,6 +206,14 @@ async def api_register(payload: dict, request: Request):
         f"🆕 <b>New SunoSathi registration</b>\n{name} &lt;{email}&gt;\n"
         f"Number: {number}{os_line}\nApprove in Settings → Users &amp; Numbers."
     )
+    # Acknowledge the sign-up so the manual-approval wait is not silent. Best
+    # effort: a mail hiccup must never fail a registration that already saved.
+    if emailer.configured():
+        try:
+            subject, html = emailer.account_pending(name, os_pref)
+            await emailer.send(email, subject, html)
+        except Exception:
+            logger.exception("account_pending email failed for %s", email)
     return {"ok": True, "id": uid}
 
 
