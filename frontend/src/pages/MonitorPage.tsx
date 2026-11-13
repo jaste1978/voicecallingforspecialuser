@@ -11,6 +11,7 @@ interface Stage {
 
 interface CallReport {
   id: number
+  call_uuid: string
   from_number: string
   direction: string
   started_at: number
@@ -61,9 +62,28 @@ function fmtWhen(ts: number): string {
   })
 }
 
+type TranscriptState = 'loading' | 'error' | string[]
+
 export default function MonitorPage() {
   const [data, setData] = useState<MonitorData | null>(null)
   const [expanded, setExpanded] = useState<number | null>(null)
+  const [transcripts, setTranscripts] = useState<Record<string, TranscriptState>>({})
+
+  const toggle = (c: CallReport) => {
+    const open = expanded === c.id ? null : c.id
+    setExpanded(open)
+    // Lazy-load the transcript the first time a call is opened, so the 5s
+    // poll stays light and call content is only fetched on demand.
+    if (open !== null && transcripts[c.call_uuid] === undefined) {
+      setTranscripts((t) => ({ ...t, [c.call_uuid]: 'loading' }))
+      authFetch(`/api/calls/${c.call_uuid}/transcript`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then((d) =>
+          setTranscripts((t) => ({ ...t, [c.call_uuid]: d.transcript ?? [] })))
+        .catch(() =>
+          setTranscripts((t) => ({ ...t, [c.call_uuid]: 'error' })))
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -115,7 +135,7 @@ export default function MonitorPage() {
         <section className="setting-block" key={c.id}>
           <button
             className="monitor-row"
-            onClick={() => setExpanded(expanded === c.id ? null : c.id)}
+            onClick={() => toggle(c)}
           >
             <span className={`verdict-dot ${VERDICT_STYLE[c.verdict]}`} />
             <span className="monitor-main">
@@ -140,20 +160,39 @@ export default function MonitorPage() {
             </span>
           </button>
           {expanded === c.id && (
-            <div className="funnel">
-              {c.stages.map((s) => (
-                <div className="funnel-row" key={s.stage}>
-                  <span className={s.ok ? 'funnel-ok' : 'funnel-bad'}>
-                    {s.ok ? '✓' : '✗'}
-                  </span>
-                  <span className="funnel-name">{STAGE_LABELS[s.stage] ?? s.stage}</span>
-                  <span className="funnel-time">
-                    {s.at_ms != null ? `+${(s.at_ms / 1000).toFixed(2)}s` : '—'}
-                  </span>
-                  <span className="funnel-note">{s.note}</span>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="funnel">
+                {c.stages.map((s) => (
+                  <div className="funnel-row" key={s.stage}>
+                    <span className={s.ok ? 'funnel-ok' : 'funnel-bad'}>
+                      {s.ok ? '✓' : '✗'}
+                    </span>
+                    <span className="funnel-name">{STAGE_LABELS[s.stage] ?? s.stage}</span>
+                    <span className="funnel-time">
+                      {s.at_ms != null ? `+${(s.at_ms / 1000).toFixed(2)}s` : '—'}
+                    </span>
+                    <span className="funnel-note">{s.note}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="transcript">
+                <h4 className="transcript-head">Transcript</h4>
+                {transcripts[c.call_uuid] === 'loading' && (
+                  <p className="transcript-empty">Loading…</p>
+                )}
+                {transcripts[c.call_uuid] === 'error' && (
+                  <p className="transcript-empty">Could not load transcript.</p>
+                )}
+                {Array.isArray(transcripts[c.call_uuid]) &&
+                  ((transcripts[c.call_uuid] as string[]).length === 0 ? (
+                    <p className="transcript-empty">No captions in this call.</p>
+                  ) : (
+                    (transcripts[c.call_uuid] as string[]).map((line, i) => (
+                      <p className="transcript-line" key={i}>{line}</p>
+                    ))
+                  ))}
+              </div>
+            </>
           )}
         </section>
       ))}

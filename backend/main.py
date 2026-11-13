@@ -942,6 +942,26 @@ async def api_monitor(request: Request):
     }
 
 
+@app.get("/api/calls/{call_uuid}/transcript")
+async def api_call_transcript(call_uuid: str, request: Request):
+    """Full caption transcript for one call. Admin-only (call content is
+    personal). Lazy-loaded when a Monitor row is expanded, so the 5s poll
+    stays light and transcripts are only fetched on demand."""
+    _require_admin(request)
+    import history
+
+    call = history.get_by_uuid(call_uuid)
+    if call is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return {
+        "call_uuid": call_uuid,
+        "from_number": call.get("from_number"),
+        "direction": call.get("direction", "in"),
+        "language": call.get("language"),
+        "transcript": call.get("transcript") or [],
+    }
+
+
 @app.post("/api/providers")
 async def api_provider_add(payload: dict, request: Request):
     _require_admin(request)
