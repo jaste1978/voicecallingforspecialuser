@@ -909,6 +909,14 @@ async def api_contrib_set_status(uid: str, payload: dict, request: Request):
                                 {"status": status})
 
 
+@app.get("/api/stats")
+async def api_stats(request: Request):
+    """Admin dashboard: all-time and windowed product numbers."""
+    _require_admin(request)
+    import stats
+    return await stats.compute()
+
+
 @app.get("/api/monitor")
 async def api_monitor(request: Request):
     _require_admin(request)
@@ -1244,7 +1252,7 @@ if _dist.is_dir():
         "", "start", "login", "register", "calls", "call", "help", "setup",
         "support", "contacts", "settings", "captions", "history", "models",
         "ringtone", "monitor", "waitlist", "contribute", "users", "costs",
-        "content", "admin",
+        "content", "admin", "dashboard",
     }
 
     @app.get("/{path:path}")

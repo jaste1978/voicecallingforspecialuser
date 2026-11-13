@@ -15,6 +15,7 @@ import ModelsPage from './pages/SettingsPage'
 import SettingsTab from './pages/AdminPage'
 import RingtonePage from './pages/RingtonePage'
 import MonitorPage from './pages/MonitorPage'
+import DashboardPage from './pages/DashboardPage'
 import WaitlistPage from './pages/WaitlistPage'
 import ContributePage from './pages/ContributePage'
 import UsersPage from './pages/UsersPage'
@@ -41,6 +42,7 @@ const TITLES: Record<string, string> = {
   '/models': 'AI Models',
   '/ringtone': 'Ring & Vibration',
   '/monitor': 'Call Monitor',
+  '/dashboard': 'Dashboard',
   '/waitlist': 'Messages & feedback',
   '/users': 'Users & Numbers',
   '/costs': 'Costs',
@@ -51,7 +53,7 @@ const TITLES: Record<string, string> = {
 const TAB_ROOTS = new Set(['/', '/calls', '/call', '/contacts', '/settings'])
 // sub-pages that belong to the Settings tab
 const SETTINGS_CHILDREN = new Set([
-  '/captions', '/history', '/models', '/ringtone', '/monitor', '/waitlist', '/users', '/costs',
+  '/captions', '/history', '/models', '/ringtone', '/monitor', '/dashboard', '/waitlist', '/users', '/costs',
   '/content',
 ])
 
@@ -141,6 +143,7 @@ export default function App() {
           <Route path="/models" element={<ModelsPage />} />
           <Route path="/ringtone" element={<RingtonePage />} />
           <Route path="/monitor" element={<MonitorPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
           <Route path="/contribute" element={<ContributePage />} />
           <Route path="/users" element={<UsersPage />} />
