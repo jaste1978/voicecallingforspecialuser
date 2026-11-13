@@ -17,36 +17,131 @@ export type { Baseline, Extracted } from '@studio/holistic'
 export interface LandmarkerHandle {
   landmarker: HolisticLandmarker
   delegate: 'GPU' | 'CPU'
+  blendshapes: boolean
+}
+
+// Not every combination runs. On current MediaPipe builds the WebGL delegate
+// cannot execute the face-blendshapes subgraph ("No support of const"), and
+// it fails when the graph RUNS, not when the landmarker is created. Without
+// a probe, `createFromOptions` succeeds on the GPU and then every real frame
+// throws: the hand dots never light, no take ever sees a hand, and a second
+// later the recorder reports "camera tracking stopped". Same list and same
+// order as `sign-studio/src/lib/holistic.ts`, best first: blendshapes give
+// calibration-free facial grammar, which is the part of ISL we least want to
+// approximate; GPU is the difference between 25fps and 10fps on a phone.
+const CANDIDATES: Array<{ delegate: 'GPU' | 'CPU'; blendshapes: boolean }> = [
+  { delegate: 'GPU', blendshapes: true },
+  { delegate: 'CPU', blendshapes: true },
+  { delegate: 'GPU', blendshapes: false },
+  { delegate: 'CPU', blendshapes: false },
+]
+
+/** How long one backend may take to initialise before we try the next. */
+const CREATE_TIMEOUT_MS = 20_000
+
+/**
+ * The first backend that actually runs a frame.
+ *
+ * A budget Android with a blocklisted WebGL driver is exactly the phone an
+ * NGO session will hand us, and "the camera page is broken on my phone"
+ * would cost us contributors we cannot afford to lose. CPU is slower, and a
+ * 10fps clip is still a usable clip, because frames carry real timestamps.
+ *
+ * Two phone realities the studio never met:
+ *  - The 14MB model is downloaded ONCE, here, with progress, and handed to
+ *    every candidate as a buffer. Letting each attempt fetch its own copy
+ *    meant a slow connection paid for the model up to four times, and the
+ *    contributor stared at "getting ready" with no idea why.
+ *  - Some GPU drivers hang inside initialisation rather than throwing, and a
+ *    probe that only falls through on throw would wait forever. Each attempt
+ *    gets a deadline; a landmarker that resolves late is closed, not used.
+ */
+export async function createLandmarker(
+  onProgress?: (fraction: number) => void,
+): Promise<LandmarkerHandle> {
+  const fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm')
+  const model = await fetchModel('/models/holistic_landmarker.task', onProgress)
+  const probe = document.createElement('canvas')
+  probe.width = 64
+  probe.height = 64
+  probe.getContext('2d')?.fillRect(0, 0, 64, 64)
+
+  const failures: string[] = []
+  for (const c of CANDIDATES) {
+    let lm: HolisticLandmarker | null = null
+    try {
+      lm = await withDeadline(
+        HolisticLandmarker.createFromOptions(fileset, {
+          baseOptions: { modelAssetBuffer: model, delegate: c.delegate },
+          runningMode: 'VIDEO',
+          outputFaceBlendshapes: c.blendshapes,
+          minHandLandmarksConfidence: 0.4,
+        }),
+        CREATE_TIMEOUT_MS,
+        `${c.delegate} init`,
+      )
+      lm.detectForVideo(probe, performance.now())
+      // Rejected candidates dump a wall of MediaPipe errors to the console
+      // on the way here. Say so, or the next person to open devtools spends
+      // an hour debugging a working recorder.
+      console.info(
+        `[contribute] using ${c.delegate}${c.blendshapes ? ' with blendshapes' : ' (geometric facial grammar)'}.`,
+        failures.length ? `Preceding MediaPipe errors are rejected probes: ${failures.length}.` : '',
+      )
+      return { landmarker: lm, ...c }
+    } catch (err) {
+      lm?.close()
+      failures.push(`${c.delegate}${c.blendshapes ? '+blendshapes' : ''}: ${err instanceof Error ? err.message.split('\n')[0] : err}`)
+    }
+  }
+  throw new Error(`MediaPipe Holistic would not run.\n${failures.join('\n')}`)
+}
+
+/** The model file as bytes, reporting download progress as a 0–1 fraction. */
+async function fetchModel(url: string, onProgress?: (fraction: number) => void): Promise<Uint8Array> {
+  const res = await fetch(url)
+  if (!res.ok || !res.body) throw new Error(`model download failed (${res.status})`)
+  const total = Number(res.headers.get('content-length')) || 0
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let got = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    got += value.length
+    if (total) onProgress?.(Math.min(1, got / total))
+  }
+  const out = new Uint8Array(got)
+  let at = 0
+  for (const chunk of chunks) {
+    out.set(chunk, at)
+    at += chunk.length
+  }
+  onProgress?.(1)
+  return out
 }
 
 /**
- * GPU where we can get it, CPU where we cannot. A budget Android with a
- * blocklisted WebGL driver is exactly the phone an NGO session will hand us,
- * and "the camera page is broken on my phone" would cost us contributors we
- * cannot afford to lose. CPU is slower — 10fps rather than 25 — and a
- * 10fps clip is still a usable clip, because frames carry real timestamps.
+ * Reject when `work` has not settled within `ms`. If it settles afterwards
+ * the landmarker it produced is closed, so a hung GPU attempt that finally
+ * wakes up does not hold a WebGL context next to the backend we chose.
  */
-export async function createLandmarker(): Promise<LandmarkerHandle> {
-  const fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm')
-  const options = {
-    baseOptions: { modelAssetPath: '/models/holistic_landmarker.task' },
-    runningMode: 'VIDEO' as const,
-    outputFaceBlendshapes: true,
-    minHandLandmarksConfidence: 0.4,
-  }
-  try {
-    const landmarker = await HolisticLandmarker.createFromOptions(fileset, {
-      ...options,
-      baseOptions: { ...options.baseOptions, delegate: 'GPU' as const },
-    })
-    return { landmarker, delegate: 'GPU' }
-  } catch {
-    const landmarker = await HolisticLandmarker.createFromOptions(fileset, {
-      ...options,
-      baseOptions: { ...options.baseOptions, delegate: 'CPU' as const },
-    })
-    return { landmarker, delegate: 'CPU' }
-  }
+function withDeadline(
+  work: Promise<HolisticLandmarker>, ms: number, what: string,
+): Promise<HolisticLandmarker> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      settled = true
+      reject(new Error(`${what} timed out after ${ms}ms`))
+      work.then((lm) => lm.close()).catch(() => {})
+    }, ms)
+    work.then(
+      (lm) => { clearTimeout(timer); if (settled) lm.close(); else { settled = true; resolve(lm) } },
+      (err) => { clearTimeout(timer); if (!settled) { settled = true; reject(err) } },
+    )
+  })
 }
 
 /** Longest edge we hand the detector, regardless of what the camera gives. */
