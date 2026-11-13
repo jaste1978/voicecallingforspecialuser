@@ -527,3 +527,65 @@ main { flex: 1; display: flex; flex-direction: column; }
   background: var(--surface);
 }
 .pill.trusted { background: #EAF0FF; color: #2B4A9B; }
+
+/* ---- clips (admin archive) ---- */
+.pill.via { background: #EFEAFF; color: #4B37A8; }
+.pill.low { background: #FDECEC; color: var(--danger); }
+
+.clips a { color: var(--accent-ink); }
+.cliplist { list-style: none; margin: 10px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 8px; }
+.clip {
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.clip.open { border-color: var(--accent); }
+.clip.pending { border-left: 3px solid #E0A33A; }
+.clip.approved { border-left: 3px solid #14794A; }
+.clip.rejected { border-left: 3px solid var(--danger); }
+
+/* The whole row is the hit target — on a phone, a link-sized tap area in a
+   list of 600 rows is a guarantee of mis-taps. */
+.clip-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 13px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.clip-row:hover { background: var(--surface); }
+.clip-phrase { font-size: 16px; }
+.clip-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.clip-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 13px 13px;
+  border-top: 1px solid var(--divider);
+}
+/* Video and pose together: the video says what she signed, the pose says
+   what the model will actually be trained on. */
+.clip-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.clip-stage video, .clip-stage canvas {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  background: #1A130D;
+  display: block;
+  object-fit: contain;
+}
+.clip-stage canvas { background: var(--surface); }
+@media (max-width: 560px) {
+  .clip-stage { grid-template-columns: 1fr; }
+}
+.votes { list-style: none; margin: 0; padding: 0; display: flex;
+  flex-direction: column; gap: 2px; }

@@ -192,6 +192,75 @@ export const setUserStatus = (id: string, status: Status, role?: Role) =>
     method: 'POST', body: JSON.stringify({ status, ...(role ? { role } : {}) }),
   })
 
+export interface AdminClip {
+  id: string
+  phrase_id: string
+  contributor_id: string
+  contributor_name: string
+  hi: string
+  en: string
+  gloss: string
+  kind: 'word' | 'phrase' | 'number' | 'letter'
+  tier: number
+  target_count: number
+  duration_ms: number
+  fps: number
+  frame_count: number
+  cov_body: number
+  cov_face: number
+  cov_hand_l: number
+  cov_hand_r: number
+  video_key: string
+  video_status: string
+  video_bytes: number
+  video_url: string | null
+  review_status: 'pending' | 'approved' | 'rejected'
+  approved_via: string
+  variant_tag: string
+  approvals: number
+  rejections: number
+  keypoints_bytes: number
+  created_at: number
+}
+
+export interface AdminClipPage {
+  clips: AdminClip[]
+  total: number
+  counts: Record<string, number>
+  needed: number
+}
+
+export interface AdminClipVote {
+  verdict: 'approve' | 'reject'
+  reason: string
+  reviewer_name: string | null
+  created_at: number
+}
+
+/** The detail call adds what the list deliberately leaves out: the pose
+ *  itself, and who voted which way. */
+export interface AdminClipDetail extends AdminClip {
+  frames: SignFrame[]
+  reviews: AdminClipVote[]
+}
+
+export const adminClips = (q: {
+  review_status?: string; phrase_id?: string; contributor_id?: string
+  limit?: number; offset?: number
+} = {}) => {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries(q)) if (v) p.set(k, String(v))
+  return json<AdminClipPage>(`/api/admin/clips${p.size ? `?${p}` : ''}`)
+}
+
+export const adminClip = (id: string) => json<AdminClipDetail>(`/api/admin/clips/${id}`)
+
+export const setClipReview = (id: string, status: 'approved' | 'rejected' | 'pending') =>
+  json<{ ok: boolean; review_status: string; approved_via: string }>(
+    `/api/admin/clips/${id}/review`,
+    { method: 'POST', body: JSON.stringify({ status }) },
+  )
+
 export const getStats = () =>
   json<{ clips: number; people: number; phrases_covered: number; phrases_total: number }>(
     '/api/stats',

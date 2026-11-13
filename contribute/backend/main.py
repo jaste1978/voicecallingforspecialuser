@@ -784,6 +784,144 @@ def api_admin_set_trusted(uid: str, payload: dict, request: Request,
     return {"ok": True, "id": uid, "trusted": bool(trusted)}
 
 
+@app.get("/api/admin/clips")
+def api_admin_clips(request: Request, review_status: str = "", phrase_id: str = "",
+                    contributor_id: str = "", limit: int = 60, offset: int = 0,
+                    x_admin_key: str | None = Header(None)):
+    """Every clip in the archive, newest first.
+
+    This is the only screen that sees the whole collection. Review deliberately
+    does not: a reviewer is shown one clip at a time, never their own, and
+    never one they already voted on. Those exclusions are right for reviewing
+    and useless for knowing what you actually have — which is why the counts,
+    the video and the unfiltered list live here instead.
+
+    Keypoints are left out on purpose. They are ~14KB a clip gzipped and the
+    list would be megabytes long before it was useful; the detail endpoint
+    sends them for the one clip being looked at.
+    """
+    if not _is_admin(request, x_admin_key):
+        return Response(status_code=401)
+
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
+    where = ["c.deleted_at IS NULL"]
+    args: list = []
+    if review_status:
+        where.append("c.review_status = ?")
+        args.append(review_status)
+    if phrase_id:
+        where.append("c.phrase_id = ?")
+        args.append(phrase_id)
+    if contributor_id:
+        where.append("c.contributor_id = ?")
+        args.append(contributor_id)
+    clause = " AND ".join(where)
+
+    with db.conn() as c:
+        rows = c.execute(
+            f"""
+            SELECT c.id, c.phrase_id, c.contributor_id, c.duration_ms, c.fps,
+                   c.frame_count, c.cov_body, c.cov_face, c.cov_hand_l,
+                   c.cov_hand_r, c.video_key, c.video_status, c.video_bytes,
+                   c.review_status, c.approved_via, c.variant_tag,
+                   c.created_at, c.keypoints_bytes,
+                   p.hi, p.en, p.gloss, p.kind, p.tier, p.target_count,
+                   u.display_name AS contributor_name,
+                   (SELECT COUNT(*) FROM reviews r2 WHERE r2.contribution_id = c.id
+                     AND r2.verdict = 'approve') AS approvals,
+                   (SELECT COUNT(*) FROM reviews r3 WHERE r3.contribution_id = c.id
+                     AND r3.verdict = 'reject') AS rejections
+              FROM contributions c
+              JOIN phrases p ON p.id = c.phrase_id
+              LEFT JOIN users u ON u.id = c.contributor_id
+             WHERE {clause}
+             ORDER BY c.created_at DESC
+             LIMIT ? OFFSET ?
+            """,
+            (*args, limit, offset),
+        ).fetchall()
+        total = c.execute(
+            f"SELECT COUNT(*) FROM contributions c WHERE {clause}", args).fetchone()[0]
+        # Counts ignore the status filter — the tabs have to show what is in
+        # the other tabs, or they cannot be used to navigate.
+        counts = {r[0]: r[1] for r in c.execute(
+            "SELECT review_status, COUNT(*) FROM contributions"
+            " WHERE deleted_at IS NULL GROUP BY review_status")}
+
+    clips = []
+    for r in rows:
+        d = dict(r)
+        d["video_url"] = (storage.presign_get(r["video_key"])
+                          if r["video_status"] == "stored" and r["video_key"] else None)
+        clips.append(d)
+    return {"clips": clips, "total": total, "counts": counts,
+            "needed": db.REVIEWS_TO_SETTLE}
+
+
+@app.get("/api/admin/clips/{cid}")
+def api_admin_clip(cid: str, request: Request,
+                   x_admin_key: str | None = Header(None)):
+    """One clip with its pose, for playing back next to the video.
+
+    The pose is the thing being trained on, so an admin looking at a clip
+    should be able to see what the model will see — a video can look fine
+    while the tracking underneath it dropped a hand.
+    """
+    if not _is_admin(request, x_admin_key):
+        return Response(status_code=401)
+    with db.conn() as c:
+        r = c.execute(
+            "SELECT c.*, p.hi, p.en, p.gloss, p.kind,"
+            " u.display_name AS contributor_name"
+            " FROM contributions c JOIN phrases p ON p.id = c.phrase_id"
+            " LEFT JOIN users u ON u.id = c.contributor_id"
+            " WHERE c.id = ? AND c.deleted_at IS NULL", (cid,)).fetchone()
+        if not r:
+            return JSONResponse({"error": "unknown clip"}, status_code=404)
+        votes = c.execute(
+            "SELECT r.verdict, r.reason, r.created_at,"
+            " u.display_name AS reviewer_name FROM reviews r"
+            " LEFT JOIN users u ON u.id = r.reviewer_id"
+            " WHERE r.contribution_id = ? ORDER BY r.created_at", (cid,)).fetchall()
+
+    d = {k: r[k] for k in r.keys() if k != "keypoints"}
+    d["frames"] = db.unpack_keypoints(r["keypoints"])
+    d["video_url"] = (storage.presign_get(r["video_key"])
+                      if r["video_status"] == "stored" and r["video_key"] else None)
+    d["reviews"] = [dict(v) for v in votes]
+    return d
+
+
+@app.post("/api/admin/clips/{cid}/review")
+def api_admin_set_clip_review(cid: str, payload: dict, request: Request,
+                              x_admin_key: str | None = Header(None)):
+    """Settle a clip by hand.
+
+    Needed because peer review can deadlock: two contributors who are each
+    other's only possible reviewer can never reach two approvals, and a clip
+    nobody can vote on is a clip that never ships. The override is recorded
+    as its own provenance rather than being dressed up as agreement — 'an
+    admin decided' and 'two reviewers agreed' are different claims about the
+    data, and the export keeps them apart.
+    """
+    if not _is_admin(request, x_admin_key):
+        return Response(status_code=401)
+    status = str(payload.get("status") or "")
+    if status not in ("approved", "rejected", "pending"):
+        return JSONResponse({"error": "bad status"}, status_code=422)
+    with db.conn() as c:
+        if not c.execute("SELECT 1 FROM contributions WHERE id = ?"
+                         " AND deleted_at IS NULL", (cid,)).fetchone():
+            return JSONResponse({"error": "unknown clip"}, status_code=404)
+        # Back to pending means "let review decide after all", so the
+        # override marker goes with it.
+        via = "" if status == "pending" else "admin-override"
+        c.execute("UPDATE contributions SET review_status = ?, approved_via = ?"
+                  " WHERE id = ?", (status, via, cid))
+    return {"ok": True, "id": cid, "review_status": status, "approved_via": via}
+
+
 @app.get("/api/admin/export.jsonl")
 def api_admin_export(request: Request, x_admin_key: str | None = Header(None),
                      review_status: str = "", limit: int = 5000):
