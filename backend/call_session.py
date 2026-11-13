@@ -917,6 +917,9 @@ class UserLine:
                         f"From: <b>{call.from_number}</b>\n"
                         f"Callback from the app → app.sunosathi.com",
                         chat_id=chat)
+                # and their WhatsApp, if they linked that
+                import whatsapp_link
+                await whatsapp_link.alert(self.user_id, "missed", call.from_number)
             elif technical:
                 await telegram_notify.send(
                     f"⚠️ <b>Call problem</b> for {who}\n"
@@ -1020,6 +1023,11 @@ class CallManager:
                     chat_id=chat)
         except Exception:
             logger.exception("callback telegram notify failed")
+        try:
+            import whatsapp_link
+            await whatsapp_link.alert(user_id, "callback", pretty)
+        except Exception:
+            logger.exception("callback whatsapp notify failed")
         try:
             import apns
             await apns.notify(
