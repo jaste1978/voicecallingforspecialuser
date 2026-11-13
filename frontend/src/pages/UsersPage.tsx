@@ -113,13 +113,13 @@ export default function UsersPage() {
     }
   }
 
-  async function addNumber(userId: number) {
+  async function addNumber(userId: number, kind: 'forwarded' | 'did' = 'forwarded') {
     const value = (numInputs[userId] || '').trim()
     if (!value) return
     const resp = await authFetch('/api/numbers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, number: value }),
+      body: JSON.stringify({ user_id: userId, number: value, kind }),
     })
     if (!resp.ok) {
       setError('Number rejected — needs 10 digits, and one number can only map to one user')
@@ -314,10 +314,20 @@ export default function UsersPage() {
                 onChange={(e) => setNumInputs((p) => ({ ...p, [u.id]: e.target.value }))} />
               <button className="promptbtn" style={{ flex: '0 0 auto' }}
                 disabled={!(numInputs[u.id] || '').trim()}
-                onClick={() => void addNumber(u.id)}>
-                Link
+                onClick={() => void addNumber(u.id, 'forwarded')}>
+                Forwarded
+              </button>
+              <button className="promptbtn" style={{ flex: '0 0 auto' }}
+                disabled={!(numInputs[u.id] || '').trim()}
+                onClick={() => void addNumber(u.id, 'did')}>
+                Dedicated
               </button>
             </div>
+            <p className="idle-hint" style={{ textAlign: 'left', marginTop: 4 }}>
+              <b>Forwarded</b> = the user's own mobile that rings here.
+              <b> Dedicated</b> = a Vobiz number we rent for them — shown as their
+              caller ID on outbound calls, and callbacks route to them.
+            </p>
           </div>
 
           {resetPw[u.id] && (

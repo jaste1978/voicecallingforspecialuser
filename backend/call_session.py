@@ -480,7 +480,12 @@ class UserLine:
         call.trace.event("outbound_dialing", to=number)
         await self._to_browser({"type": "dialing", "to": name or number})
         try:
-            data = await outbound.place_call(number)
+            # Show the caller's own dedicated number if they have one, so the
+            # callee sees (and can call back) their number — not the shared one.
+            import number_map
+            did10 = number_map.did_for_user(self.user_id)
+            from_did = ("91" + did10) if did10 else None
+            data = await outbound.place_call(number, from_did=from_did)
             call.request_uuid = data.get("request_uuid")
         except Exception as exc:
             logger.exception("outbound place_call failed")

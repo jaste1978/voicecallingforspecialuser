@@ -50,6 +50,18 @@ def number_for_user(user_id: int) -> str | None:
     return row["number"] if row else None
 
 
+def did_for_user(user_id: int) -> str | None:
+    """The user's own dedicated number (kind='did'), used as their outbound
+    caller ID. None means they fall back to the shared SunoSathi number."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT number FROM numbers WHERE user_id = ? AND kind = 'did'"
+            " ORDER BY id LIMIT 1",
+            (user_id,),
+        ).fetchone()
+    return row["number"] if row else None
+
+
 def list_numbers() -> list[dict]:
     with _conn() as conn:
         rows = conn.execute("SELECT * FROM numbers ORDER BY id").fetchall()

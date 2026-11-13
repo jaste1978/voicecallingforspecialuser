@@ -3,7 +3,16 @@ import { authFetch } from '../lib/auth'
 
 const WHATSAPP = 'https://wa.me/919819095969?text=' +
   encodeURIComponent('Namaste! मुझे SunoSathi में मदद चाहिए —')
+// Dedicated-number sales run as a 1:1 WhatsApp concierge chat.
+const DEDICATED_WA_NUMBER = '918850320558'
 const EMAIL = 'tnlangalia@gmail.com'
+
+function dedicatedLink(name?: string, number?: string): string {
+  const who = [name, number].filter(Boolean).join(' · ')
+  const msg = 'Namaste! मुझे अपना dedicated SunoSathi number चाहिए (अपना number, calls पर दिखे).' +
+    (who ? `\nMy account: ${who}` : '')
+  return `https://wa.me/${DEDICATED_WA_NUMBER}?text=${encodeURIComponent(msg)}`
+}
 
 export default function SupportPage() {
   const [message, setMessage] = useState('')
@@ -15,11 +24,16 @@ export default function SupportPage() {
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const [me, setMe] = useState<{ name?: string; number?: string } | null>(null)
 
   useEffect(() => {
     authFetch('/api/account/delete-status')
       .then((r) => r.json())
       .then(setDel)
+      .catch(() => {})
+    authFetch('/api/me')
+      .then((r) => r.json())
+      .then((d) => setMe({ name: d.name, number: d.number }))
       .catch(() => {})
   }, [])
 
@@ -82,6 +96,18 @@ export default function SupportPage() {
         </p>
         <a className="bigbtn start" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 52, textDecoration: 'none', marginTop: 10 }} href={WHATSAPP} target="_blank" rel="noreferrer">
           WhatsApp us
+        </a>
+      </section>
+
+      <section className="setting-block">
+        <h3>अपना dedicated number 📞</h3>
+        <p className="idle-hint" style={{ textAlign: 'left' }}>
+          Want your <b>own number</b> to show when you call people — and for
+          them to call you back on it? Get a dedicated SunoSathi number.
+          हर किसी के लिए ज़रूरी नहीं — आप हमारा common number ऐसे ही use कर सकते हैं।
+        </p>
+        <a className="bigbtn start" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 52, textDecoration: 'none', marginTop: 10 }} href={dedicatedLink(me?.name, me?.number)} target="_blank" rel="noreferrer">
+          WhatsApp पर request कीजिए
         </a>
       </section>
 

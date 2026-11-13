@@ -28,8 +28,13 @@ def configured() -> bool:
     return _creds() is not None and bool(os.environ.get("PUBLIC_HOST"))
 
 
-async def place_call(to_number: str) -> dict:
-    """Fire the outbound call. Returns {'request_uuid': ...} on success."""
+async def place_call(to_number: str, from_did: str | None = None) -> dict:
+    """Fire the outbound call. Returns {'request_uuid': ...} on success.
+
+    `from_did` is the caller ID shown to the callee. Pass a user's dedicated
+    number here; when omitted we fall back to the shared SunoSathi DID. It
+    must be a number owned on our Vobiz account — providers do not allow
+    showing an arbitrary mobile as caller ID."""
     creds = _creds()
     host = os.environ.get("PUBLIC_HOST")
     if creds is None or not host:
@@ -37,7 +42,7 @@ async def place_call(to_number: str) -> dict:
             "Outbound not configured: set VOBIZ_AUTH_ID, VOBIZ_AUTH_TOKEN and PUBLIC_HOST"
         )
     auth_id, token = creds
-    from_did = os.environ.get("VOBIZ_DID", "917971442451")
+    from_did = from_did or os.environ.get("VOBIZ_DID", "917971442451")
     base = f"https://{host}"
     payload = {
         "from": from_did,
