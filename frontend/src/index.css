@@ -975,6 +975,38 @@ select.lang.wide {
   color: var(--dim);
 }
 
+.transcript {
+  margin-top: 12px;
+  border-top: 1px solid var(--divider);
+  padding-top: 10px;
+}
+
+.transcript-head {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.transcript-line {
+  margin: 0 0 6px;
+  padding: 7px 11px;
+  background: var(--chip-bg, rgba(0, 0, 0, 0.04));
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.transcript-empty {
+  margin: 0;
+  color: var(--dim);
+  font-size: 14px;
+}
+
 /* ---------- app shell: tabs + content ---------- */
 .content {
   flex: 1;
