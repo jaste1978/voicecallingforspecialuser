@@ -21,7 +21,8 @@ GRACE_SECONDS = 12 * 60 * 60  # 12 hours
 
 # Every table that stores rows keyed by a user's id.
 _USER_TABLES = ("sessions", "push_tokens", "numbers", "contacts",
-                "calls", "callback_alerts")
+                "calls", "callback_alerts",
+                "whatsapp_numbers", "whatsapp_link_tokens")
 
 
 def init() -> None:

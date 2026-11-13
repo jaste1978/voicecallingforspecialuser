@@ -511,6 +511,67 @@ async def api_telegram_webhook(payload: dict, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/whatsapp/link")
+async def api_whatsapp_link(request: Request):
+    """Settings: a wa.me link that binds this user's WhatsApp to alerts.
+    `available` is false until the Cloud API is configured, so the entry
+    stays hidden rather than leading nowhere."""
+    import whatsapp_link
+    import whatsapp_notify
+
+    user = _require_user(request)
+    if not whatsapp_notify.configured():
+        return {"available": False, "linked": False, "url": ""}
+    return {"available": True,
+            "url": whatsapp_link.make_link(user["id"]),
+            "linked": whatsapp_link.number_for(user["id"]) is not None}
+
+
+@app.post("/api/whatsapp/unlink")
+async def api_whatsapp_unlink(request: Request):
+    import whatsapp_link
+
+    user = _require_user(request)
+    whatsapp_link.unlink(user["id"])
+    return {"ok": True}
+
+
+@app.get("/api/whatsapp/webhook")
+async def api_whatsapp_webhook_verify(request: Request):
+    """Meta's one-time subscription handshake: echo the challenge."""
+    q = request.query_params
+    token = os.environ.get("WHATSAPP_VERIFY_TOKEN", "")
+    if (token and q.get("hub.mode") == "subscribe"
+            and q.get("hub.verify_token") == token):
+        return Response(content=q.get("hub.challenge", ""),
+                        media_type="text/plain")
+    return Response(status_code=403)
+
+
+@app.post("/api/whatsapp/webhook")
+async def api_whatsapp_webhook(request: Request):
+    """Inbound WhatsApp messages (LINK <code> / STOP). Signature-checked
+    against the raw body before anything is parsed."""
+    import whatsapp_link
+    import whatsapp_notify
+
+    body = await request.body()
+    if not whatsapp_notify.valid_signature(
+            body, request.headers.get("x-hub-signature-256")):
+        return Response(status_code=403)
+    try:
+        payload = json.loads(body)
+        for entry in payload.get("entry") or []:
+            for change in entry.get("changes") or []:
+                for msg in (change.get("value") or {}).get("messages") or []:
+                    if msg.get("type") == "text" and msg.get("from"):
+                        await whatsapp_link.handle_inbound(
+                            msg["from"], (msg.get("text") or {}).get("body", ""))
+    except Exception:
+        logger.exception("whatsapp webhook handling failed")
+    return {"ok": True}  # always 200 once authentic, or Meta retries for days
+
+
 @app.get("/api/callbacks")
 async def api_callbacks(request: Request):
     """People who dialed the shared number back, so the app can show a

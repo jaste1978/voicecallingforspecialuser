@@ -23,6 +23,43 @@ export default function SettingsTab() {
   const [admin, setAdmin] = useState(isAdmin())
   const [picMode, setPicMode] = useState(pictureCaptionsEnabled())
   const [tgLinked, setTgLinked] = useState(false)
+  // WhatsApp alerts: hidden until the server has the Cloud API configured
+  const [waAvailable, setWaAvailable] = useState(false)
+  const [waLinked, setWaLinked] = useState(false)
+  const [waUrl, setWaUrl] = useState('')
+  const [waOpen, setWaOpen] = useState(false)
+  const [waChecking, setWaChecking] = useState(false)
+
+  async function loadWhatsApp() {
+    try {
+      const d = await (await authFetch('/api/whatsapp/link')).json()
+      setWaAvailable(!!d.available)
+      setWaLinked(!!d.linked)
+      setWaUrl(d.url || '')
+      return !!d.linked
+    } catch { return false }
+  }
+
+  useEffect(() => { void loadWhatsApp() }, [])
+
+  // After sending the message in WhatsApp, confirm here without a reload.
+  async function recheckWaLinked() {
+    setWaChecking(true)
+    if (await loadWhatsApp()) setWaOpen(false)
+    setWaChecking(false)
+  }
+
+  async function turnOffWhatsApp() {
+    try {
+      await authFetch('/api/whatsapp/unlink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      })
+    } catch { /* ignore */ }
+    setWaOpen(false)
+    void loadWhatsApp()
+  }
 
   useEffect(() => {
     authFetch('/api/telegram/link')
@@ -248,6 +285,53 @@ export default function SettingsTab() {
               Bot का ✅ reply आते ही हो जाएगा।
             </span>
           </div>
+        </div>
+      )}
+      {waAvailable && (
+        <button className="home-btn" onClick={() => setWaOpen((o) => !o)}>
+          <span className="emoji icon">💬</span>
+          <span style={{ flex: 1 }}>
+            WhatsApp alerts
+            <small>Missed calls reach you on WhatsApp, even with the app closed</small>
+          </span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: waLinked ? 'var(--ok)' : 'var(--dim)' }}>
+            {waLinked ? '✓' : 'Link'}
+          </span>
+        </button>
+      )}
+      {waAvailable && waOpen && !waLinked && (
+        <div className="setting-block">
+          <h3>Link WhatsApp</h3>
+          <p className="idle-hint" style={{ textAlign: 'left' }}>
+            Tap the button, then tap <strong>Send</strong> in WhatsApp. The
+            message is already typed for you.
+          </p>
+          <a className="bigbtn start" href={waUrl} target="_blank" rel="noreferrer"
+            style={{ display: 'flex', justifyContent: 'center', marginTop: 10,
+              textDecoration: 'none' }}>
+            💬 Open WhatsApp &amp; send
+          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
+            <button className="promptbtn" style={{ flex: '0 0 auto' }}
+              onClick={() => void recheckWaLinked()} disabled={waChecking}>
+              {waChecking ? 'Checking…' : "I've sent it — check"}
+            </button>
+            <span className="idle-hint" style={{ margin: 0 }}>
+              You will get a ✅ reply in WhatsApp.
+            </span>
+          </div>
+        </div>
+      )}
+      {waAvailable && waOpen && waLinked && (
+        <div className="setting-block">
+          <h3>WhatsApp alerts are on</h3>
+          <p className="idle-hint" style={{ textAlign: 'left' }}>
+            Missed calls and call-backs are sent to your WhatsApp.
+          </p>
+          <button className="promptbtn" style={{ marginTop: 10 }}
+            onClick={() => void turnOffWhatsApp()}>
+            Turn off
+          </button>
         </div>
       )}
       <button className="home-btn" onClick={() => navigate('/help')}>
